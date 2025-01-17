@@ -1,0 +1,11 @@
+[Unit]
+Description=1000 sites provision system - Python3 app
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/provision/provision.py
+PrivateTmp=false
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
