@@ -193,7 +193,7 @@ def setupNginx(file):
         logging.info(f"Folders and files ownership of {os.path.join(WEB_FOLDER,filename)} changed to {WWW_USER}:{WWW_GROUP}")
         config = f"""server {{
     listen 203.161.35.70:80;
-    server_name {filename};
+    server_name {filename} www.{filename};
     access_log /var/log/nginx/access_{filename}.log postdata;
     error_log /var/log/nginx/error_{filename}.log;
 
@@ -211,7 +211,7 @@ server {{
     error_log /var/log/nginx/error_{filename}.log;
 
     location / {{
-      return 301 https://{filename}$request_uri;
+      return 301 https://{filename};
     }}
 }}
 
