@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from flask import Flask,render_template,render_template_string,request,make_response,redirect,url_for
+from flask import Flask,render_template,request,make_response,redirect
 from werkzeug.utils import secure_filename
 import os
 import sys
@@ -15,28 +15,17 @@ import zipfile
 import random
 import string
 import bcrypt
+import signal
 
 CONFIG_FILE = os.path.abspath(os.path.dirname(__file__))+"/provision.conf"
 PASSWORD_FILE = os.path.abspath(os.path.dirname(__file__))+"/user-pass.conf"
-TELEGRAM_TOKEN = ""
-TELEGRAM_CHATID = ""
-WEB_FOLDER = ""
-JOB_ID = ""
-NGX_CRT_PATH = ""
-WWW_USER = ""
-WWW_GROUP = ""
-NGX_SITES_PATH = ""
-NGX_SITES_PATH2 = ""
-JOB_COUNTER = 1
-JOB_TOTAL = 1
-PHP_POOL = ""
+TELEGRAM_TOKEN = TELEGRAM_CHATID = WEB_FOLDER = JOB_ID = NGX_CRT_PATH = WWW_USER = WWW_GROUP = NGX_SITES_PATH = NGX_SITES_PATH2 = PHP_POOL = ""
+JOB_COUNTER = JOB_TOTAL = 1
 PWD_LIST = []
 COOKIE_SALT="55c5834073242d20dd19c94a058198cf"
 
-application = Flask(__name__)
-
 def load_config():
-    global PWD_LIST
+    global TELEGRAM_TOKEN, TELEGRAM_CHATID, WEB_FOLDER, NGX_CRT_PATH, WWW_USER, WWW_GROUP, NGX_SITES_PATH, NGX_SITES_PATH2, PHP_POOL,PWD_LIST
     error = 0
     "Check if config file exists. If not - generate the new one."
     if os.path.exists(CONFIG_FILE):
@@ -50,15 +39,6 @@ def load_config():
         if error != 0:
             print(f"Some variables are not set in config file. Please fix it then run the program again.")
             quit()
-        global TELEGRAM_TOKEN
-        global TELEGRAM_CHATID
-        global WEB_FOLDER
-        global NGX_CRT_PATH
-        global WWW_USER
-        global WWW_GROUP
-        global NGX_SITES_PATH
-        global NGX_SITES_PATH2
-        global PHP_POOL
         WEB_FOLDER = config.get('webFolder')
         TELEGRAM_TOKEN = config.get('telegramToken')
         TELEGRAM_CHATID = config.get('telegramChat')       
@@ -365,6 +345,13 @@ def main():
     logging.info(f"-----------------------Starting pre-check(JOB ID:{JOB_ID}). Total {JOB_TOTAL} archive(s) found-----------------")
     findZip_1()
 
+def reload_config(signum, frame):
+    logging.info("SIGHUP received. Reloading configuration...")
+
+load_config()
+signal.signal(signal.SIGHUP, reload_config)
+application = Flask(__name__)
+
 #catch logout form. Deleting cookies and redirect to /
 @application.route("/logout", methods=['POST'])
 def logout():
@@ -499,4 +486,4 @@ if __name__ == "__main__":
             print(f"Something went wrong. Please check the parameters.")
             quit()
     load_config()
-    application.run(host='127.0.0.1',port=8500,debug=False)
+    application.run()
