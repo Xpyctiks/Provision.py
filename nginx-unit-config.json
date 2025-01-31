@@ -5,13 +5,13 @@
      }
    },
   "applications": {
-    "cloud-cache-clean": {
+    "provision": {
       "type": "python 3.11",
       "processes": 4,
       "user": "www-data",
       "group": "www-data",
       "working_directory": "/opt/provision",
-      "home": "/opt/provision",
+      "home": "/opt/venv",
       "path": "/opt/provision",
       "module": "provision",
       "callable": "application"

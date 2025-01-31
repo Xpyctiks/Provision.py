@@ -299,8 +299,18 @@ def unZip_3(file):
 def checkZip_2(file):
     logging.info(f">>>Start processing of archive #{JOB_COUNTER} of {JOB_TOTAL} total - {file}")
     send_to_telegram(f"🎢Provisoin job start({JOB_ID}):",f"Archive #{JOB_COUNTER} of {JOB_TOTAL}: {file}")
+    #Getting site name from archive name
     fileName = os.path.basename(file)[:-4]
-    found = 0
+    #Preparing full path - path to general web folder + site name
+    finalPath = os.path.join(WEB_FOLDER,fileName)
+    #Preparing full path + "public" folder
+    test = os.path.join(finalPath,"public")
+    #test if already exists site folder + public folder inside
+    if os.path.exists(test):
+        #Set counter to 4 to pass all checks. We don't need to check the archive now - just unpack whatever is inside
+        found = 4
+    else:
+        found = 0
     try:
         with zipfile.ZipFile(file, 'r') as zip_ref:
             file_list = zip_ref.namelist()
@@ -313,7 +323,7 @@ def checkZip_2(file):
                 found += 1
             if files == f"htpasswd":
                 found += 1
-        if found != 4:
+        if found >= 4:
             print(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             send_to_telegram(f"🚒Provision job error:",f"Job #{JOB_COUNTER} error: Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
