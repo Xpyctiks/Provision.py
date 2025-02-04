@@ -327,7 +327,7 @@ def checkZip_2(file):
             if files == f"htpasswd":
                 found += 1
                 logging.info("htpasswd found!")                
-        if found >= 4:
+        if found < 4:
             print(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             send_to_telegram(f"🚒Provision job error:",f"Job #{JOB_COUNTER} error: Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
