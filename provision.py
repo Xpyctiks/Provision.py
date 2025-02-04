@@ -388,7 +388,7 @@ def upload_file():
             for file in files:
                 if file.filename:
                     filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),secure_filename(file.filename))
-                    file.save(f"./{filename}")
+                    file.save(f"{filename}")
                     nameList += filename+","
             response = make_response(redirect("/"),301)
             response.set_cookie("result", f"File(s) uploaded successfully!", max_age=5)
