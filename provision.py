@@ -314,15 +314,24 @@ def checkZip_2(file):
     try:
         with zipfile.ZipFile(file, 'r') as zip_ref:
             file_list = zip_ref.namelist()
+            currentList = []
         for files in file_list:
             if files == f"{fileName}.crt":
                 found += 1
+            else:
+                logging.error("no {fileName}.crt found!")
             if files == f"{fileName}.key":
                 found += 1
+            else:
+                logging.error("no {fileName}.key found!")
             if files == f"public/":
                 found += 1
+            else:
+                logging.error("no public/ found!")
             if files == f"htpasswd":
                 found += 1
+            else:
+                logging.error("no htpasswd found!")
         if found >= 4:
             print(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
@@ -394,6 +403,7 @@ def upload_file():
             response.set_cookie("result", f"File(s) uploaded successfully!", max_age=5)
             logging.info(f"Upload by {request.cookies.get('realname')}: Files {nameList} uploaded successfully")
             send_to_telegram(f"⬆Provision\nUpload by {request.cookies.get('realname')}:",f"Files {nameList} uploaded successfully")
+            #now call this script from shell to start deploy procedure
             subprocess.run([__file__, 'main'])
             return response
     #if this is GET request - redirect to /
