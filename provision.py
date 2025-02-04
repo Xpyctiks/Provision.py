@@ -260,7 +260,7 @@ server {{
             os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
         logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
         if os.system("/usr/sbin/nginx -t") == 0:
-            os.system("sudo /usr/sbin/nginx -s reload")
+            os.system("/usr/sbin/nginx -s reload")
             logging.info(f"Nginx reloaded successfully")
             setupPHP(file)
         else:
