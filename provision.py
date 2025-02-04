@@ -314,24 +314,19 @@ def checkZip_2(file):
     try:
         with zipfile.ZipFile(file, 'r') as zip_ref:
             file_list = zip_ref.namelist()
-            currentList = []
         for files in file_list:
             if files == f"{fileName}.crt":
                 found += 1
-            else:
-                logging.error("no {fileName}.crt found!")
+                logging.info("{fileName}.crt found!")               
             if files == f"{fileName}.key":
                 found += 1
-            else:
-                logging.error("no {fileName}.key found!")
+                logging.info("{fileName}.key found!")              
             if files == f"public/":
                 found += 1
-            else:
-                logging.error("no public/ found!")
+                logging.info("public/ found!")               
             if files == f"htpasswd":
                 found += 1
-            else:
-                logging.error("no htpasswd found!")
+                logging.info("htpasswd found!")                
         if found >= 4:
             print(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
