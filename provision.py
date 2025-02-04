@@ -64,7 +64,7 @@ def generate_default_config():
         "telegramToken": "",
         "telegramChat": "",
         "webFolder": "/var/www",
-        "logFile": "/var/log/provision.log",
+        "logFile": "provision.log",
         "nginxCrtPath": "/etc/nginx/ssl/",
         "wwwUser": "www-data",
         "wwwGroup": "www-data",
@@ -260,7 +260,7 @@ server {{
             os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
         logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
         if os.system("/usr/sbin/nginx -t") == 0:
-            os.system("systemctl reload nginx")
+            os.system("sudo /usr/sbin/nginx -s reload")
             logging.info(f"Nginx reloaded successfully")
             setupPHP(file)
         else:
