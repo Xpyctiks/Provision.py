@@ -151,13 +151,13 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
         if  re.search(r".*test is successful.*",result.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
-            logging.info(f"PHP config test passed successfully: {result.stdout}. Reloading PHP, version {phpVer}...")
+            logging.info(f"PHP config test passed successfully: {result.stdout.strip()}. Reloading PHP, version {phpVer}...")
             result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
                 finishJob(file)
         else:
-            logging.error(f"Error while reloading PHP: {result.stdout} {result.stderr}")
+            logging.error(f"Error while reloading PHP: {result.stdout.strip()} {result.stderr.strip()}")
             send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading PHP")
             finishJob(file)
     except Exception as msg:
@@ -273,10 +273,10 @@ server {{
             logging.info(f"Nginx config test passed successfully: {result.stderr}. Reloading Nginx...")
             result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result.stderr):
-                logging.info(f"Nginx reloaded successfully. Result: {result.stderr}")
+                logging.info(f"Nginx reloaded successfully. Result: {result.stderr.strip()}")
             setupPHP(file)
         else:
-            logging.error(f"Error while reloading Nginx: {result.stderr}")
+            logging.error(f"Error while reloading Nginx: {result.stderr.strip()}")
             send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading Nginx")
             finishJob(file)
     except Exception as msg:
