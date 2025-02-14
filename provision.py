@@ -147,12 +147,12 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
         with open(os.path.join(PHP_POOL,filename)+".conf", 'w',encoding='utf8') as fileC:
             fileC.write(config)
         logging.info(f"PHP config {os.path.join(PHP_POOL,filename)} created")
-        result = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, text=True, shell=True)
+        result = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
             logging.info(f"PHP config test passed successfully: {result.stdout}. Reloading PHP, version {phpVer}...")
-            result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, shell=True, text=True)
+            result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
                 finishJob(file)
@@ -268,10 +268,10 @@ server {{
         if not os.path.exists(os.path.join(NGX_SITES_PATH2,filename)):
             os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
         logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
-        result = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, text=True, shell=True)
+        result = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
             logging.info(f"Nginx config test passed successfully: {result.stderr}. Reloading Nginx...")
-            result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True, shell=True)
+            result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result.stderr):
                 logging.info(f"Nginx reloaded successfully. Result: {result.stderr}")
             setupPHP(file)
