@@ -42,7 +42,7 @@ def load_config():
             quit()
         WEB_FOLDER = config.get('webFolder')
         TELEGRAM_TOKEN = config.get('telegramToken')
-        TELEGRAM_CHATID = config.get('telegramChat')       
+        TELEGRAM_CHATID = config.get('telegramChat')
         LOG_FILE = config.get('logFile')
         NGX_CRT_PATH = config.get('nginxCrtPath')
         NGX_SITES_PATH = config.get('nginxSitesPathAv')
@@ -147,17 +147,17 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
         with open(os.path.join(PHP_POOL,filename)+".conf", 'w',encoding='utf8') as fileC:
             fileC.write(config)
         logging.info(f"PHP config {os.path.join(PHP_POOL,filename)} created")
-        result = subprocess.run([PHPFPM_PATH,"-t"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
-        if  result.returncode == 0:
+        result = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, shell=True)
+        if  re.search(r".*test is successful.*",result.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
             logging.info(f"PHP config test passed successfully: {result.stdout}. Reloading PHP, version {phpVer}...")
-            result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
+            result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, shell=True)
             if  result.returncode == 0:
-                logging.info(f"PHP reloaded successfully, Result: {result.stdout}")
+                logging.info(f"PHP reloaded successfully.")
                 finishJob(file)
         else:
-            logging.error(f"Error while reloading PHP: {result.stdout}")
+            logging.error(f"Error while reloading PHP: {result.stdout} {result.stderr}")
             send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading PHP")
             finishJob(file)
     except Exception as msg:
@@ -268,15 +268,15 @@ server {{
         if not os.path.exists(os.path.join(NGX_SITES_PATH2,filename)):
             os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
         logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
-        result = subprocess.run(["/usr/sbin/nginx","-t"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
-        if  result.returncode == 0:
-            logging.info(f"Nginx config test passed successfully: {result.stdout}. Reloading Nginx...")
-            result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
-            if  result.returncode == 0:
-                logging.info(f"Nginx reloaded successfully. Result: {result.stdout}")
+        result = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, shell=True)
+        if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
+            logging.info(f"Nginx config test passed successfully: {result.stderr}. Reloading Nginx...")
+            result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True, shell=True)
+            if  re.search(r".*started.*",result.stderr):
+                logging.info(f"Nginx reloaded successfully. Result: {result.stderr}")
             setupPHP(file)
         else:
-            logging.error(f"Error while reloading Nginx: {result.stdout}")
+            logging.error(f"Error while reloading Nginx: {result.stderr}")
             send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading Nginx")
             finishJob(file)
     except Exception as msg:
@@ -329,16 +329,16 @@ def checkZip_2(file):
         for files in file_list:
             if files == f"{fileName}.crt":
                 found += 1
-                logging.info(f"{fileName}.crt found!")               
+                logging.info(f"{fileName}.crt found!")
             if files == f"{fileName}.key":
                 found += 1
-                logging.info(f"{fileName}.key found!")              
+                logging.info(f"{fileName}.key found!")
             if files == f"public/":
                 found += 1
-                logging.info("public/ found!")               
+                logging.info("public/ found!")
             if files == f"htpasswd":
                 found += 1
-                logging.info("htpasswd found!")                
+                logging.info("htpasswd found!")
         if found < 4:
             print(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
