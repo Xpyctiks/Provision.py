@@ -57,10 +57,11 @@ def load_config():
             with open(PASSWORD_FILE, 'r',encoding='utf8') as file2:
                 PWD_LIST = json.load(file2)
         else:
-            print(f"Config file {PASSWORD_FILE} is not found. Please check it.")
-            logging.error(f"Config file {PASSWORD_FILE} is not found. Please check it.")
+            generate_default_config2()
+            quit()
     else:
         generate_default_config()
+        quit()
 
 def generate_default_config():
     config = {
@@ -80,7 +81,22 @@ def generate_default_config():
         json.dump(config, file, indent=4)
     os.chmod(CONFIG_FILE, 0o600)
     print(f"First launch. New config file {CONFIG_FILE} generated and needs to be configured.")
-    quit()
+
+def generate_default_config2():
+    config2 = {
+        "admin": {
+            "Password": "<bcrypt hash>",
+            "Name": "Admin Istrator"
+        },
+        "user": {
+            "Password": "<bcrypt hash>",
+            "Name": "User Name"
+        }
+    }
+    with open(PASSWORD_FILE, 'w',encoding='utf8') as file:
+        json.dump(config2, file, indent=4)
+    os.chmod(PASSWORD_FILE, 0o600)
+    print(f"First launch. New user/password file {PASSWORD_FILE} generated and needs to be configured.")
 
 def send_to_telegram(subject,message):
     headers = {
