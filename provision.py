@@ -16,16 +16,17 @@ import random
 import string
 import bcrypt
 import signal
+import re
 
 CONFIG_FILE = os.path.abspath(os.path.dirname(__file__))+"/provision.conf"
 PASSWORD_FILE = os.path.abspath(os.path.dirname(__file__))+"/user-pass.conf"
-TELEGRAM_TOKEN = TELEGRAM_CHATID = WEB_FOLDER = JOB_ID = NGX_CRT_PATH = WWW_USER = WWW_GROUP = NGX_SITES_PATH = NGX_SITES_PATH2 = PHP_POOL = ""
+TELEGRAM_TOKEN = TELEGRAM_CHATID = WEB_FOLDER = JOB_ID = NGX_CRT_PATH = WWW_USER = WWW_GROUP = NGX_SITES_PATH = NGX_SITES_PATH2 = PHP_POOL = NGINX_PATH = PHPFPM_PATH = ""
 JOB_COUNTER = JOB_TOTAL = 1
 PWD_LIST = []
 COOKIE_SALT="55c5834073242d20dd19c94a058198cf"
 
 def load_config():
-    global TELEGRAM_TOKEN, TELEGRAM_CHATID, WEB_FOLDER, NGX_CRT_PATH, WWW_USER, WWW_GROUP, NGX_SITES_PATH, NGX_SITES_PATH2, PHP_POOL,PWD_LIST
+    global TELEGRAM_TOKEN, TELEGRAM_CHATID, WEB_FOLDER, NGX_CRT_PATH, WWW_USER, WWW_GROUP, NGX_SITES_PATH, NGX_SITES_PATH2, PHP_POOL,PWD_LIST, NGINX_PATH, PHPFPM_PATH
     error = 0
     "Check if config file exists. If not - generate the new one."
     if os.path.exists(CONFIG_FILE):
@@ -49,6 +50,8 @@ def load_config():
         WWW_USER = config.get('wwwUser')
         WWW_GROUP = config.get('wwwGroup')
         PHP_POOL = config.get('phpPool')
+        NGINX_PATH = config.get('nginxPath')
+        PHPFPM_PATH = config.get('phpFpmPath')
         logging.basicConfig(filename=LOG_FILE,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
         if os.path.exists(PASSWORD_FILE):
             with open(PASSWORD_FILE, 'r',encoding='utf8') as file2:
@@ -66,6 +69,8 @@ def generate_default_config():
         "webFolder": "/var/www",
         "logFile": "provision.log",
         "nginxCrtPath": "/etc/nginx/ssl/",
+        "phpFpmPath": "/usr/sbin/php-fpm8.2",
+        "nginxPath": "/usr/sbin/nginx",
         "wwwUser": "www-data",
         "wwwGroup": "www-data",
         "nginxSitesPathAv": "/etc/nginx/sites-available/",
@@ -98,7 +103,6 @@ def genJobID():
 
 def finishJob(file):
     global JOB_COUNTER
-    #global JOB_TOTAL
     filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),os.path.basename(file))
     os.remove(filename)
     logging.info(f"Archive #{JOB_COUNTER} of {JOB_TOTAL} - {filename} removed")
@@ -143,12 +147,17 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
         with open(os.path.join(PHP_POOL,filename)+".conf", 'w',encoding='utf8') as fileC:
             fileC.write(config)
         logging.info(f"PHP config {os.path.join(PHP_POOL,filename)} created")
-        if os.system("/usr/sbin/php-fpm8.2 -t") == 0:
-            os.system("systemctl reload php8.2-fpm")
-            logging.info(f"PHP reloaded successfully")
-            finishJob(file)
+        result = subprocess.run([PHPFPM_PATH,"-t"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
+        if  result.returncode == 0:
+            #gettings digits of PHP version from the path to the PHP-FPM
+            phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
+            logging.info(f"PHP config test passed successfully: {result.stdout}. Reloading PHP, version {phpVer}...")
+            result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
+            if  result.returncode == 0:
+                logging.info(f"PHP reloaded successfully, Result: {result.stdout}")
+                finishJob(file)
         else:
-            logging.error(f"Error while reloading PHP")
+            logging.error(f"Error while reloading PHP: {result.stdout}")
             send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading PHP")
             finishJob(file)
     except Exception as msg:
@@ -159,8 +168,8 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
 def setupNginx(file):
     logging.info(f"Configuring Nginx...Preparing certificates")
     filename = os.path.basename(file)[:-4]
-    crtPath = os.path.join(WEB_FOLDER+"/"+filename,filename+".crt")
-    keyPath = os.path.join(WEB_FOLDER+"/"+filename,filename+".key")
+    crtPath = os.path.join(WEB_FOLDER,filename,filename+".crt")
+    keyPath = os.path.join(WEB_FOLDER,filename,filename+".key")
     try:
         shutil.copy(crtPath,NGX_CRT_PATH)
         os.remove(crtPath)
@@ -259,12 +268,15 @@ server {{
         if not os.path.exists(os.path.join(NGX_SITES_PATH2,filename)):
             os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
         logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
-        if os.system("/usr/sbin/nginx -t") == 0:
-            os.system("/usr/sbin/nginx -s reload")
-            logging.info(f"Nginx reloaded successfully")
+        result = subprocess.run(["/usr/sbin/nginx","-t"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
+        if  result.returncode == 0:
+            logging.info(f"Nginx config test passed successfully: {result.stdout}. Reloading Nginx...")
+            result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, capture_output=True, shell=True)
+            if  result.returncode == 0:
+                logging.info(f"Nginx reloaded successfully. Result: {result.stdout}")
             setupPHP(file)
         else:
-            logging.error(f"Error while reloading Nginx")
+            logging.error(f"Error while reloading Nginx: {result.stdout}")
             send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading Nginx")
             finishJob(file)
     except Exception as msg:
@@ -317,10 +329,10 @@ def checkZip_2(file):
         for files in file_list:
             if files == f"{fileName}.crt":
                 found += 1
-                logging.info("{fileName}.crt found!")               
+                logging.info(f"{fileName}.crt found!")               
             if files == f"{fileName}.key":
                 found += 1
-                logging.info("{fileName}.key found!")              
+                logging.info(f"{fileName}.key found!")              
             if files == f"public/":
                 found += 1
                 logging.info("public/ found!")               
