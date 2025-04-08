@@ -16,5 +16,11 @@
       "module": "provision",
       "callable": "application"
     }
+  },
+  "settings": {
+    "http": {
+      "max_body_size": 512512000
+    }
   }
+
 }
