@@ -918,7 +918,10 @@ def index():
     try:
         table = ""
         sites_list = []
-        sites_list = os.listdir(WEB_FOLDER)
+        sites_list = [
+            name for name in os.listdir(WEB_FOLDER)
+            if os.path.isdir(os.path.join(WEB_FOLDER, name))
+        ]
         for i, s in enumerate(sites_list, 1):
             #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
             #variable with full path to nginx sites-enabled symlink to the site
