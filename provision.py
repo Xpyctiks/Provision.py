@@ -835,7 +835,6 @@ def enable_site(sitename):
 def load_user(user_id):
     return db.session.get(User,int(user_id))
 
-#catch logout form. Deleting cookies and redirect to /
 @application.route("/logout", methods=['POST'])
 @login_required
 def logout():
@@ -843,7 +842,6 @@ def logout():
     flash("You are logged out", "alert alert-info")
     return redirect(url_for("login"),301)
 
-#catch login form. Check if user exists in the list and password is correct. If yes - set cookies and redirect to /
 @application.route("/login", methods=['GET','POST'])
 def login():
     #is this is POST request so we are trying to login
@@ -874,7 +872,7 @@ def upload_file():
     if request.method == 'POST':
         #check if fileUpload[] is in the request
         if 'fileUpload[]' not in request.files:
-            logging.error(f"Upload: No <fileUpload> name in the request fields")
+            logging.error(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields")
             flash('Upload: No <fileUpload> in the request fields', 'alert alert-danger')
             return redirect(url_for("upload"),301)
         else:
@@ -887,8 +885,8 @@ def upload_file():
                     file.save(f"{filename}")
                     nameList += filename+","
             flash('File(s) uploaded successfully!', 'alert alert-success')
-            logging.info(f"Upload by {request.cookies.get('realname')}: Files {nameList} uploaded successfully")
-            asyncio.run(send_to_telegram(f"⬆Provision\nUpload by {request.cookies.get('realname')}:",f"Files {nameList} uploaded successfully"))
+            logging.info(f"Upload by {current_user.realname}: Files {nameList} uploaded successfully")
+            asyncio.run(send_to_telegram(f"⬆Provision\nUpload by {current_user.realname}:",f"Files {nameList} uploaded successfully"))
             #now call this script from shell to start deploy procedure
             subprocess.run([__file__, 'main'])
             return redirect("/",301)
@@ -911,7 +909,6 @@ def do_action():
         enable_site(request.form['enable'].strip())
     return redirect("/",301)
 
-#main route. If cookies are set - show main page. If not - redirect to login page
 @application.route("/", methods=['GET'])
 @login_required
 def index():
