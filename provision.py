@@ -139,12 +139,12 @@ def update_user(username,password):
             print(f"Password for user \"{user.username}\" updated successfully!")
             logging.info(f"Password for user \"{user.username}\" updated successfully!")
         else:
-            print(f"User \"{user.username}\" set password error - no such user!")
-            logging.error(f"User \"{user.username}\" set password error - no such user!")
+            print(f"User \"{username}\" set password error - no such user!")
+            logging.error(f"User \"{username}\" set password error - no such user!")
             quit(1)
     except Exception as err:
-        logging.error(f"User \"{user.username}\" set password error: {err}")
-        print(f"User \"{user.username}\" set password error: {err}")
+        logging.error(f"User \"{username}\" set password error: {err}")
+        print(f"User \"{username}\" set password error: {err}")
 
 def delete_user(username):
     try:
@@ -156,12 +156,12 @@ def delete_user(username):
             print(f"User \"{user.username}\" deleted successfully!")
             logging.info(f"User \"{user.username}\" deleted successfully!")
         else:
-            print(f"User \"{user.username}\" delete error - no such user!")
-            logging.error(f"User \"{user.username}\" delete error - no such user!")
+            print(f"User \"{username}\" delete error - no such user!")
+            logging.error(f"User \"{username}\" delete error - no such user!")
             quit(1)
     except Exception as err:
-        logging.error(f"User \"{user.username}\" delete error: {err}")
-        print(f"User \"{user.username}\" delete error: {err}")
+        logging.error(f"User \"{username}\" delete error: {err}")
+        print(f"User \"{username}\" delete error: {err}")
 
 def set_webFolder(data):
     try:
