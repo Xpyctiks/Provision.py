@@ -479,12 +479,12 @@ def setupPHP(file):
         with open(os.path.join(PHP_POOL,filename)+".conf", 'w',encoding='utf8') as fileC:
             fileC.write(config)
         logging.info(f"PHP config {os.path.join(PHP_POOL,filename)} created")
-        result = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, text=True)
+        result = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
             logging.info(f"PHP config test passed successfully: {result.stderr.strip()}. Reloading PHP, version {phpVer}...")
-            result = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+            result = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
                 finishJob(file)
@@ -510,7 +510,7 @@ def setupNginx(file):
         os.chmod(NGX_CRT_PATH+filename+".crt", 0o600)
         os.chmod(NGX_CRT_PATH+filename+".key", 0o600)
         logging.info(f"Certificate {crtPath} and key {keyPath} moved successfully to {NGX_CRT_PATH}")
-        os.system(f"chown -R {WWW_USER}:{WWW_GROUP} {os.path.join(WEB_FOLDER,filename)}")
+        os.system(f"sudo chown -R {WWW_USER}:{WWW_GROUP} {os.path.join(WEB_FOLDER,filename)}")
         logging.info(f"Folders and files ownership of {os.path.join(WEB_FOLDER,filename)} changed to {WWW_USER}:{WWW_GROUP}")
         config = create_nginx_config(filename)
         with open(os.path.join(NGX_SITES_PATH,filename), 'w',encoding='utf8') as fileC:
@@ -519,10 +519,10 @@ def setupNginx(file):
         if not os.path.exists(os.path.join(NGX_SITES_PATH2,filename)):
             os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
         logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
-        result = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, text=True)
+        result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
             logging.info(f"Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
-            result = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True)
+            result = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result.stderr):
                 logging.info(f"Nginx reloaded successfully. Result: {result.stderr.strip()}")
             setupPHP(file)
@@ -811,7 +811,7 @@ def enable_site(sitename):
         #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
             logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
-            result3 = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+            result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result3.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
         else:
