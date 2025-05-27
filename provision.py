@@ -641,9 +641,9 @@ def delete_site(sitename):
             logging.info(f"Nginx {ngx_av} deleted successfully")
         else:
             logging.info(f"Nginx {ngx_av} is already deleted")
-        result1 = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, text=True)
+        result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-            result2 = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True)
+            result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result2.stderr):
                 logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
         else:
@@ -661,12 +661,12 @@ def delete_site(sitename):
             logging.info(f"PHP config {php_dis} deleted successfully")
         else:
             logging.info(f"PHP config {php} already deleted")
-        result2 = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, text=True)
+        result2 = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result2.stderr):
         #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
             logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
-            result3 = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+            result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result3.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
         else:
@@ -713,9 +713,9 @@ def disable_site(sitename):
         if os.path.isfile(ngx) or os.path.islink(ngx):
             os.unlink(ngx)
             logging.info(f"Nginx symlink {ngx} removed")
-            result1 = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, text=True)
+            result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
             if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-                result2 = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True)
+                result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
                 if  re.search(r".*started.*",result2.stderr):
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
             else:
@@ -729,12 +729,12 @@ def disable_site(sitename):
         php = os.path.join(PHP_POOL,sitename+".conf")
         if os.path.isfile(php) or os.path.islink(php):
             os.rename(php,php+".disabled")
-            result2 = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, text=True)
+            result2 = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
             if  re.search(r".*test is successful.*",result2.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
                 phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
                 logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
-                result3 = subprocess.run(["systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+                result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
                 if  result3.returncode == 0:
                     logging.info(f"PHP reloaded successfully.")
             else:
@@ -796,9 +796,9 @@ def enable_site(sitename):
                 fileC.write(config)
             logging.info(f"PHP config {os.path.join(PHP_POOL,sitename)} created because it wasn't exist")
         #start of checks - nginx
-        result1 = subprocess.run(["/usr/sbin/nginx","-t"], capture_output=True, text=True)
+        result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-            result2 = subprocess.run(["/usr/sbin/nginx","-s", "reload"], text=True, capture_output=True)
+            result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result2.stderr):
                 logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
         else:
@@ -806,7 +806,7 @@ def enable_site(sitename):
             error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
             asyncio.run(send_to_telegram(f"🚒Provision site disable error({sitename}):",f"Error while reloading Nginx"))
         #start of checks - php
-        result2 = subprocess.run([PHPFPM_PATH,"-t"], capture_output=True, text=True)
+        result2 = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result2.stderr):
         #gettings digits of PHP version from the path to the PHP-FPM
             phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
