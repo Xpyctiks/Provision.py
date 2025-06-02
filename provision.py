@@ -407,7 +407,7 @@ server {{
     error_log /var/log/nginx/error_{filename}.log;
 
     location / {{
-      return 301 https://{filename};
+      return 301 https://{filename}$request_uri;
     }}
 }}
 
@@ -422,12 +422,13 @@ server {{
     root {os.path.join(WEB_FOLDER,filename)}/public;
     charset utf8;
     index index.php index.html index.htm;
-
+    include additional-configs/301-{filename}.conf;
+    
     if ($request_method !~ ^(GET|POST|HEAD)$ ) {{
       return 403 "Forbidden!";
     }}
 
-    location ~ /.git/ {{
+    location ~ /\..*/ {{
       deny all;
     }}
 
@@ -446,7 +447,7 @@ server {{
       try_files $uri $uri/ /index.php?$args;
     }}
 
-        location ~* ".+\.(?:svg|svgz|eot|otf|webmanifest|woff|woff2|ttf|rss|css|swf|js|atom|jpe?g|gif|png|ico|html)$" {{
+    location ~* ".+\.(?:svg|svgz|eot|otf|webmanifest|woff|woff2|ttf|rss|css|swf|js|atom|jpe?g|gif|png|ico|html)$" {{
         allow all;
         root {os.path.join(WEB_FOLDER,filename)}/public;
         try_files $uri $uri/;
@@ -454,7 +455,7 @@ server {{
 
     location / {{
       if ( $request_uri != "/") {{ return 301 https://{filename}/; }}
-      index index.php index.html index.htm;
+      try_files $uri $uri/ /index.php?$args @home;
     }}
 
     location @home {{
@@ -503,6 +504,7 @@ def setupNginx(file):
     crtPath = os.path.join(WEB_FOLDER,filename,filename+".crt")
     keyPath = os.path.join(WEB_FOLDER,filename,filename+".key")
     try:
+        #preparing certificates
         shutil.copy(crtPath,NGX_CRT_PATH)
         os.remove(crtPath)
         shutil.copy(keyPath,NGX_CRT_PATH)
@@ -510,8 +512,18 @@ def setupNginx(file):
         os.chmod(NGX_CRT_PATH+filename+".crt", 0o600)
         os.chmod(NGX_CRT_PATH+filename+".key", 0o600)
         logging.info(f"Certificate {crtPath} and key {keyPath} moved successfully to {NGX_CRT_PATH}")
+        #preparing folder
         os.system(f"sudo chown -R {WWW_USER}:{WWW_GROUP} {os.path.join(WEB_FOLDER,filename)}")
         logging.info(f"Folders and files ownership of {os.path.join(WEB_FOLDER,filename)} changed to {WWW_USER}:{WWW_GROUP}")
+        #preparing redirects config
+        if os.path.exists("/etc/nginx/additional-configs/"):
+            redirect_file = os.path.join("/etc/nginx/additional-configs/","301-" + filename + ".conf")
+            with open(redirect_file, 'w',encoding='utf8') as fileRedir:
+                fileRedir.write("")
+            logging.info(f"File for redirects {redirect_file} created successfully!")
+        else:
+            logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
+            asyncio.run(send_to_telegram(f"🚒Provision job warning({JOB_ID}):",f"Folder /etc/nginx/additional-configs is not exists!"))
         config = create_nginx_config(filename)
         with open(os.path.join(NGX_SITES_PATH,filename), 'w',encoding='utf8') as fileC:
             fileC.write(config)
