@@ -19,6 +19,8 @@ application.config['PERMANENT_SESSION_LIFETIME'] = 28800
 db = SQLAlchemy(application)
 login_manager = LoginManager(application)
 login_manager.login_view = "login"
+login_manager.login_message = "You must log in before proceed."
+login_manager.session_protection = "strong"
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -850,6 +852,7 @@ def load_user(user_id):
 @application.route("/logout", methods=['POST'])
 @login_required
 def logout():
+    logging.info(f"User {current_user.realname} is logging out")
     logout_user()
     flash("You are logged out", "alert alert-info")
     return redirect(url_for("login"),301)
@@ -859,12 +862,13 @@ def login():
     #is this is POST request so we are trying to login
     if request.method == 'POST':
         if current_user.is_authenticated:
+            logging.info(f"POST: User {current_user.username} is already logged in. Redirecting to the main page.")
             return redirect('/',301)
         username = request.form["username"]
         password = request.form["password"]
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user)
+            login_user(user,duration=2880)
             logging.info(f"Login: User {username} logged in")
             return redirect("/",301)
         else:
@@ -873,6 +877,7 @@ def login():
             flash('Wrong username or password!', 'alert alert-danger')
             return render_template("template-login.html")    
     if current_user.is_authenticated:
+        logging.info(f"not POST: User {current_user.username} is already logged in. Redirecting to the main page.")
         return redirect('/',301)
     else:
         return render_template("template-login.html")
@@ -940,7 +945,13 @@ def index():
             #check of nginx and php have active links and configs of the site
             if os.path.islink(ngx_site) and os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-success">{i}</th>
-                <td class="table-success"><form method="post" action="/action"><button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button><button type="submit" value="{s}" name="disable" onclick="showLoading()" class="btn btn-warning">Disable site</button></form>
+                <td class="table-success"><form method="post" action="/action">
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
+                    <button type="submit" value="{s}" name="disable" onclick="showLoading()" class="btn btn-warning">Disable site</button>
+                    <button type="submit" value="asdf" name="manager" onclick="" class="btn btn-info">Redirects manager</button>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="redirect" checked>Redirect all to the main page
+                    </div></form>
                 <td class="table-success">{s}</td>
                 <td class="table-success">{os.path.join(WEB_FOLDER,s)}</td>
                 <td class="table-success">OK</td>
@@ -948,7 +959,9 @@ def index():
             #if nginx is ok but php is not
             elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
-                <td class="table-danger"><form method="post" action="/action"><button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button><button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
+                <td class="table-danger"><form method="post" action="/action">
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
+                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
                 <td class="table-danger">{s}</td>
                 <td class="table-danger">{os.path.join(WEB_FOLDER,s)}</td>
                 <td class="table-danger">PHP config error</td>
@@ -956,7 +969,9 @@ def index():
             #if php is ok but nginx is not
             elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
-                <td class="table-danger"><form method="post" action="/action"><button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button><button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
+                <td class="table-danger"><form method="post" action="/action">
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
+                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
                 <td class="table-danger">{s}</td>
                 <td class="table-danger">{os.path.join(WEB_FOLDER,s)}</td>
                 <td class="table-danger">Nginx config error</td>
@@ -964,7 +979,9 @@ def index():
             #if really disabled
             elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-warning">{i}</th>
-                <td class="table-warning"><form method="post" action="/action"><button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button><button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success">Enable site</button></form>
+                <td class="table-warning"><form method="post" action="/action">
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
+                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success">Enable site</button></form>
                 <td class="table-warning">{s}</td>
                 <td class="table-warning">{os.path.join(WEB_FOLDER,s)}</td>
                 <td class="table-warning">Site is disabled</td>
