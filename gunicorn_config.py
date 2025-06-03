@@ -11,4 +11,4 @@ bind = "0.0.0.0:8880"
 workers = 3
 timeout = 30
 loglevel = "info"
-wsgi_app = "provision:application"
+wsgi_app = "main:application"
