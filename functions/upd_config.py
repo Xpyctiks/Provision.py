@@ -5,7 +5,6 @@ from functions.load_config import load_config
 from flask import current_app
 from werkzeug.security import generate_password_hash
 
-current_app.app_context.
 def set_telegramChat(tgChat):
     t = Settings(id=1,telegramChat=tgChat.strip())
     db.session.merge(t)

@@ -11,8 +11,8 @@ from functions.load_config import load_config, generate_default_config, show_con
 from functions.send_to_telegram import send_to_telegram
 from functions.upd_config import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken
 
-CONFIG_DIR = os.path.join("/etc/",os.path.basename(__file__).split(".py")[0])
-DB_FILE = os.path.join(CONFIG_DIR,os.path.basename(__file__).split(".py")[0]+".db")
+CONFIG_DIR = "/etc/provision/"
+DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 JOB_COUNTER = JOB_TOTAL = 1
 application = Flask(__name__)
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
