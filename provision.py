@@ -1,86 +1,45 @@
 #!/usr/local/bin/python3
 
-from flask import Flask,render_template,request,redirect,url_for,flash
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
-from werkzeug.utils import secure_filename
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
-import os,sys,subprocess,shutil,logging,glob,zipfile,random,string,re,httpx,asyncio
+from flask import Flask,render_template,request,redirect,flash
+from flask_login import LoginManager, login_required
+from werkzeug.security import generate_password_hash
+import os,sys,subprocess,shutil,logging,glob,zipfile,random,string,re,asyncio
+from pages import blueprint as routes_blueprint
+from db.db import db
+from db.database import User, Settings
+from functions.config_templates import create_nginx_config, create_php_config
+from functions.load_config import load_config, generate_default_config, show_config
+from functions.send_to_telegram import send_to_telegram
 
 CONFIG_DIR = os.path.join("/etc/",os.path.basename(__file__).split(".py")[0])
 DB_FILE = os.path.join(CONFIG_DIR,os.path.basename(__file__).split(".py")[0]+".db")
-TELEGRAM_TOKEN = TELEGRAM_CHATID = WEB_FOLDER = JOB_ID = NGX_CRT_PATH = WWW_USER = WWW_GROUP = NGX_SITES_PATH = NGX_SITES_PATH2 = PHP_POOL = PHPFPM_PATH = ""
 JOB_COUNTER = JOB_TOTAL = 1
 application = Flask(__name__)
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800
-db = SQLAlchemy(application)
+application.register_blueprint(routes_blueprint)
+db.init_app(application)
 login_manager = LoginManager(application)
-login_manager.login_view = "login"
+login_manager.login_view = "/login"
 login_manager.login_message = "You must log in before proceed."
 login_manager.session_protection = "strong"
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    realname = db.Column(db.String(80), nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    created = db.Column(db.DateTime,default=datetime.now)
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-    
-class Settings(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    telegramChat = db.Column(db.String(16), nullable=True)
-    telegramToken = db.Column(db.String(64), nullable=True)
-    logFile = db.Column(db.String(512), nullable=False)
-    sessionKey = db.Column(db.String(64), nullable=False)
-    webFolder = db.Column(db.String(512), nullable=False)
-    nginxCrtPath = db.Column(db.String(512), nullable=False)
-    wwwUser = db.Column(db.String(64), nullable=False)
-    wwwGroup = db.Column(db.String(64), nullable=False)
-    nginxSitesPathAv = db.Column(db.String(512), nullable=False)
-    nginxSitesPathEn = db.Column(db.String(512), nullable=False)
-    phpPool = db.Column(db.String(512), nullable=False)
-    phpFpmPath = db.Column(db.String(512), nullable=False)
-
-def generate_default_config():
-    if not os.path.isfile(DB_FILE):
-        length = 64
-        characters = string.ascii_letters + string.digits
-        session_key = ''.join(random.choice(characters) for _ in range(length))
-        default_settings = Settings(id=1, 
-            telegramChat = "",
-            telegramToken = "",
-            logFile = "/var/log/provision.log",
-            sessionKey = session_key,
-            webFolder = "/var/www/drops-sites/",
-            nginxCrtPath = "/etc/nginx/ssl/",
-            wwwUser = "www-data",
-            wwwGroup = "www-data",
-            nginxSitesPathAv = "/etc/nginx/sites-available-drops/",
-            nginxSitesPathEn = "/etc/nginx/sites-enabled-drops/",
-            phpPool = "/etc/php/8.2/fpm/pool.d/",
-            phpFpmPath = "/usr/sbin/php-fpm8.2"
-            )
-        try:
-            if not os.path.exists(CONFIG_DIR):
-                os.mkdir(CONFIG_DIR)
-            db.create_all()
-            db.session.add(default_settings)
-            db.session.commit()
-            print(f"First launch. Default database created in {DB_FILE}. You need to add telegram ChatID and Token if you want to get notifications")
-        except Exception as msg:
-            print(f"Generate-default-config error: {msg}")
-            quit(1)
+#Global loading of config and all main initializations
+generate_default_config(application,CONFIG_DIR,DB_FILE)
+load_config(application)
+application.secret_key = application.config["SECRET_KEY"]
+try:
+    logging.basicConfig(filename=application.config["LOG_FILE"],level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
+except Exception as msg:
+    logging.error(msg)
+    print(f"Logger activation error: {msg}")
 
 def set_telegramChat(tgChat):
     t = Settings(id=1,telegramChat=tgChat.strip())
     db.session.merge(t)
     db.session.commit()
-    load_config()
+    load_config(application)
     print("Telegram ChatID added successfully")
     try:
         logging.info(f"Telegram ChatID updated successfully!")
@@ -91,7 +50,7 @@ def set_telegramToken(tgToken):
     t = Settings(id=1,telegramToken=tgToken)
     db.session.merge(t)
     db.session.commit()
-    load_config()
+    load_config(application)
     print("Telegram Token added successfully")
     try:
         logging.info(f"Telegram Token updated successfully!")
@@ -102,7 +61,7 @@ def set_logpath(logpath):
     t = Settings(id=1,logFile=logpath)
     db.session.merge(t)
     db.session.commit()
-    load_config()
+    load_config(application)
     updated = db.session.get(Settings, 1)
     print(f"logPath updated successfully. New log path: \"{updated.logFile}\"")
     try:
@@ -123,7 +82,7 @@ def register_user(username,password,realname):
             )
             db.session.add(new_user)
             db.session.commit()
-            load_config()
+            load_config(application)
             print(f"New user \"{username}\" - \"{realname}\" created successfully!")
             logging.info(f"New user \"{username}\" - \"{realname}\" created successfully!")
     except Exception as err:
@@ -137,7 +96,6 @@ def update_user(username,password):
             d = User(id=user.id,password_hash=generate_password_hash(password))
             db.session.merge(d)
             db.session.commit()
-            load_config()
             print(f"Password for user \"{user.username}\" updated successfully!")
             logging.info(f"Password for user \"{user.username}\" updated successfully!")
         else:
@@ -154,7 +112,7 @@ def delete_user(username):
         if user:
             db.session.delete(user)
             db.session.commit()
-            load_config()
+            load_config(application)
             print(f"User \"{user.username}\" deleted successfully!")
             logging.info(f"User \"{user.username}\" deleted successfully!")
         else:
@@ -170,7 +128,7 @@ def set_webFolder(data):
         t = Settings(id=1,webFolder=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"Root web folder updated successfully. New path: \"{updated.webFolder}\"")
         logging.info(f"Root web folder updated to \"{updated.webFolder}\"")
@@ -183,7 +141,7 @@ def set_nginxCrtPath(data):
         t = Settings(id=1,nginxCrtPath=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"Nginx SSL folder updated successfully. New path: \"{updated.nginxCrtPath}\"")
         logging.info(f"Nginx SSL folder updated to \"{updated.nginxCrtPath}\"")
@@ -196,7 +154,7 @@ def set_wwwUser(data):
         t = Settings(id=1,wwwUser=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"User for web folders updated successfully to: \"{updated.wwwUser}\"")
         logging.info(f"User for web folders updated to \"{updated.wwwUser}\"")
@@ -209,7 +167,7 @@ def set_wwwGroup(data):
         t = Settings(id=1,wwwGroup=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"Group for web folders updated successfully to: \"{updated.wwwGroup}\"")
         logging.info(f"Group for web folders updated to \"{updated.wwwGroup}\"")
@@ -222,7 +180,7 @@ def set_nginxSitesPathAv(data):
         t = Settings(id=1,nginxSitesPathAv=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"Nginx Sites-available folder updated successfully to: \"{updated.nginxSitesPathAv}\"")
         logging.info(f"Nginx Sites-available folder updated to \"{updated.nginxSitesPathAv}\"")
@@ -235,7 +193,7 @@ def set_nginxSitesPathEn(data):
         t = Settings(id=1,nginxSitesPathEn=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"Nginx Sites-enabled folder updated successfully to: \"{updated.nginxSitesPathEn}\"")
         logging.info(f"Nginx Sites-enabled folder updated to \"{updated.nginxSitesPathEn}\"")
@@ -248,7 +206,7 @@ def set_phpPool(data):
         t = Settings(id=1,nginxSitesPathEn=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"PHP Pool.d/ folder updated successfully to: \"{updated.phpPool}\"")
         logging.info(f"PHP Pool.d/ folder updated to \"{updated.phpPool}\"")
@@ -261,84 +219,13 @@ def set_phpFpmPath(data):
         t = Settings(id=1,nginxSitesPathEn=data)
         db.session.merge(t)
         db.session.commit()
-        load_config()
+        load_config(application)
         updated = db.session.get(Settings, 1)
         print(f"Php-fpm executable path updated successfully to: \"{updated.phpFpmPath}\"")
         logging.info(f"Php-fpm executable path updated to \"{updated.phpFpmPath}\"")
     except Exception as err:
         logging.error(f"Php-fpm executable path \"{data}\" set error: {err}")
         print(f"Php-fpm executable path \"{data}\" set error: {err}")
-
-def show_config():
-    try:
-        load_config()
-        data = db.session.get(Settings, 1)
-        print(f"""
-            Telegram ChatID:       {data.telegramChat}
-            Telegram Token:        {data.telegramToken}
-            Log file:              {data.logFile}
-            SessionKey:            {data.sessionKey}
-            Web root folder:       {data.webFolder}
-            Nginx SSL folder:      {data.nginxCrtPath}
-            WWW folders user:      {data.wwwUser}
-            WWW folders group:     {data.wwwGroup}
-            Nginx Sites-Available: {data.nginxSitesPathAv}
-            Nginx Sites-Enabled:   {data.nginxSitesPathEn}
-            Php Pool.d folder:     {data.phpPool}
-            Php-fpm executable:    {data.phpFpmPath}
-              """)
-    except Exception as err:
-        logging.error(f"Show config error: {err}")
-        print(f"Show config error: {err}")
-
-async def send_to_telegram(subject,message):
-    if TELEGRAM_CHATID and TELEGRAM_TOKEN:
-        headers = {
-            'Content-Type': 'application/json',
-        }
-        data = {
-            "chat_id": f"{TELEGRAM_CHATID}",
-            "text": f"{subject}\n{message}",
-        }
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.post(
-                    f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-                    headers=headers,
-                    json=data
-                )
-            print(response.status_code)
-            if response.status_code != 200:
-                logging.error("error", f"Telegram bot error! Status: {response.status_code} Body: {response.text}")
-        except Exception as err:
-            logging.error(f"Error while sending message to Telegram: {err}")
-
-def load_config():
-    #main initialization phase starts here
-    global TELEGRAM_TOKEN, TELEGRAM_CHATID, WEB_FOLDER, NGX_CRT_PATH, WWW_USER, WWW_GROUP, NGX_SITES_PATH, NGX_SITES_PATH2, PHP_POOL, PHPFPM_PATH
-    try:
-        config = db.session.get(Settings, 1)
-        TELEGRAM_TOKEN = config.telegramToken
-        TELEGRAM_CHATID = config.telegramChat
-        LOG_FILE = config.logFile
-        WEB_FOLDER = config.webFolder
-        NGX_CRT_PATH = config.nginxCrtPath
-        NGX_SITES_PATH = config.nginxSitesPathAv
-        NGX_SITES_PATH2 = config.nginxSitesPathEn
-        WWW_USER = config.wwwUser
-        WWW_GROUP = config.wwwGroup
-        PHP_POOL = config.phpPool
-        PHPFPM_PATH = config.phpFpmPath
-        application.secret_key = config.sessionKey
-        try:
-            logging.basicConfig(filename=LOG_FILE,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
-        except Exception as msg:
-            logging.error(msg)
-            print(f"Load-config error: {msg}")
-            quit(1)
-    except Exception as msg:
-        print(f"Load-config error: {msg}")
-        quit(1)
 
 def genJobID():  
     global JOB_ID
@@ -361,131 +248,18 @@ def finishJob(file):
         JOB_COUNTER += 1
         findZip_1()
 
-def create_php_config(filename):
-    config = f"""[{filename}]
-user = {WWW_USER}
-group = {WWW_GROUP}
-listen = /run/php/{filename}.sock
-listen.owner = {WWW_USER}
-listen.group = {WWW_GROUP}
-listen.mode = 0660
-listen.allowed_clients = 127.0.0.1
-pm = dynamic
-pm.max_children = 5
-pm.start_servers = 2
-pm.min_spare_servers = 1
-pm.max_spare_servers = 3
-chdir = {os.path.join(WEB_FOLDER,filename)}
-env[HOSTNAME] = {filename}
-env[PATH] = /usr/local/bin:/usr/bin:/bin
-env[TMP] = /tmp
-env[TMPDIR] = /tmp
-env[TEMP] = /tmp
-php_admin_value[error_log] = /var/log/nginx/php-fpm_{filename}.log
-php_admin_flag[log_errors] = on
-php_admin_value[open_basedir] = {os.path.join(WEB_FOLDER,filename)}:/tmp
-php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,apache_get_version,apache_getenv,apache_lookup_uri,apache_note,apache_request_headers,apache_reset_timeout,apache_response_headers,apache_setenv,getallheaders,virtual,chdir,chroot,exec,passthru,proc_close,proc_get_status,proc_nice,proc_open,proc_terminate,shell_exec,system,chgrp,chown,disk_free_space,disk_total_space,diskfreespace,filegroup,fileinode,fileowner,lchgrp,lchown,link,linkinfo,lstat,pclose,popen,readlink,symlink,umask,cli_get_process_title,cli_set_process_title,dl,gc_collect_cycles,gc_disable,gc_enable,get_current_user,getmygid,getmyinode,getmypid,getmyuid,php_ini_loaded_file,php_ini_scanned_files,php_logo_guid,php_uname,zend_logo_guid,zend_thread_id,highlight_file,php_check_syntax,show_source,sys_getloadavg,closelog,define_syslog_variables,openlog,pfsockopen,syslog,nsapi_request_headers,nsapi_response_headers,nsapi_virtual,pcntl_alarm,pcntl_errno,pcntl_exec,pcntl_fork,pcntl_get_last_error,pcntl_getpriority,pcntl_setpriority,pcntl_signal_dispatch,pcntl_signal,pcntl_sigprocmask,pcntl_sigtimedwait,pcntl_sigwaitinfo,pcntl_strerror,pcntl_wait,pcntl_waitpid,pcntl_wexitstatus,pcntl_wifexited,pcntl_wifsignaled,pcntl_wifstopped,pcntl_wstopsig,pcntl_wtermsig,posix_access,posix_ctermid,posix_errno,posix_get_last_error,posix_getcwd,posix_getegid,posix_geteuid,posix_getgid,posix_getgrgid,posix_getgrnam,posix_getgroups,posix_getlogin,posix_getpgid,posix_getpgrp,posix_getpid,posix_getppid,posix_getpwnam,posix_getpwuid,posix_getrlimit,posix_getsid,posix_getuid,posix_initgroups,posix_isatty,posix_kill,posix_mkfifo,posix_mknod,posix_setegid,posix_seteuid,posix_setgid,posix_setpgid,posix_setsid,posix_setuid,posix_strerror,posix_times,posix_ttyname,posix_uname,setproctitle,setthreadtitle,shmop_close,shmop_delete,shmop_open,shmop_read,shmop_size,shmop_write,opcache_compile_file,opcache_get_configuration,opcache_get_status,opcache_invalidate,opcache_is_script_cached,opcache_reset,putenv
-"""
-    return config
-
-def create_nginx_config(filename):
-    config = f"""server {{
-    listen 203.161.35.70:80;
-    server_name {filename} www.{filename};
-    access_log /var/log/nginx/access_{filename}.log postdata;
-    error_log /var/log/nginx/error_{filename}.log;
-
-    location ~ / {{
-      return 301 https://{filename};
-    }}
-}}
-
-server {{
-    listen 203.161.35.70:443 ssl http2;
-    server_name www.{filename};
-    ssl_certificate /etc/nginx/ssl/{filename}.crt;
-    ssl_certificate_key /etc/nginx/ssl/{filename}.key;
-    access_log /var/log/nginx/access_{filename}.log postdata;
-    error_log /var/log/nginx/error_{filename}.log;
-
-    location / {{
-      return 301 https://{filename}$request_uri;
-    }}
-}}
-
-server {{
-    listen 203.161.35.70:443 ssl http2;
-    server_name {filename};
-    ssl_certificate /etc/nginx/ssl/{filename}.crt;
-    ssl_certificate_key /etc/nginx/ssl/{filename}.key;
-    include mime.types;
-    access_log /var/log/nginx/access_{filename}.log postdata;
-    error_log /var/log/nginx/error_{filename}.log;
-    root {os.path.join(WEB_FOLDER,filename)}/public;
-    charset utf8;
-    index index.php index.html index.htm;
-    include additional-configs/301-{filename}.conf;
-    
-    if ($request_method !~ ^(GET|POST|HEAD)$ ) {{
-      return 403 "Forbidden!";
-    }}
-
-    location ~ /\..*/ {{
-      deny all;
-    }}
-
-    location /admin/ {{
-      auth_basic "Prove you are who you are";
-      auth_basic_user_file {os.path.join(WEB_FOLDER,filename)}/htpasswd;
-      location ~* ^/admin/.+\.php$ {{
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/{filename}.sock;
-      }}
-    }}
-
-    location ~* ^/(?:robots.txt) {{
-      allow all;
-      root {os.path.join(WEB_FOLDER,filename)}/public;
-      try_files $uri $uri/ /index.php?$args;
-    }}
-
-    location ~* ".+\.(?:svg|svgz|eot|otf|webmanifest|woff|woff2|ttf|rss|css|swf|js|atom|jpe?g|gif|png|ico|html)$" {{
-        allow all;
-        root {os.path.join(WEB_FOLDER,filename)}/public;
-        try_files $uri $uri/;
-    }}
-
-    location / {{
-      if ( $request_uri != "/") {{ return 301 https://{filename}/; }}
-      try_files $uri $uri/ /index.php?$args @home;
-    }}
-
-    location @home {{
-      return 301 https://{filename}/;
-    }}
-
-    location ~ \.php$ {{
-      include snippets/fastcgi-php.conf;
-      add_header X-XSS-Protection "1; mode=block";
-      add_header X-Content-Type-Options nosniff;
-      add_header X-Frame-Options SAMEORIGIN;
-      fastcgi_pass unix:/var/run/php/{filename}.sock;
-    }}
-}}"""
-    return config
-
 def setupPHP(file):
     logging.info(f"Configuring PHP...")
     filename = os.path.basename(file)[:-4]
     config = create_php_config(filename)
     try:
-        with open(os.path.join(PHP_POOL,filename)+".conf", 'w',encoding='utf8') as fileC:
+        with open(os.path.join(application.config["PHP_POOL"],filename)+".conf", 'w',encoding='utf8') as fileC:
             fileC.write(config)
-        logging.info(f"PHP config {os.path.join(PHP_POOL,filename)} created")
-        result = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
+        logging.info(f"PHP config {os.path.join(application.config['PHP_POOL'],filename)} created")
+        result = subprocess.run(["sudo",application.config["PHPFPM_PATH"],"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
-            phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
+            phpVer = re.search(r"(.*)(\d\.\d)",application.config["PHPFPM_PATH"]).group(2)
             logging.info(f"PHP config test passed successfully: {result.stderr.strip()}. Reloading PHP, version {phpVer}...")
             result = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result.returncode == 0:
@@ -503,20 +277,20 @@ def setupPHP(file):
 def setupNginx(file):
     logging.info(f"Configuring Nginx...Preparing certificates")
     filename = os.path.basename(file)[:-4]
-    crtPath = os.path.join(WEB_FOLDER,filename,filename+".crt")
-    keyPath = os.path.join(WEB_FOLDER,filename,filename+".key")
+    crtPath = os.path.join(application.config["WEB_FOLDER"],filename,filename+".crt")
+    keyPath = os.path.join(application.config["WEB_FOLDER"],filename,filename+".key")
     try:
         #preparing certificates
-        shutil.copy(crtPath,NGX_CRT_PATH)
+        shutil.copy(crtPath,application.config["NGX_CRT_PATH"])
         os.remove(crtPath)
-        shutil.copy(keyPath,NGX_CRT_PATH)
+        shutil.copy(keyPath,application.config["NGX_CRT_PATH"])
         os.remove(keyPath)
-        os.chmod(NGX_CRT_PATH+filename+".crt", 0o600)
-        os.chmod(NGX_CRT_PATH+filename+".key", 0o600)
-        logging.info(f"Certificate {crtPath} and key {keyPath} moved successfully to {NGX_CRT_PATH}")
+        os.chmod(application.config["NGX_CRT_PATH"]+filename+".crt", 0o600)
+        os.chmod(application.config["NGX_CRT_PATH"]+filename+".key", 0o600)
+        logging.info(f"Certificate {crtPath} and key {keyPath} moved successfully to {application.config['NGX_CRT_PATH']}")
         #preparing folder
-        os.system(f"sudo chown -R {WWW_USER}:{WWW_GROUP} {os.path.join(WEB_FOLDER,filename)}")
-        logging.info(f"Folders and files ownership of {os.path.join(WEB_FOLDER,filename)} changed to {WWW_USER}:{WWW_GROUP}")
+        os.system(f"sudo chown -R {application.config['WWW_USER']}:{application.config['WWW_GROUP']} {os.path.join(application.config['WEB_FOLDER'],filename)}")
+        logging.info(f"Folders and files ownership of {os.path.join(application.config['WEB_FOLDER'],filename)} changed to {application.config['WWW_USER']}:{application.config['WWW_GROUP']}")
         #preparing redirects config
         if os.path.exists("/etc/nginx/additional-configs/"):
             redirect_file = os.path.join("/etc/nginx/additional-configs/","301-" + filename + ".conf")
@@ -527,12 +301,12 @@ def setupNginx(file):
             logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
             asyncio.run(send_to_telegram(f"🚒Provision job warning({JOB_ID}):",f"Folder /etc/nginx/additional-configs is not exists!"))
         config = create_nginx_config(filename)
-        with open(os.path.join(NGX_SITES_PATH,filename), 'w',encoding='utf8') as fileC:
+        with open(os.path.join(application.config["NGX_SITES_PATHAV"],filename), 'w',encoding='utf8') as fileC:
             fileC.write(config)
-        logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH,filename)} created")
-        if not os.path.exists(os.path.join(NGX_SITES_PATH2,filename)):
-            os.symlink(os.path.join(NGX_SITES_PATH,filename),os.path.join(NGX_SITES_PATH2,filename))
-        logging.info(f"Nginx config {os.path.join(NGX_SITES_PATH2,filename)} symlink created")
+        logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHAV'],filename)} created")
+        if not os.path.exists(os.path.join(application.config["NGX_SITES_PATHAEN"],filename)):
+            os.symlink(os.path.join(application.config["NGX_SITES_PATHAV"],filename),os.path.join(application.config["NGX_SITES_PATHEN"],filename))
+        logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHAVEN'],filename)} symlink created")
         result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
             logging.info(f"Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
@@ -553,7 +327,7 @@ def unZip_3(file):
     "Getting the site name from the archive name"
     filename = os.path.basename(file)[:-4]
     "Getting the full path to the folder"
-    finalPath = os.path.join(WEB_FOLDER,filename)
+    finalPath = os.path.join(application.config["WEB_FOLDER"],filename)
     logging.info(f"Unpacking {file} to {finalPath}")
     try:
         if not os.path.exists(finalPath):
@@ -579,7 +353,7 @@ def checkZip_2(file):
     #Getting site name from archive name
     fileName = os.path.basename(file)[:-4]
     #Preparing full path - path to general web folder + site name
-    finalPath = os.path.join(WEB_FOLDER,fileName)
+    finalPath = os.path.join(application.config["WEB_FOLDER"],fileName)
     #Preparing full path + "public" folder
     test = os.path.join(finalPath,"public")
     #test if already exists site folder + public folder inside
@@ -627,7 +401,7 @@ def findZip_1():
 
 def main():
     global JOB_TOTAL
-    load_config()
+    #load_config()
     genJobID()
     path = os.path.abspath(os.path.dirname(__file__))
     extension = "*.zip"
@@ -641,8 +415,8 @@ def delete_site(sitename):
     try:
         logging.info(f"-----------------------Starting site delete: {sitename}-----------------")
         #-------------------------Delete Nginx site config
-        ngx_en = os.path.join(NGX_SITES_PATH2,sitename)
-        ngx_av = os.path.join(NGX_SITES_PATH,sitename)
+        ngx_en = os.path.join(application.config["NGX_SITES_PATHEN"],sitename)
+        ngx_av = os.path.join(application.config["NGX_SITES_PATHAV"],sitename)
         #delete in nginx/sites-enabled
         if os.path.islink(ngx_en):
             os.unlink(ngx_en)
@@ -665,8 +439,8 @@ def delete_site(sitename):
             error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
             asyncio.run(send_to_telegram(f"🚒Provision site delete error({sitename}):",f"Error while reloading Nginx"))
         #------------------------Delete in php pool.d/
-        php = os.path.join(PHP_POOL,sitename+".conf")
-        php_dis = os.path.join(PHP_POOL,sitename+".conf.disabled")
+        php = os.path.join(application.config["PHP_POOL"],sitename+".conf")
+        php_dis = os.path.join(application.config["PHP_POOL"],sitename+".conf.disabled")
         if os.path.isfile(php):
             os.unlink(php)
             logging.info(f"PHP config {php} deleted successfully")
@@ -675,10 +449,10 @@ def delete_site(sitename):
             logging.info(f"PHP config {php_dis} deleted successfully")
         else:
             logging.info(f"PHP config {php} already deleted")
-        result2 = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
+        result2 = subprocess.run(["sudo",application.config["PHPFPM_PATH"],"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result2.stderr):
         #gettings digits of PHP version from the path to the PHP-FPM
-            phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
+            phpVer = re.search(r"(.*)(\d\.\d)",application.config["PHPFPM_PATH"]).group(2)
             logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
             result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result3.returncode == 0:
@@ -688,7 +462,7 @@ def delete_site(sitename):
             error_message += f"Error while reloading PHP: {result2.stderr.strip()}"
             asyncio.run(send_to_telegram(f"🚒Provision site delete error({sitename}):",f"Error while reloading PHP"))
         #--------------Delete of the site folder
-        path = os.path.join(WEB_FOLDER,sitename)
+        path = os.path.join(application.config["WEB_FOLDER"],sitename)
         if not os.path.isdir(path):
             logging.error(f"Site folder delete error - {path} - is not a directory!")
             error_message += f"Site folder delete error - {path} - is not a directory!"
@@ -723,7 +497,7 @@ def disable_site(sitename):
     try:
         logging.info(f"-----------------------Starting site disable: {sitename}-----------------")
         #disable Nginx site
-        ngx = os.path.join(NGX_SITES_PATH2,sitename)
+        ngx = os.path.join(application.config["NGX_SITES_PATHEN"],sitename)
         if os.path.isfile(ngx) or os.path.islink(ngx):
             os.unlink(ngx)
             logging.info(f"Nginx symlink {ngx} removed")
@@ -740,13 +514,13 @@ def disable_site(sitename):
             logging.error(f"Nginx site disable error - symlink {ngx} is not exist")
             error_message += f"Error while reloading Nginx"
         #php disable
-        php = os.path.join(PHP_POOL,sitename+".conf")
+        php = os.path.join(application.config["PHP_POOL"],sitename+".conf")
         if os.path.isfile(php) or os.path.islink(php):
             os.rename(php,php+".disabled")
-            result2 = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
+            result2 = subprocess.run(["sudo",application.config["PHPFPM_PATH"],"-t"], capture_output=True, text=True)
             if  re.search(r".*test is successful.*",result2.stderr):
             #gettings digits of PHP version from the path to the PHP-FPM
-                phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
+                phpVer = re.search(r"(.*)(\d\.\d)",application.config["PHPFPM_PATH"]).group(2)
                 logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
                 result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
                 if  result3.returncode == 0:
@@ -761,7 +535,7 @@ def disable_site(sitename):
     except Exception as msg:
         logging.error(f"Error while site disable. Error: {msg}")
         error_message += f"Error while site disable. Error: {msg}"
-        asyncio.run(send_to_telegram(f"🚒Provision site disable error({JOB_ID}):",f"Error: {msg}"))
+        asyncio.run(send_to_telegram(f"🚒Provision site disable error({sitename}):",f"Error: {msg}"))
         if len(error_message) > 0:
             flash(error_message, 'alert alert-danger')
         else:
@@ -777,10 +551,10 @@ def enable_site(sitename):
     try:
         logging.info(f"-----------------------Starting site enable: {sitename}-----------------")
         #enable Nginx site
-        ngx_en = os.path.join(NGX_SITES_PATH2,sitename)
-        ngx_av = os.path.join(NGX_SITES_PATH,sitename)
-        php_cnf = os.path.join(PHP_POOL,sitename+".conf")
-        php_cnf_dis = os.path.join(PHP_POOL,sitename+".conf.disabled")
+        ngx_en = os.path.join(application.config["NGX_SITES_PATHEN"],sitename)
+        ngx_av = os.path.join(application.config["NGX_SITES_PATHAV"],sitename)
+        php_cnf = os.path.join(application.config["PHP_POOL"],sitename+".conf")
+        php_cnf_dis = os.path.join(application.config["PHP_POOL"],sitename+".conf.disabled")
         #--------------------check if there is no active symlink to the site
         #in sites-enabled is not exists, but in sites-available it is
         if not os.path.islink(ngx_en) and os.path.isfile(ngx_av):
@@ -808,7 +582,7 @@ def enable_site(sitename):
             config = create_php_config(sitename)
             with open(php_cnf, 'w',encoding='utf8') as fileC:
                 fileC.write(config)
-            logging.info(f"PHP config {os.path.join(PHP_POOL,sitename)} created because it wasn't exist")
+            logging.info(f"PHP config {os.path.join(application.config['PHP_POOL'],sitename)} created because it wasn't exist")
         #start of checks - nginx
         result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
@@ -820,10 +594,10 @@ def enable_site(sitename):
             error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
             asyncio.run(send_to_telegram(f"🚒Provision site disable error({sitename}):",f"Error while reloading Nginx"))
         #start of checks - php
-        result2 = subprocess.run(["sudo",PHPFPM_PATH,"-t"], capture_output=True, text=True)
+        result2 = subprocess.run(["sudo",application.config['PHPFPM_PATH'],"-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result2.stderr):
         #gettings digits of PHP version from the path to the PHP-FPM
-            phpVer = re.search(r"(.*)(\d\.\d)",PHPFPM_PATH).group(2)
+            phpVer = re.search(r"(.*)(\d\.\d)",application.config['PHPFPM_PATH']).group(2)
             logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
             result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result3.returncode == 0:
@@ -835,7 +609,7 @@ def enable_site(sitename):
     except Exception as msg:
         logging.error(f"Global error while site enable. Error: {msg}")
         error_message += f"Global error while site disable. Error: {msg}"
-        asyncio.run(send_to_telegram(f"🚒Provision site enable global error({JOB_ID}):",f"Error: {msg}"))
+        asyncio.run(send_to_telegram(f"🚒Provision site enable global error({sitename}):",f"Error: {msg}"))
         if len(error_message) > 0:
             flash(error_message, 'alert alert-danger')
         else:
@@ -848,68 +622,6 @@ def enable_site(sitename):
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User,int(user_id))
-
-@application.route("/logout", methods=['POST'])
-@login_required
-def logout():
-    logging.info(f"User {current_user.realname} is logging out")
-    logout_user()
-    flash("You are logged out", "alert alert-info")
-    return redirect(url_for("login"),301)
-
-@application.route("/login", methods=['GET','POST'])
-def login():
-    #is this is POST request so we are trying to login
-    if request.method == 'POST':
-        if current_user.is_authenticated:
-            logging.info(f"POST: User {current_user.username} is already logged in. Redirecting to the main page.")
-            return redirect('/',301)
-        username = request.form["username"]
-        password = request.form["password"]
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            login_user(user,duration=2880)
-            logging.info(f"Login: User {username} logged in")
-            return redirect("/",301)
-        else:
-            logging.error(f"Login: Wrong password \"{password}\" for user \"{username}\"")
-            asyncio.run(send_to_telegram("🚷Provision:",f"Login error.Wrong password for user \"{username}\""))
-            flash('Wrong username or password!', 'alert alert-danger')
-            return render_template("template-login.html")    
-    if current_user.is_authenticated:
-        logging.info(f"not POST: User {current_user.username} is already logged in. Redirecting to the main page.")
-        return redirect('/',301)
-    else:
-        return render_template("template-login.html")
-
-#catch upload form. Save files to the current folder. Redirect to /
-@application.route("/upload", methods=['GET','POST'])
-@login_required
-def upload_file():
-    if request.method == 'POST':
-        #check if fileUpload[] is in the request
-        if 'fileUpload[]' not in request.files:
-            logging.error(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields")
-            flash('Upload: No <fileUpload> in the request fields', 'alert alert-danger')
-            return redirect(url_for("upload"),301)
-        else:
-            #get the list of files. saving them to the current folder. Redirect to /
-            files = request.files.getlist("fileUpload[]")
-            nameList = ""
-            for file in files:
-                if file.filename:
-                    filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),secure_filename(file.filename))
-                    file.save(f"{filename}")
-                    nameList += filename+","
-            flash('File(s) uploaded successfully!', 'alert alert-success')
-            logging.info(f"Upload by {current_user.realname}: Files {nameList} uploaded successfully")
-            asyncio.run(send_to_telegram(f"⬆Provision\nUpload by {current_user.realname}:",f"Files {nameList} uploaded successfully"))
-            #now call this script from shell to start deploy procedure
-            subprocess.run([__file__, 'main'])
-            return redirect("/",301)
-    #if this is GET request - show page
-    if request.method == 'GET':
-        return render_template("template-upload.html")
 
 #catch upload form. Save files to the current folder. Redirect to /
 @application.route("/action", methods=['POST'])
@@ -933,15 +645,15 @@ def index():
         table = ""
         sites_list = []
         sites_list = [
-            name for name in os.listdir(WEB_FOLDER)
-            if os.path.isdir(os.path.join(WEB_FOLDER, name))
+            name for name in os.listdir(application.config["WEB_FOLDER"])
+            if os.path.isdir(os.path.join(application.config["WEB_FOLDER"], name))
         ]
         for i, s in enumerate(sites_list, 1):
             #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
             #variable with full path to nginx sites-enabled symlink to the site
-            ngx_site = os.path.join(NGX_SITES_PATH2,s)
+            ngx_site = os.path.join(application.config["NGX_SITES_PATHEN"],s)
             #variable with full path to php pool config of the site
-            php_site = os.path.join(PHP_POOL,s+".conf")
+            php_site = os.path.join(application.config["PHP_POOL"],s+".conf")
             #check of nginx and php have active links and configs of the site
             if os.path.islink(ngx_site) and os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-success">{i}</th>
@@ -953,7 +665,7 @@ def index():
                         <input class="form-check-input" type="checkbox" name="redirect" checked>Redirect all to the main page
                     </div></form>
                 <td class="table-success">{s}</td>
-                <td class="table-success">{os.path.join(WEB_FOLDER,s)}</td>
+                <td class="table-success">{os.path.join(application.config["WEB_FOLDER"],s)}</td>
                 <td class="table-success">OK</td>
                 \n</tr>"""
             #if nginx is ok but php is not
@@ -963,7 +675,7 @@ def index():
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
                 <td class="table-danger">{s}</td>
-                <td class="table-danger">{os.path.join(WEB_FOLDER,s)}</td>
+                <td class="table-danger">{os.path.join(application.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger">PHP config error</td>
                 \n</tr>"""
             #if php is ok but nginx is not
@@ -973,7 +685,7 @@ def index():
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
                 <td class="table-danger">{s}</td>
-                <td class="table-danger">{os.path.join(WEB_FOLDER,s)}</td>
+                <td class="table-danger">{os.path.join(application.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger">Nginx config error</td>
                 \n</tr>"""
             #if really disabled
@@ -983,7 +695,7 @@ def index():
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success">Enable site</button></form>
                 <td class="table-warning">{s}</td>
-                <td class="table-warning">{os.path.join(WEB_FOLDER,s)}</td>
+                <td class="table-warning">{os.path.join(application.config["WEB_FOLDER"],s)}</td>
                 <td class="table-warning">Site is disabled</td>
                 \n</tr>"""
             else:
@@ -998,8 +710,6 @@ def index():
 
 if __name__ == "__main__":
     application.app_context().push()
-    generate_default_config()
-    load_config()
     if len(sys.argv) > 2:
         if sys.argv[1] == "set" and sys.argv[2] == "chat":
             if (len(sys.argv) == 4):
@@ -1073,7 +783,7 @@ if __name__ == "__main__":
                 print("Error! Enter path to Php-fpm executable")
         elif sys.argv[1] == "show" and sys.argv[2] == "config":
             if (len(sys.argv) == 3):
-                show_config()
+                show_config(application)
     #if we call the script from console with argument "main" to start provision process
     elif len(sys.argv) == 2 and sys.argv[1] == "main":
         main()
@@ -1102,5 +812,3 @@ Info: full script should be launched via UWSGI server. In CLI mode use can only 
     quit(0)
 else:
     application.app_context().push()
-    generate_default_config()
-    load_config()

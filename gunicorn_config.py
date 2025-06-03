@@ -5,9 +5,9 @@ import os
 venv_path = "/usr/local/"
 sys.path.insert(0, os.path.join(venv_path, "lib/python3.11/site-packages"))
 #change to yours
-sys.path.insert(0, "/opt/provision")
+sys.path.insert(0, "/share/provision")
 
-bind = "127.0.0.1:8880"
+bind = "0.0.0.0:8880"
 workers = 3
 timeout = 30
 loglevel = "info"
