@@ -15,15 +15,6 @@
 <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
   <div class="container-fluid" style="height: 45px;">
     <a class="navbar-brand" href="/">Automatic sites provisioning system:</a>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <ul class=flashes style="margin-top: 33px;" id="message">
-    {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-    {% endfor %}
-    </ul>
-    {% endif %}
-    {% endwith %}
     <div class="spinner-border text-primary" role="status" style="margin-top: 15px; visibility: hidden;" id="spinner">
     </div>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +42,7 @@
 <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 55px;">ID</th>
-    <th scope="col" style="width: 410px;">Actions:</th>
+    <th scope="col" style="width: 450px;">Actions:</th>
     <th scope="col">Site:</th>
     <th scope="col">Path:</th>
     <th scope="col">Status:</th>
@@ -61,14 +52,38 @@
 {{table|safe}}
 </tbody>
 </table>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="myModalLabel">Information:</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          <ul class=flashes style="margin-top: 33px;" id="message">
+            {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        </div>    
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Got it</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
 <script>
-  function hideLoading() {
-    document.getElementById("spinner").style.visibility = "hidden";
-  }
-  function showLoading() {
-    document.getElementById("spinner").style.visibility = "visible";
-    document.getElementById("message").remove();
-  }
+  document.addEventListener("DOMContentLoaded", function () {
+    const modalElement = document.getElementById("myModal");
+    if (modalElement) {
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  });
   </script>
 </main>
 </body>

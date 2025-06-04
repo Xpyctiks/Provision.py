@@ -8,11 +8,14 @@ root_bp = Blueprint("root", __name__)
 def index():
     try:
         table = ""
+        checkbox_state = ""
+        button_state = "enabled"
         sites_list = []
         sites_list = [
             name for name in os.listdir(current_app.config["WEB_FOLDER"])
             if os.path.isdir(os.path.join(current_app.config["WEB_FOLDER"], name))
         ]
+        #
         for i, s in enumerate(sites_list, 1):
             #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
             #variable with full path to nginx sites-enabled symlink to the site
@@ -21,14 +24,25 @@ def index():
             php_site = os.path.join(current_app.config["PHP_POOL"],s+".conf")
             #check of nginx and php have active links and configs of the site
             if os.path.islink(ngx_site) and os.path.isfile(php_site):
+                #check if redirects are enabled or disabled in nginx site config and set checkbox to the proper state
+                with open(ngx_site, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.lstrip().startswith("if ( $request_uri !="):
+                            checkbox_state = "checked"
+                            button_state = "disabled"
                 table += f"""\n<tr>\n<th scope="row" class="table-success">{i}</th>
                 <td class="table-success"><form method="post" action="/action">
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
                     <button type="submit" value="{s}" name="disable" onclick="showLoading()" class="btn btn-warning">Disable site</button>
-                    <button type="submit" value="asdf" name="manager" onclick="" class="btn btn-info">Redirects manager</button>
+                </form>
+                <form method="post" action="/redirects_manager" id="redirect_form" style="margin-top: -20px;">
+                    <a href="/redirects_manager?site={s}" class="btn btn-info" type="submit" name="manager" value="{s}" style="margin-top: -25px; margin-left: 217px;" {button_state}>Redirects manager</a>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="redirect" checked>Redirect all to the main page
-                    </div></form>
+                        <input type="hidden" name="redirect_checkbox" value="0">
+                        <input type="hidden" name="sitename" value="{s}">
+                        <input class="form-check-input" type="checkbox" name="redirect_checkbox" id="redirect_checkbox" onchange="document.getElementById('redirect_form').submit();" value="1" {checkbox_state}>Redirect all to the main page
+                    </div>
+                </form>
                 <td class="table-success">{s}</td>
                 <td class="table-success">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
                 <td class="table-success">OK</td>
