@@ -3,3 +3,5 @@
 *.conf
 *.local
 pyvenv.cfg
+gunicorn_config.py
+gunicorn-provision.service
