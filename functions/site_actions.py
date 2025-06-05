@@ -219,6 +219,7 @@ def enable_allredirects(sitename):
     try:
         logging.info(f"-----------------------Enabling all redirects to the main page for {sitename} by {current_user.realname}-----------------")
         ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
+        logging.info(f"File: {ngx_av}")
         #get into the site's config and uncomment one string
         if os.path.exists(ngx_av):
             with open(ngx_av, "r", encoding="utf-8") as f:
@@ -267,6 +268,7 @@ def disable_allredirects(sitename):
     try:
         logging.info(f"-----------------------Disabling all redirects to the main page for {sitename} by {current_user.realname}-----------------")
         ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
+        logging.info(f"File: {ngx_av}")
         #get into the site's config and uncomment one string
         if os.path.exists(ngx_av):
             with open(ngx_av, "r", encoding="utf-8") as f:

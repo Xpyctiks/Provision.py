@@ -28,9 +28,8 @@
           </li>
           <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
         </ul>
-        <form class="d-flex" action="/upload_redirects" method="POST">
-          <button class="btn btn-info" type="submit" id="upload_redirects" name="upload_redirects" value="{{sitename|safe}}">Upload file with redirects</button>
-        </form>
+        <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">Go to main</a>
+        <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">Add or upload new redirects</a>
         <form class="d-flex" action="/logout" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">{{current_user.realname}}&nbsp;Logout</button>
         </form>

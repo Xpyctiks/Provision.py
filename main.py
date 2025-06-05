@@ -2,12 +2,12 @@
 
 from flask import Flask
 from flask_login import LoginManager
-import os,sys,subprocess,shutil,logging,glob,zipfile,random,string,re,asyncio
+import os,sys,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
 from pages import blueprint as routes_blueprint
 from db.db import db
 from db.database import User
 from functions.config_templates import create_nginx_config, create_php_config
-from functions.load_config import load_config, generate_default_config, show_config
+from functions.load_config import load_config, generate_default_config
 from functions.send_to_telegram import send_to_telegram
 from functions.upd_config import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken
 
@@ -18,22 +18,16 @@ application = Flask(__name__)
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800
-application.register_blueprint(routes_blueprint)
 db.init_app(application)
-login_manager = LoginManager(application)
-login_manager.login_view = "/login"
-login_manager.login_message = "You must log in before proceed."
-login_manager.session_protection = "strong"
+login_manager = LoginManager()
+login_manager.init_app(application)
+login_manager.login_view = "main.login.login"
 
 #Global loading of config and all main initializations
 generate_default_config(application,CONFIG_DIR,DB_FILE)
 load_config(application)
 application.secret_key = application.config["SECRET_KEY"]
-try:
-    logging.basicConfig(filename=application.config["LOG_FILE"],level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
-except Exception as msg:
-    logging.error(msg)
-    print(f"Logger activation error: {msg}")
+application.register_blueprint(routes_blueprint)
 
 def genJobID():  
     global JOB_ID
@@ -209,7 +203,7 @@ def findZip_1():
 
 def main():
     global JOB_TOTAL
-    #load_config()
+    load_config(application)
     genJobID()
     path = os.path.abspath(os.path.dirname(__file__))
     extension = "*.zip"
@@ -297,7 +291,21 @@ if __name__ == "__main__":
                 print("Error! Enter path to Php-fpm executable")
         elif sys.argv[1] == "show" and sys.argv[2] == "config":
             if (len(sys.argv) == 3):
-                show_config(application)
+                print (f"""
+    Telegram ChatID:       {application.config["TELEGRAM_TOKEN"]}
+    Telegram Token:        {application.config["TELEGRAM_CHATID"]}
+    Log file:              {application.config["LOG_FILE"]}
+    SessionKey:            {application.config["SECRET_KEY"]}
+    Web root folder:       {application.config["WEB_FOLDER"]}
+    Nginx SSL folder:      {application.config["NGX_CRT_PATH"]}
+    WWW folders user:      {application.config["WWW_USER"]}
+    WWW folders group:     {application.config["WWW_GROUP"]}
+    Nginx Sites-Available: {application.config["NGX_SITES_PATHAV"]}
+    Nginx Sites-Enabled:   {application.config["NGX_SITES_PATHEN"]}
+    Php Pool.d folder:     {application.config["PHP_POOL"]}
+    Php-fpm executable:    {application.config["PHPFPM_PATH"]}
+    key: {application.secret_key}
+                """)
     #if we call the script from console with argument "main" to start provision process
     elif len(sys.argv) == 2 and sys.argv[1] == "main":
         main()
