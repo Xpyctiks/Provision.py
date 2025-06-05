@@ -52,6 +52,11 @@ def redirects():
                 </td>
                 \n</tr>"""
                 i = i+1
-            return render_template("template-redirects.html",table=table,sitename=site)
+            #here we check file marker to make Apply button glow yellow if there is something to apply
+            if os.path.exists("/tmp/provision.marker"):
+                applyButton = "btn-warning"
+            else:
+                applyButton = "btn-outline-warning"
+            return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton)
         else:
             return redirect("/",301)

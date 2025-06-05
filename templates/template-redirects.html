@@ -20,13 +20,11 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav me-auto mb-2 mb-md-0">
-          <li class="nav-item">
-            <a class="nav-link active" id="totalLines" style="color: 0dcaf0;"></a>
-          </li>
-          <li>
-            <a class="nav-link active" id="totalRecords" style="color: 0dcaf0;"></a>
-          </li>
           <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
+          <form action="/action" method="post">
+            <button class="btn {{applyButton|safe}}" type="submit" id="applyChanges" name="applyChanges" value="apply" style="margin-left: -15px;">Apply changes</button>
+            <input type="hidden" name="sitename" value="{{sitename|safe}}">
+          </form>
         </ul>
         <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">Go to main</a>
         <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">Add or upload new redirects</a>

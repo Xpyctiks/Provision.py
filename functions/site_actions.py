@@ -1,5 +1,5 @@
 import logging,os,subprocess,asyncio,re,shutil
-from flask import current_app,flash
+from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config, create_php_config
 from flask_login import current_user
@@ -222,6 +222,7 @@ def enable_allredirects(sitename):
         logging.info(f"File: {ngx_av}")
         #get into the site's config and uncomment one string
         if os.path.exists(ngx_av):
+            #the first open - uncomment out redirects catch in root location
             with open(ngx_av, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             new_lines = []
@@ -234,7 +235,43 @@ def enable_allredirects(sitename):
                     new_lines.append(line)
             with open(ngx_av, "w", encoding="utf-8") as f:
                 f.writelines(new_lines)
-            logging.info(f"Nginx redirects config of {sitename} uncommented out successfully")
+            logging.info(f"Redirects in root location of {sitename} Nginx config uncommented out successfully")
+            #the second open - uncomment out include of redirect file config to be sure
+            with open(ngx_av, "r", encoding="utf-8") as f2:
+                lines2 = f2.readlines()
+            new_lines2 = []
+            hasbeenfound = 0
+            for line2 in lines2:
+                stripped2 = line2.lstrip()
+                if stripped2.startswith("#") and f"include additional-configs/301-{sitename}.conf;" in stripped2:
+                    uncommented2 = line2.replace("#", "", 1)
+                    new_lines2.append(uncommented2)
+                    hasbeenfound = 1
+                    logging.info("inlude line found and uncommented")
+                else:
+                    new_lines2.append(line2)
+            #if there is no include at all (old config file)
+            if hasbeenfound == 0:
+                stripped2 = line2 = lines2 = uncommented2 = ""
+                with open(ngx_av, "r", encoding="utf-8") as f2:
+                    lines2 = f2.readlines()
+                new_lines2 = []
+                for line2 in lines2:
+                    stripped2 = line2.lstrip()
+                    if stripped2.startswith("charset utf8;"):
+                        uncommented2 = line2.replace("charset utf8;", f"charset utf8;\n    include additional-configs/301-{sitename}.conf;", 1)
+                        new_lines2.append(uncommented2)
+                        hasbeenfound = 2
+                    else:
+                        new_lines2.append(line2)
+            #here we log the creating of this line
+            if hasbeenfound == 2:
+                logging.info(f"There was no Include for additional-configs/301-{sitename}.conf. Created one.")
+            #if there was changes - write them down
+            if hasbeenfound != 0:
+                with open(ngx_av, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines2)
+                logging.info(f"Redirects in root location of {sitename} Nginx config uncommented out successfully")
             #start of checks - nginx
             result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
             if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
@@ -271,6 +308,7 @@ def disable_allredirects(sitename):
         logging.info(f"File: {ngx_av}")
         #get into the site's config and uncomment one string
         if os.path.exists(ngx_av):
+            #the first open - comment out redirects catch in root location
             with open(ngx_av, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             new_lines = []
@@ -283,7 +321,21 @@ def disable_allredirects(sitename):
                     new_lines.append(line)
             with open(ngx_av, "w", encoding="utf-8") as f:
                 f.writelines(new_lines)
-            logging.info(f"Nginx redirects config of {sitename} commented out successfully")
+            logging.info(f"Redirects in root location of {sitename} Nginx config commented out successfully")
+            #the second open - comment out include of redirect file config to be sure
+            with open(ngx_av, "r", encoding="utf-8") as f2:
+                lines2 = f2.readlines()
+            new_lines2 = []
+            for line2 in lines2:
+                stripped2 = line2.lstrip()
+                if stripped2.startswith(f"include additional-configs/301-{sitename}.conf;"):
+                    uncommented2 = line2.replace(f"include additional-configs/301-{sitename}.conf;", f"#include additional-configs/301-{sitename}.conf;", 1)
+                    new_lines2.append(uncommented2)
+                else:
+                    new_lines2.append(line2)
+            with open(ngx_av, "w", encoding="utf-8") as f:
+                f.writelines(new_lines2)
+            logging.info(f"Include of redirects file of {sitename} Nginx config commented out successfully")
             #start of checks - nginx
             result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
             if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
@@ -313,9 +365,8 @@ def disable_allredirects(sitename):
     logging.info(f"-----------------------Finished disabling all redirects to the main page for {sitename}-----------------")
 
 def del_redirect(location,sitename):
-    error_message = ""
     try:
-        logging.info(f"-----------------------Delete redirect(s) for {sitename} by {current_user.realname}-----------------")
+        logging.info(f"-----------------------Delete single redirect for {sitename} by {current_user.realname}-----------------")
         file301 = os.path.join("/etc/nginx/additional-configs","301-" + sitename + ".conf")
         #get into the site's config and uncomment one string
         if os.path.exists(file301):
@@ -335,35 +386,24 @@ def del_redirect(location,sitename):
                 with open(file301, "w", encoding="utf-8") as f:
                     f.write(new_content)
                 logging.info(f"Redirect path {location} of {sitename} was deleted successfully")
-                #start of checks - nginx
-                result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
-                if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-                    result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
-                    if  re.search(r".*started.*",result2.stderr):
-                        logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
-                else:
-                    logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-                    error_message += f"Error reloading Nginx:  {result1.stderr.strip()}"
-                    asyncio.run(send_to_telegram(f"🚒Provision Error",f"Error reloading Nginx"))
         else:
-            logging.error(f"Error enabling all redirects to the main page of {sitename}: {file301} is not exists!")
-            error_message += f"Error enabling all redirects to the main page of {sitename}: {file301} is not exists!"
-            asyncio.run(send_to_telegram(f"🚒Error enabling all redirects to the main page of {sitename}:",f"{file301} is not exists!"))
+            logging.error(f"Error delete redirects of {sitename}: {file301} is not exists,but it is not possible because you are deleting from it!")
+            flash(f"Error delete redirects of {sitename}: {file301} is not exists!", 'alert alert-danger')
+            asyncio.run(send_to_telegram(f"🚒Provision redirects delete error:",f"{file301} is not exists,but it is not possible because you are deleting from it!"))
     except Exception as msg:
-        logging.error(f"Global Error enabling all redirects to the main page of {sitename}: {msg}")
-        error_message += f"Global Error enabling all redirects to the main page of {sitename}: {msg}"
-        asyncio.run(send_to_telegram(f"🚒Provision Error enabling all redirects to the main page of {sitename}:",f"Error: {msg}"))
-        if len(error_message) > 0:
-            flash(error_message, 'alert alert-danger')
-    if len(error_message) > 0:
-        flash(error_message, 'alert alert-danger')
-    logging.info(f"-----------------------Finished enabling all redirects to the main page for {sitename}-----------------")
+        logging.error(f"Privision Global Error:", "{msg}")
+        asyncio.run(send_to_telegram(f"🚒Provision Global Error:",f"{file301} is not exists, but it is not possible because you are deleting from it."))
+    #here we create a marker file which makes "Apply changes" button to glow yellow
+    if not os.path.exists("/tmp/provision.marker"):
+        with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
+            file3.write("")
+            logging.info("Marker file for Apply button created")
+    logging.info(f"-----------------------single redirect deleted---------------------------")
+    return redirect(f"/redirects_manager?site={sitename}",301)
 
 def del_selected_redirects(array,sitename):
-    error_message = ""
-    success = 0
     try:
-        logging.info(f"-----------------------Delete redirect(s) for {sitename} by {current_user.realname}-----------------")
+        logging.info(f"-----------------------Delete selected bulk redirects for {sitename} by {current_user.realname}-----------------")
         file301 = os.path.join("/etc/nginx/additional-configs","301-" + sitename + ".conf")
         #get into the site's config and uncomment one string
         if os.path.exists(file301):
@@ -385,30 +425,36 @@ def del_selected_redirects(array,sitename):
                     with open(file301, "w", encoding="utf-8") as f:
                         f.write(new_content)
                     logging.info(f"Redirect path {location} of {sitename} was deleted successfully")
-                    success = 1
-            #restart Nginx if we have at least one successfull update in config file
-            if success > 0:
-                result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
-                if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-                    result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
-                    if  re.search(r".*started.*",result2.stderr):
-                        logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
-                else:
-                    logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-                    error_message += f"Error reloading Nginx:  {result1.stderr.strip()}"
-                    asyncio.run(send_to_telegram(f"🚒Provision Error",f"Error reloading Nginx"))
-            else:
-                logging.info(f"Looks like there was no successfull deletion, so we don't reload Nginx")
         else:
-            logging.error(f"Error enabling all redirects to the main page of {sitename}: {file301} is not exists!")
-            error_message += f"Error enabling all redirects to the main page of {sitename}: {file301} is not exists!"
-            asyncio.run(send_to_telegram(f"🚒Error enabling all redirects to the main page of {sitename}:",f"{file301} is not exists!"))
+            logging.error(f"Error delete redirects of {sitename}: {file301} is not exists,but it is not possible because you are deleting from it!")
+            flash(f"Error delete redirects of {sitename}: {file301} is not exists!", 'alert alert-danger')
+            asyncio.run(send_to_telegram(f"🚒Provision redirects delete error:",f"{file301} is not exists,but it is not possible because you are deleting from it!"))
     except Exception as msg:
-        logging.error(f"Global Error enabling all redirects to the main page of {sitename}: {msg}")
-        error_message += f"Global Error enabling all redirects to the main page of {sitename}: {msg}"
-        asyncio.run(send_to_telegram(f"🚒Provision Error enabling all redirects to the main page of {sitename}:",f"Error: {msg}"))
-        if len(error_message) > 0:
-            flash(error_message, 'alert alert-danger')
-    if len(error_message) > 0:
-        flash(error_message, 'alert alert-danger')
-    logging.info(f"-----------------------Finished enabling all redirects to the main page for {sitename}-----------------")
+        logging.error(f"Privision Global Error:", "{msg}")
+        asyncio.run(send_to_telegram(f"🚒Provision Global Error:",f"{file301} is not exists, but it is not possible because you are deleting from it."))
+    #here we create a marker file which makes "Apply changes" button to glow yellow
+    if not os.path.exists("/tmp/provision.marker"):
+        with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
+            file3.write("")
+            logging.info("Marker file for Apply button created")
+    logging.info(f"-----------------------Selected bulk redirects deleted---------------------------")
+    return redirect(f"/redirects_manager?site={sitename}",301)
+
+def applyChanges(sitename):
+    logging.info(f"-----------------------Applying changes in Nginx by {current_user.realname}-----------------")
+    result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
+    if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
+        result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
+        if  re.search(r".*started.*",result2.stderr):
+            logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+            flash(f"Changes applied succesfully. Nginx reloaded.",'alert alert-success')
+            logging.info(f"-----------------------Applying changes in Nginx finished-----------------")
+            if os.path.exists("/tmp/provision.marker"):
+                os.unlink("/tmp/provision.marker")
+            return redirect(f"/redirects_manager?site={sitename}",301)
+    else:
+        logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
+        asyncio.run(send_to_telegram(f"🚒Provision Error",f"Changes apply error: Nginx has bad configuration"))
+        flash(f"Error reloading Nginx! Some error in configuration, see logs:\n{result1.stderr.strip()}",'alert alert-danger')
+        logging.info(f"-----------------------Applying changes in Nginx finished-----------------")
+        return redirect(f"/redirects_manager?site={sitename}",301)

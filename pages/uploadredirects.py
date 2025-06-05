@@ -41,6 +41,11 @@ rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent
             logging.info(f"New redirects were saved to {file301}")
             os.unlink(filename)
             logging.info(f"Uploaded CSV file {filename} was deleted")
+            #here we create a marker file which makes "Apply changes" button to glow yellow
+            if not os.path.exists("/tmp/provision.marker"):
+                with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
+                    file3.write("")
+                logging.info("Marker file for Apply button created")
             flash(f"{redirectsCount} redirects added successfully!", 'alert alert-success')
             logging.info(f"-----------------------New redirects added successfully for {request.form.get('sitename').strip()}-----------------")
             return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
@@ -60,6 +65,11 @@ rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent
 """
             with open(file301, "a", encoding="utf-8") as f:
                 f.write(template)
+            #here we create a marker file which makes "Apply changes" button to glow yellow
+            if not os.path.exists("/tmp/provision.marker"):
+                with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
+                    file3.write("")
+                logging.info("Marker file for Apply button created")
             logging.info(f"-----------------------New redirect added successfully for {request.form.get('sitename').strip()}-----------------")
             return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
         else:
