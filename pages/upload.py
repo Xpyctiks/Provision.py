@@ -1,6 +1,6 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
-import logging,asyncio,subprocess,os
+import logging,asyncio,subprocess,os,pathlib
 from functions.send_to_telegram import send_to_telegram
 from werkzeug.utils import secure_filename
 
@@ -15,19 +15,24 @@ def upload_file():
             flash('Upload: No <fileUpload> in the request fields', 'alert alert-danger')
             return redirect("/upload",301)
         else:
+            #get name of the parent directory for the whole project
+            current_file = pathlib.Path(__file__)
+            directory = current_file.resolve().parent
+            project_root = directory.parent
             #get the list of files. saving them to the current folder. Redirect to /
             files = request.files.getlist("fileUpload[]")
             nameList = ""
             for file in files:
                 if file.filename:
-                    filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),secure_filename(file.filename))
+                    filename = os.path.join(project_root,secure_filename(file.filename))
                     file.save(f"{filename}")
                     nameList += filename+","
             flash('File(s) uploaded successfully!', 'alert alert-success')
-            logging.info(f"Upload by {current_user.realname}: Files {nameList} uploaded successfully")
+            logging.info(f"Upload by {current_user.realname}: Files {nameList} uploaded to {project_root} successfully")
             asyncio.run(send_to_telegram(f"⬆Provision\nUpload by {current_user.realname}:",f"Files {nameList} uploaded successfully"))
             #now call this script from shell to start deploy procedure
-            subprocess.run([__file__, 'main'])
+            executive = os.path.join(project_root,"main.py")
+            subprocess.run([executive, 'main'])
             return redirect("/",301)
     #if this is GET request - show page
     if request.method == 'GET':
