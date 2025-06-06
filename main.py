@@ -106,7 +106,7 @@ def setupNginx(file):
         with open(os.path.join(application.config["NGX_SITES_PATHAV"],filename), 'w',encoding='utf8') as fileC:
             fileC.write(config)
         logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHAV'],filename)} created")
-        if not os.path.exists(os.path.join(application.config["NGX_SITES_PATHAEN"],filename)):
+        if not os.path.exists(os.path.join(application.config["NGX_SITES_PATHEN"],filename)):
             os.symlink(os.path.join(application.config["NGX_SITES_PATHAV"],filename),os.path.join(application.config["NGX_SITES_PATHEN"],filename))
         logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHAVEN'],filename)} symlink created")
         result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
