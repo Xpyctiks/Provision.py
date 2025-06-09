@@ -1,4 +1,4 @@
-from flask import render_template,request,redirect,flash,Blueprint
+from flask import render_template,request,redirect,flash,Blueprint,session
 from flask_login import current_user
 import logging,asyncio
 from flask_login import login_user, current_user
@@ -18,6 +18,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             login_user(user)
+            session.permanent = True
             logging.info(f"Login: User {username} logged in")
             return redirect("/",301)
         else:

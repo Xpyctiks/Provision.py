@@ -3,13 +3,6 @@
 from flask import Flask
 from flask_login import LoginManager
 import os,sys,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
-from pages import blueprint as routes_blueprint
-from db.db import db
-from db.database import User
-from functions.config_templates import create_nginx_config, create_php_config
-from functions.load_config import load_config, generate_default_config
-from functions.send_to_telegram import send_to_telegram
-from functions.upd_config import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken
 
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
@@ -18,16 +11,25 @@ application = Flask(__name__)
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800
+application.config['SESSION_COOKIE_SECURE'] = True
+application.config['SESSION_COOKIE_HTTPONLY'] = True
+application.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+from db.db import db
+from db.database import User
 db.init_app(application)
-login_manager = LoginManager()
-login_manager.init_app(application)
-login_manager.login_view = "main.login.login"
-
-#Global loading of config and all main initializations
+from functions.load_config import load_config, generate_default_config
 generate_default_config(application,CONFIG_DIR,DB_FILE)
 load_config(application)
 application.secret_key = application.config["SECRET_KEY"]
+login_manager = LoginManager()
+login_manager.login_view = "main.login.login"
+login_manager.session_protection = "strong"
+login_manager.init_app(application)
+from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
+from functions.config_templates import create_nginx_config, create_php_config
+from functions.send_to_telegram import send_to_telegram
+from functions.upd_config import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken
 
 def genJobID():  
     global JOB_ID
@@ -108,7 +110,7 @@ def setupNginx(file):
         logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHAV'],filename)} created")
         if not os.path.exists(os.path.join(application.config["NGX_SITES_PATHEN"],filename)):
             os.symlink(os.path.join(application.config["NGX_SITES_PATHAV"],filename),os.path.join(application.config["NGX_SITES_PATHEN"],filename))
-        logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHAVEN'],filename)} symlink created")
+        logging.info(f"Nginx config {os.path.join(application.config['NGX_SITES_PATHEN'],filename)} symlink created")
         result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
             logging.info(f"Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
