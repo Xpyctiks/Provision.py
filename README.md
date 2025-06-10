@@ -25,7 +25,7 @@ StandardError=append:/var/log/gunicorn/provision-error.log
 [Install]
 WantedBy=multi-user.target
 ```
--Gunicorn settings file:
+-Gunicorn settings file(gunicorn_config.py):
 ```
 import sys
 import os
@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.join(venv_path, "lib/python3.11/site-packages"))
 sys.path.insert(0, "/opt/provision")
 
 bind = "0.0.0.0:8880"
-workers = 3
+workers = 1
 timeout = 30
 loglevel = "info"
 wsgi_app = "main:application"

@@ -30,6 +30,30 @@
         </div>
         {{loginError|safe}}
     </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="myModalLabel">Information:</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+            <ul class=flashes style="margin-top: 33px;" id="message">
+                {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            </div>    
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Got it</button>
+            </div>
+        </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
     <script>
     function showLoading() {
         document.getElementById("spinner").style.visibility = "visible";

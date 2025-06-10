@@ -20,7 +20,7 @@ def load_config(application):
                 "PHPFPM_PATH": f"{config.phpFpmPath}",
                 "SECRET_KEY": f"{config.sessionKey}"
             })
-            logging.basicConfig(filename=config.logFile,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
+            logging.basicConfig(filename=config.logFile,level=logging.DEBUG,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
             logging.info("Programm started succesfully. Configuration loaded.")
         except Exception as msg:
             print(f"Load-config error: {msg}")

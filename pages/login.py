@@ -1,14 +1,13 @@
-from flask import render_template,request,redirect,flash,Blueprint,session
-from flask_login import current_user
+from flask import render_template,request,redirect,flash,Blueprint,session,make_response
 import logging,asyncio
 from flask_login import login_user, current_user
 from db.database import User
 from functions.send_to_telegram import send_to_telegram
+from datetime import timedelta
 
 login_bp = Blueprint("login", __name__)
 @login_bp.route("/login", methods=['GET','POST'])
 def login():
-    #is this is POST request so we are trying to login
     if request.method == 'POST':
         if current_user.is_authenticated:
             logging.info(f"POST: User {current_user.username} is already logged in. Redirecting to the main page.")
@@ -17,10 +16,19 @@ def login():
         password = request.form["password"]
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user)
-            session.permanent = True
-            logging.info(f"Login: User {username} logged in")
-            return redirect("/",301)
+            session.clear()
+            session.permanent = True          
+            login_user(user, remember=True, duration=timedelta(hours=8))
+            logging.info(f"User {user.realname} logged in successfully")
+            response = make_response(redirect("/",301))           
+            response.set_cookie(
+                'provision_session',
+                max_age=28800,
+                secure=True,
+                httponly=True,
+                samesite='Lax'
+            )
+            return response
         else:
             logging.error(f"Login: Wrong password \"{password}\" for user \"{username}\"")
             asyncio.run(send_to_telegram("🚷Provision:",f"Login error.Wrong password for user \"{username}\""))

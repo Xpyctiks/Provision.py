@@ -1,8 +1,10 @@
 #!/usr/local/bin/python3
 
 from flask import Flask
+from flask_session import Session
 from flask_login import LoginManager
 import os,sys,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
+from datetime import timedelta
 
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
@@ -11,12 +13,17 @@ application = Flask(__name__)
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800
-application.config['SESSION_COOKIE_SECURE'] = True
+application.config['SESSION_COOKIE_SECURE'] = False
 application.config['SESSION_COOKIE_HTTPONLY'] = True
 application.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+application.config['SESSION_TYPE'] = 'sqlalchemy'
+application.config['SESSION_SQLALCHEMY_TABLE'] = 'flask_sessions'
+application.config['SESSION_USE_SIGNER'] = True
+application.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
 from db.db import db
 from db.database import User
 db.init_app(application)
+application.config['SESSION_SQLALCHEMY'] = db
 from functions.load_config import load_config, generate_default_config
 generate_default_config(application,CONFIG_DIR,DB_FILE)
 load_config(application)
@@ -25,11 +32,18 @@ login_manager = LoginManager()
 login_manager.login_view = "main.login.login"
 login_manager.session_protection = "strong"
 login_manager.init_app(application)
-from pages import blueprint as routes_blueprint
-application.register_blueprint(routes_blueprint)
+Session(application)
+with application.app_context():
+    db.create_all()
 from functions.config_templates import create_nginx_config, create_php_config
 from functions.send_to_telegram import send_to_telegram
 from functions.upd_config import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User,int(user_id))
+from pages import blueprint as routes_blueprint
+application.register_blueprint(routes_blueprint)
 
 def genJobID():  
     global JOB_ID
@@ -214,12 +228,8 @@ def main():
     logging.info(f"-----------------------Starting pre-check(JOB ID:{JOB_ID}). Total {JOB_TOTAL} archive(s) found-----------------")
     findZip_1()
 
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User,int(user_id))
-
 if __name__ == "__main__":
-    application.app_context().push()
+    #application.app_context().push()
     if len(sys.argv) > 2:
         if sys.argv[1] == "set" and sys.argv[2] == "chat":
             if (len(sys.argv) == 4):
@@ -334,5 +344,5 @@ if __name__ == "__main__":
 Info: full script should be launched via UWSGI server. In CLI mode use can only use commands above.
 """)
     quit(0)
-else:
-    application.app_context().push()
+#else:
+    #application.app_context().push()
