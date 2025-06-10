@@ -9,7 +9,6 @@ upload_bp = Blueprint("upload", __name__)
 @login_required
 def upload_file():
     if request.method == 'POST':
-        #check if fileUpload[] is in the request
         if 'fileUpload[]' not in request.files:
             logging.error(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields")
             flash('Upload: No <fileUpload> in the request fields', 'alert alert-danger')
@@ -28,8 +27,8 @@ def upload_file():
                     file.save(f"{filename}")
                     nameList += filename+","
             flash('File(s) uploaded successfully!', 'alert alert-success')
-            logging.info(f"Upload by {current_user.realname}: Files {nameList} uploaded to {project_root} successfully")
-            asyncio.run(send_to_telegram(f"⬆Provision\nUpload by {current_user.realname}:",f"Files {nameList} uploaded successfully"))
+            logging.info(f"Upload by {current_user.realname} IP:{request.remote_addr}: Files {nameList} uploaded to {project_root} successfully")
+            asyncio.run(send_to_telegram(f"Files {nameList} uploaded successfully",f"⬆Provision\nUpload by {current_user.realname}:"))
             #now call this script from shell to start deploy procedure
             executive = os.path.join(project_root,"main.py")
             subprocess.run([executive, 'main'])

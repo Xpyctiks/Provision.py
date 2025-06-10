@@ -53,12 +53,12 @@ def finishJob(file):
     os.remove(filename)
     logging.info(f"Archive #{JOB_COUNTER} of {JOB_TOTAL} - {filename} removed")
     if JOB_COUNTER == JOB_TOTAL:
-        asyncio.run(send_to_telegram(f"🏁Provision job finish ({JOB_ID}):",f"Provision jobs are finished. Total {JOB_TOTAL} done."))
+        asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {JOB_TOTAL} done.",f"🏁Provision job finish ({JOB_ID}):"))
         logging.info(f"----------------------------------------End of JOB ID:{JOB_ID}--------------------------------------------")
         quit()
     else:
         logging.info(f">>>End of JOB #{JOB_COUNTER}")
-        asyncio.run(send_to_telegram(f"Provision job {JOB_ID}:",f"JOB #{JOB_COUNTER} of {JOB_TOTAL} finished successfully"))
+        asyncio.run(send_to_telegram(f"JOB #{JOB_COUNTER} of {JOB_TOTAL} finished successfully",f"Provision job {JOB_ID}:"))
         JOB_COUNTER += 1
         findZip_1()
 
@@ -81,11 +81,11 @@ def setupPHP(file):
                 finishJob(file)
         else:
             logging.error(f"Error while reloading PHP: {result.stdout.strip()} {result.stderr.strip()}")
-            asyncio.run(send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading PHP"))
+            asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({JOB_ID}):"))
             finishJob(file)
     except Exception as msg:
         logging.error(f"Error while configuring PHP. Error: {msg}")
-        asyncio.run(send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error: {msg}"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
 def setupNginx(file):
@@ -113,7 +113,7 @@ def setupNginx(file):
             logging.info(f"File for redirects {redirect_file} created successfully!")
         else:
             logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
-            asyncio.run(send_to_telegram(f"🚒Provision job warning({JOB_ID}):",f"Folder /etc/nginx/additional-configs is not exists!"))
+            asyncio.run(send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({JOB_ID}):"))
         config = create_nginx_config(filename)
         with open(os.path.join(application.config["NGX_SITES_PATHAV"],filename), 'w',encoding='utf8') as fileC:
             fileC.write(config)
@@ -130,11 +130,11 @@ def setupNginx(file):
             setupPHP(file)
         else:
             logging.error(f"Error while reloading Nginx: {result.stderr.strip()}")
-            asyncio.run(send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error while reloading Nginx"))
+            asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({JOB_ID}):"))
             finishJob(file)
     except Exception as msg:
         logging.error(f"Error while configuring Nginx. Error: {msg}")
-        asyncio.run(send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error: {msg}"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
 def unZip_3(file):
@@ -158,12 +158,12 @@ def unZip_3(file):
             setupNginx(file)
     except Exception as msg:
         logging.error(f"Error while unpacking {file}. Error: {msg}")
-        asyncio.run(send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error: {msg}"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
 def checkZip_2(file):
     logging.info(f">>>Start processing of archive #{JOB_COUNTER} of {JOB_TOTAL} total - {file}")
-    asyncio.run(send_to_telegram(f"🎢Provisoin job start({JOB_ID}):",f"Archive #{JOB_COUNTER} of {JOB_TOTAL}: {file}"))
+    asyncio.run(send_to_telegram(f"Archive #{JOB_COUNTER} of {JOB_TOTAL}: {file}",f"🎢Provisoin job start({JOB_ID}):"))
     #Getting site name from archive name
     fileName = os.path.basename(file)[:-4]
     #Preparing full path - path to general web folder + site name
@@ -195,7 +195,7 @@ def checkZip_2(file):
         if found < 4:
             print(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}")
-            asyncio.run(send_to_telegram(f"🚒Provision job error:",f"Job #{JOB_COUNTER} error: Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}"))
+            asyncio.run(send_to_telegram(f"Job #{JOB_COUNTER} error: Either {fileName}.crt or {fileName}.key or htpasswd or public/ is absent in {file}",f"🚒Provision job error:"))
             logging.info(f">>>End of JOB #{JOB_COUNTER}")
             finishJob(file)
         else:
@@ -203,7 +203,7 @@ def checkZip_2(file):
             unZip_3(file)
     except Exception as msg:
         logging.error(f"Error while checking {file}. Error: {msg}")
-        asyncio.run(send_to_telegram(f"🚒Provision job error({JOB_ID}):",f"Error: {msg}"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
 def findZip_1():
@@ -225,7 +225,6 @@ def main():
     findZip_1()
 
 if __name__ == "__main__":
-    #application.app_context().push()
     if len(sys.argv) > 2:
         if sys.argv[1] == "set" and sys.argv[2] == "chat":
             if (len(sys.argv) == 4):
@@ -340,5 +339,3 @@ if __name__ == "__main__":
 Info: full script should be launched via UWSGI server. In CLI mode use can only use commands above.
 """)
     quit(0)
-#else:
-    #application.app_context().push()

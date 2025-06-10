@@ -1,8 +1,9 @@
 import os
 from flask import current_app
 
-def create_php_config(filename):
-    config = f"""[{filename}]
+def create_php_config(filename) -> str:
+  """Template. Function which creates a PHP configuration for a site, taken from filename parameter."""
+  config = f"""[{filename}]
 user = {current_app.config["WWW_USER"]}
 group = {current_app.config["WWW_GROUP"]}
 listen = /run/php/{filename}.sock
@@ -26,10 +27,11 @@ php_admin_flag[log_errors] = on
 php_admin_value[open_basedir] = {os.path.join(current_app.config["WEB_FOLDER"],filename)}:/tmp
 php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,apache_get_version,apache_getenv,apache_lookup_uri,apache_note,apache_request_headers,apache_reset_timeout,apache_response_headers,apache_setenv,getallheaders,virtual,chdir,chroot,exec,passthru,proc_close,proc_get_status,proc_nice,proc_open,proc_terminate,shell_exec,system,chgrp,chown,disk_free_space,disk_total_space,diskfreespace,filegroup,fileinode,fileowner,lchgrp,lchown,link,linkinfo,lstat,pclose,popen,readlink,symlink,umask,cli_get_process_title,cli_set_process_title,dl,gc_collect_cycles,gc_disable,gc_enable,get_current_user,getmygid,getmyinode,getmypid,getmyuid,php_ini_loaded_file,php_ini_scanned_files,php_logo_guid,php_uname,zend_logo_guid,zend_thread_id,highlight_file,php_check_syntax,show_source,sys_getloadavg,closelog,define_syslog_variables,openlog,pfsockopen,syslog,nsapi_request_headers,nsapi_response_headers,nsapi_virtual,pcntl_alarm,pcntl_errno,pcntl_exec,pcntl_fork,pcntl_get_last_error,pcntl_getpriority,pcntl_setpriority,pcntl_signal_dispatch,pcntl_signal,pcntl_sigprocmask,pcntl_sigtimedwait,pcntl_sigwaitinfo,pcntl_strerror,pcntl_wait,pcntl_waitpid,pcntl_wexitstatus,pcntl_wifexited,pcntl_wifsignaled,pcntl_wifstopped,pcntl_wstopsig,pcntl_wtermsig,posix_access,posix_ctermid,posix_errno,posix_get_last_error,posix_getcwd,posix_getegid,posix_geteuid,posix_getgid,posix_getgrgid,posix_getgrnam,posix_getgroups,posix_getlogin,posix_getpgid,posix_getpgrp,posix_getpid,posix_getppid,posix_getpwnam,posix_getpwuid,posix_getrlimit,posix_getsid,posix_getuid,posix_initgroups,posix_isatty,posix_kill,posix_mkfifo,posix_mknod,posix_setegid,posix_seteuid,posix_setgid,posix_setpgid,posix_setsid,posix_setuid,posix_strerror,posix_times,posix_ttyname,posix_uname,setproctitle,setthreadtitle,shmop_close,shmop_delete,shmop_open,shmop_read,shmop_size,shmop_write,opcache_compile_file,opcache_get_configuration,opcache_get_status,opcache_invalidate,opcache_is_script_cached,opcache_reset,putenv
 """
-    return config
+  return config
 
-def create_nginx_config(filename):
-    config = f"""server {{
+def create_nginx_config(filename) -> str:
+  """Template. Function which creates an Nginx configuration for a site, taken from filename parameter."""
+  config = f"""server {{
     listen 203.161.35.70:80;
     server_name {filename} www.{filename};
     access_log /var/log/nginx/access_{filename}.log postdata;
@@ -112,4 +114,4 @@ server {{
       fastcgi_pass unix:/var/run/php/{filename}.sock;
     }}
 }}"""
-    return config
+  return config

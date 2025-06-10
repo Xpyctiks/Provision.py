@@ -10,10 +10,11 @@ login_bp = Blueprint("login", __name__)
 def login():
     if request.method == 'POST':
         if current_user.is_authenticated:
-            logging.info(f"POST: User {current_user.username} is already logged in. Redirecting to the main page.")
+            logging.info(f"POST: User {current_user.username} IP:{request.remote_addr} is already logged in. Redirecting to the main page.")
             return redirect('/',301)
         username = request.form["username"]
         password = request.form["password"]
+        ip = request.remote_addr
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             session.clear()
@@ -24,12 +25,12 @@ def login():
             response = make_response(redirect("/",301))
             return response
         else:
-            logging.error(f"Login: Wrong password \"{password}\" for user \"{username}\"")
-            asyncio.run(send_to_telegram("🚷Provision:",f"Login error.Wrong password for user \"{username}\""))
+            logging.error(f"Login: Wrong password \"{password}\" for user \"{username}\", IP:{request.remote_addr}")
+            asyncio.run(send_to_telegram("🚷Provision:",f"Login error.Wrong password for user \"{username}\", IP:{request.remote_addr}"))
             flash('Wrong username or password!', 'alert alert-danger')
             return render_template("template-login.html")    
     if current_user.is_authenticated:
-        logging.info(f"not POST: User {current_user.username} is already logged in. Redirecting to the main page.")
+        logging.info(f"not POST: User {current_user.username} IP:{request.remote_addr} is already logged in. Redirecting to the main page.")
         return redirect('/',301)
     else:
         return render_template("template-login.html")
