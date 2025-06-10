@@ -11,6 +11,7 @@ def logout():
     logout_user()
     session.clear()
     response = make_response(redirect("/login",301))
-    response.delete_cookie('provision_session')
+    response.delete_cookie('session')
+    response.delete_cookie('remember_token')
     flash("You are logged out", "alert alert-info")
     return response

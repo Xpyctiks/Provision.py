@@ -1,7 +1,6 @@
 #!/usr/local/bin/python3
 
 from flask import Flask
-from flask_session import Session
 from flask_login import LoginManager
 import os,sys,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
 from datetime import timedelta
@@ -16,8 +15,6 @@ application.config['PERMANENT_SESSION_LIFETIME'] = 28800
 application.config['SESSION_COOKIE_SECURE'] = False
 application.config['SESSION_COOKIE_HTTPONLY'] = True
 application.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-application.config['SESSION_TYPE'] = 'sqlalchemy'
-application.config['SESSION_SQLALCHEMY_TABLE'] = 'flask_sessions'
 application.config['SESSION_USE_SIGNER'] = True
 application.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
 from db.db import db
@@ -32,7 +29,6 @@ login_manager = LoginManager()
 login_manager.login_view = "main.login.login"
 login_manager.session_protection = "strong"
 login_manager.init_app(application)
-Session(application)
 with application.app_context():
     db.create_all()
 from functions.config_templates import create_nginx_config, create_php_config

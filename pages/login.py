@@ -17,17 +17,11 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             session.clear()
-            session.permanent = True          
+            session.permanent = True
+            session.permanent_session_lifetime = timedelta(hours=8)
             login_user(user, remember=True, duration=timedelta(hours=8))
             logging.info(f"User {user.realname} logged in successfully")
-            response = make_response(redirect("/",301))           
-            response.set_cookie(
-                'provision_session',
-                max_age=28800,
-                secure=True,
-                httponly=True,
-                samesite='Lax'
-            )
+            response = make_response(redirect("/",301))
             return response
         else:
             logging.error(f"Login: Wrong password \"{password}\" for user \"{username}\"")
