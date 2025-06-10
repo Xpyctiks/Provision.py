@@ -5,7 +5,7 @@ from functions.load_config import load_config
 from flask import current_app
 from werkzeug.security import generate_password_hash
 
-def set_telegramChat(tgChat) -> None:
+def set_telegramChat(tgChat: str) -> None:
     """CLI only function: sets Telegram ChatID value in database"""
     t = Settings(id=1,telegramChat=tgChat.strip())
     db.session.merge(t)
@@ -17,7 +17,7 @@ def set_telegramChat(tgChat) -> None:
     except Exception as err:
         pass
 
-def set_telegramToken(tgToken) -> None:
+def set_telegramToken(tgToken: str) -> None:
     """CLI only function: sets Telegram Token value in database"""
     t = Settings(id=1,telegramToken=tgToken)
     db.session.merge(t)
@@ -29,7 +29,7 @@ def set_telegramToken(tgToken) -> None:
     except Exception as err:
         pass
 
-def set_logpath(logpath) -> None:
+def set_logpath(logpath: str) -> None:
     """CLI only function: sets Logger file path value in database"""
     t = Settings(id=1,logFile=logpath)
     db.session.merge(t)
@@ -42,7 +42,7 @@ def set_logpath(logpath) -> None:
     except Exception as err:
         pass
 
-def register_user(username,password,realname) -> None:
+def register_user(username: str,password: str,realname: str) -> None:
     """CLI only function: adds new user and saves to database"""
     try:
         if User.query.filter_by(username=username).first():
@@ -63,7 +63,7 @@ def register_user(username,password,realname) -> None:
         logging.error(f"User \"{username}\" - \"{realname}\" creation error: {err}")
         print(f"User \"{username}\" - \"{realname}\" creation error: {err}")
 
-def update_user(username,password) -> None:
+def update_user(username: str,password: str) -> None:
     """CLI only function: password change for existing user"""
     try:
         user = User.query.filter_by(username=username).first()
@@ -81,7 +81,7 @@ def update_user(username,password) -> None:
         logging.error(f"User \"{username}\" set password error: {err}")
         print(f"User \"{username}\" set password error: {err}")
 
-def delete_user(username) -> None:
+def delete_user(username: str) -> None:
     """CLI only function: deletes an existing user from database"""
     try:
         user = User.query.filter_by(username=username).first()
@@ -99,7 +99,7 @@ def delete_user(username) -> None:
         logging.error(f"User \"{username}\" delete error: {err}")
         print(f"User \"{username}\" delete error: {err}")
 
-def set_webFolder(data) -> None:
+def set_webFolder(data: str) -> None:
     """CLI only function: sets webFolder parameter in database"""
     try:
         t = Settings(id=1,webFolder=data)
@@ -113,7 +113,7 @@ def set_webFolder(data) -> None:
         logging.error(f"Root web folder \"{data}\" set error: {err}")
         print(f"Root web folder \"{data}\" set error: {err}")
 
-def set_nginxCrtPath(data) -> None:
+def set_nginxCrtPath(data: str) -> None:
     """CLI only function: sets Nginx SSL certs path parameter in database"""
     try:
         t = Settings(id=1,nginxCrtPath=data)
@@ -127,7 +127,7 @@ def set_nginxCrtPath(data) -> None:
         logging.error(f"Nginx SSL folder \"{data}\" set error: {err}")
         print(f"Nginx SSL folder \"{data}\" set error: {err}")
 
-def set_wwwUser(data) -> None:
+def set_wwwUser(data: str) -> None:
     """CLI only function: sets wwwUser parameter in database"""
     try:
         t = Settings(id=1,wwwUser=data)
@@ -141,7 +141,7 @@ def set_wwwUser(data) -> None:
         logging.error(f"User for web folders \"{data}\" set error: {err}")
         print(f"User for web folders \"{data}\" set error: {err}")
 
-def set_wwwGroup(data) -> None:
+def set_wwwGroup(data: str) -> None:
     """CLI only function: sets webGroup parameter in database"""
     try:
         t = Settings(id=1,wwwGroup=data)
@@ -155,7 +155,7 @@ def set_wwwGroup(data) -> None:
         logging.error(f"Group for web folders \"{data}\" set error: {err}")
         print(f"Group for web folders \"{data}\" set error: {err}")
 
-def set_nginxSitesPathAv(data) -> None:
+def set_nginxSitesPathAv(data: str) -> None:
     """CLI only function: sets Nginx Sites-Available folder path in database"""
     try:
         t = Settings(id=1,nginxSitesPathAv=data)
@@ -169,7 +169,7 @@ def set_nginxSitesPathAv(data) -> None:
         logging.error(f"Nginx Sites-available folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-available folder \"{data}\" set error: {err}")
 
-def set_nginxSitesPathEn(data) -> None:
+def set_nginxSitesPathEn(data: str) -> None:
     """CLI only function: sets Nginx Sites-Enabled folder path in database"""
     try:
         t = Settings(id=1,nginxSitesPathEn=data)
@@ -183,7 +183,7 @@ def set_nginxSitesPathEn(data) -> None:
         logging.error(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
 
-def set_phpPool(data) -> None:
+def set_phpPool(data: str) -> None:
     """CLI only function: sets PHP pool.d/ folder path in database"""
     try:
         t = Settings(id=1,nginxSitesPathEn=data)
@@ -197,7 +197,7 @@ def set_phpPool(data) -> None:
         logging.error(f"PHP Pool.d/ folder \"{data}\" set error: {err}")
         print(f"PHP Pool.d/ folder \"{data}\" set error: {err}")
 
-def set_phpFpmPath(data) -> None:
+def set_phpFpmPath(data: str) -> None:
     """CLI only function: sets PHP binary path in database"""
     try:
         t = Settings(id=1,nginxSitesPathEn=data)

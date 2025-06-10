@@ -27,7 +27,7 @@ def load_config(application):
             print(f"Load-config error: {msg}")
             quit(1)
 
-def generate_default_config(application,CONFIG_DIR,DB_FILE):
+def generate_default_config(application,CONFIG_DIR: str,DB_FILE: str):
     """Checks every application loads if the app's configuration exists. If not - creates DB file with default values.Takes application as app context, CONFIG_DIR as value where config DB located and DB_FILE as config DB name"""
     with application.app_context():
         if not os.path.isfile(DB_FILE):

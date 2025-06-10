@@ -83,7 +83,7 @@ def delete_site(sitename: str) -> None:
         flash(f"Site {sitename} deleted successfully", 'alert alert-success')
     logging.info(f"-----------------------Site delete of {sitename} is finished-----------------")
 
-def disable_site(sitename) -> None:
+def disable_site(sitename: str) -> None:
     """Site action: disables the selected site and applies changes immediately. Requires "sitename" as a parameter"""
     error_message = ""
     try:
@@ -134,7 +134,7 @@ def disable_site(sitename) -> None:
         flash(f"Site {sitename} disabled successfully", 'alert alert-success')
     logging.info(f"-----------------------Site disable of {sitename} is finished-----------------")
 
-def enable_site(sitename) -> None:
+def enable_site(sitename: str) -> None:
     """Site action: enables the selected site and applies changes immediately. Requires "sitename" as a parameter"""
     error_message = ""
     try:
@@ -205,7 +205,7 @@ def enable_site(sitename) -> None:
         flash(f"Site {sitename} enabled successfully", 'alert alert-success')
     logging.info(f"-----------------------Site enable of {sitename} is finished-----------------")
 
-def enable_allredirects(sitename) -> None:
+def enable_allredirects(sitename: str) -> None:
     """Site action: Enables global redirect for all pages to the main page,personal redirects become disabled for the site.Applies changes immediately. Requires "sitename" as a parameter"""
     error_message = ""
     try:
@@ -288,7 +288,7 @@ def enable_allredirects(sitename) -> None:
         flash(f"Redirects for {sitename} enabled successfully", 'alert alert-success')
     logging.info(f"-----------------------Finished enabling all redirects to the main page for {sitename}-----------------")
 
-def disable_allredirects(sitename) -> None:
+def disable_allredirects(sitename: str) -> None:
     """Site action: Disables global redirect for all pages to the main page,personal redirects become available for the site.Applies changes immediately. Requires "sitename" as a parameter"""
     error_message = ""
     try:
@@ -349,7 +349,7 @@ def disable_allredirects(sitename) -> None:
         flash(f"Redirects for {sitename} disabled successfully", 'alert alert-success')
     logging.info(f"-----------------------Finished disabling all redirects to the main page for {sitename}-----------------")
 
-def del_redirect(location,sitename):
+def del_redirect(location: str,sitename:str):
     """Redirect-manager page: deletes one redirect,selected by Delete button on it.Don't applies changes immediately. Requires redirect "from location" and "sitename" as a parameter"""
     try:
         logging.info(f"-----------------------Delete single redirect for {sitename} by {current_user.realname}-----------------")
@@ -387,7 +387,7 @@ def del_redirect(location,sitename):
     logging.info(f"-----------------------single redirect deleted---------------------------")
     return redirect(f"/redirects_manager?site={sitename}",301)
 
-def del_selected_redirects(array,sitename):
+def del_selected_redirects(array: str,sitename:str):
     """Redirect-manager page: deletes array of selected by checkboxes redirects.Don't applies changes immediately. Requires redirect locations array and "sitename" as a parameter"""
     try:
         logging.info(f"-----------------------Delete selected bulk redirects for {sitename} by {current_user.realname}-----------------")
@@ -427,7 +427,7 @@ def del_selected_redirects(array,sitename):
     logging.info(f"-----------------------Selected bulk redirects deleted---------------------------")
     return redirect(f"/redirects_manager?site={sitename}",301)
 
-def applyChanges(sitename):
+def applyChanges(sitename: str):
     """Redirect-manager page: applies all changes, made to redirect config files"""
     logging.info(f"-----------------------Applying changes in Nginx by {current_user.realname}-----------------")
     result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)

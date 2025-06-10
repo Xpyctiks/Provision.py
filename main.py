@@ -41,13 +41,13 @@ def load_user(user_id):
 from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
-def genJobID():  
+def genJobID() -> None:  
     global JOB_ID
     length = 16
     characters = string.ascii_letters + string.digits
     JOB_ID = ''.join(random.choice(characters) for _ in range(length)).lower()
 
-def finishJob(file):
+def finishJob(file: str) -> None:
     global JOB_COUNTER
     filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),os.path.basename(file))
     os.remove(filename)
@@ -62,7 +62,7 @@ def finishJob(file):
         JOB_COUNTER += 1
         findZip_1()
 
-def setupPHP(file):
+def setupPHP(file: str) -> None:
     logging.info(f"Configuring PHP...")
     filename = os.path.basename(file)[:-4]
     config = create_php_config(filename)
@@ -88,7 +88,7 @@ def setupPHP(file):
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
-def setupNginx(file):
+def setupNginx(file: str) -> None:
     logging.info(f"Configuring Nginx...Preparing certificates")
     filename = os.path.basename(file)[:-4]
     crtPath = os.path.join(application.config["WEB_FOLDER"],filename,filename+".crt")
@@ -137,7 +137,7 @@ def setupNginx(file):
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
-def unZip_3(file):
+def unZip_3(file: str) -> None:
     "Getting the site name from the archive name"
     filename = os.path.basename(file)[:-4]
     "Getting the full path to the folder"
@@ -161,7 +161,7 @@ def unZip_3(file):
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
-def checkZip_2(file):
+def checkZip_2(file: str) -> None:
     logging.info(f">>>Start processing of archive #{JOB_COUNTER} of {JOB_TOTAL} total - {file}")
     asyncio.run(send_to_telegram(f"Archive #{JOB_COUNTER} of {JOB_TOTAL}: {file}",f"🎢Provisoin job start({JOB_ID}):"))
     #Getting site name from archive name
@@ -206,14 +206,14 @@ def checkZip_2(file):
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({JOB_ID}):"))
         finishJob(file)
 
-def findZip_1():
+def findZip_1() -> None:
     path = os.path.abspath(os.path.dirname(__file__))
     extension = "*.zip"
     files = glob.glob(os.path.join(path, extension))
     for file in files:
         checkZip_2(file)
 
-def main():
+def main() -> None:
     global JOB_TOTAL
     load_config(application)
     genJobID()

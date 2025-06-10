@@ -1,7 +1,7 @@
 import os
 from flask import current_app
 
-def create_php_config(filename) -> str:
+def create_php_config(filename: str) -> str:
   """Template. Function which creates a PHP configuration for a site, taken from filename parameter."""
   config = f"""[{filename}]
 user = {current_app.config["WWW_USER"]}
@@ -29,7 +29,7 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
 """
   return config
 
-def create_nginx_config(filename) -> str:
+def create_nginx_config(filename: str) -> str:
   """Template. Function which creates an Nginx configuration for a site, taken from filename parameter."""
   config = f"""server {{
     listen 203.161.35.70:80;
