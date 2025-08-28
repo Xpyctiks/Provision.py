@@ -98,12 +98,7 @@ server {{
     }}
 
     location / {{
-      if ( $request_uri != "/") {{ return 301 https://{filename}/; }}
-      try_files $uri $uri/ /index.php?$args @home;
-    }}
-
-    location @home {{
-      return 301 https://{filename}/;
+      try_files $uri $uri/ /index.php?$args;
     }}
 
     location ~ \.php$ {{
