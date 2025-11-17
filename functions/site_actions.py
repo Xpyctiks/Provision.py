@@ -446,3 +446,11 @@ def applyChanges(sitename: str):
         flash(f"Error reloading Nginx! Some error in configuration, see logs:\n{result1.stderr.strip()}",'alert alert-danger')
         logging.info(f"-----------------------Applying changes in Nginx finished-----------------")
         return redirect(f"/redirects_manager?site={sitename}",301)
+
+def count_redirects(site: str) -> str:
+    try:
+        with open(os.path.join("/etc/nginx/additional-configs","301-"+site+".conf"), "r", encoding="utf-8") as f:
+            count = (sum(1 for _ in f) / 3)
+            return str(count)
+    except Exception:
+        return "0"
