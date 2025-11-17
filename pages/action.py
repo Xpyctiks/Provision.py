@@ -1,5 +1,6 @@
 from flask import redirect,Blueprint,request
 from flask_login import login_required
+import os
 from functions.site_actions import disable_site, delete_site, enable_site, del_redirect, del_selected_redirects, applyChanges
 
 action_bp = Blueprint("action", __name__)
@@ -23,3 +24,23 @@ def do_action():
         applyChanges(request.form['sitename'].strip())
         return redirect(f"/redirects_manager?site={request.form['sitename'].strip()}",301)
     return redirect("/",301)
+
+@action_bp.route("/action", methods=['GET'])
+@login_required
+def showstructure():
+    path = request.args.get("showstructure", "/tmp")
+    try:
+        dirs = sorted([x for x in os.listdir(os.path.join(path,"public")) if os.path.isdir(os.path.join(os.path.join(path,"public"), x))])
+        files = sorted([x for x in os.listdir(os.path.join(path,"public")) if not os.path.isdir(os.path.join(os.path.join(path,"public"), x))])
+        items = dirs + files
+    except Exception as e:
+        return f"<div class='text-danger'>Ошибка: {e}</div>"
+    html = "<ul>"
+    for item in items:
+        full = os.path.join(os.path.join(path,"public"), item)
+        if os.path.isdir(full):
+            html += f"<li><b>📁</b> {item}</li>"
+        else:
+            html += f"<li>{item}</li>"
+    html += "</ul>"
+    return html

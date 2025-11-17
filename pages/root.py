@@ -44,7 +44,21 @@ def index():
                     </div>
                 </form>
                 <td class="table-success">{s}</td>
-                <td class="table-success">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
+                <td class="table-success">{os.path.join(current_app.config["WEB_FOLDER"],s)}
+                <div class="accordion" id="folderAccordion{i}">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne{i}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne{i}" aria-expanded="false" aria-controls="collapseOne{i}" data-path="{os.path.join(current_app.config["WEB_FOLDER"],s)}">
+                                + Folder {os.path.join(current_app.config["WEB_FOLDER"],s)}
+                            </button>
+                        </h2>
+                        <div id="collapseOne{i}" class="accordion-collapse collapse" aria-labelledby="headingOne{i}" data-bs-parent="#folderAccordion{i}">
+                            <div class="accordion-body">
+                                Loading...
+                            </div>
+                        </div>
+                    </div>
+                </div></td>
                 <td class="table-success">OK</td>
                 \n</tr>"""
             #if nginx is ok but php is not
@@ -74,7 +88,21 @@ def index():
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success">Enable site</button></form>
                 <td class="table-warning">{s}</td>
-                <td class="table-warning">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
+                <td class="table-warning">{os.path.join(current_app.config["WEB_FOLDER"],s)}
+                <div class="accordion" id="folderAccordion{i}">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne{i}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne{i}" aria-expanded="false" aria-controls="collapseOne{i}" data-path="{os.path.join(current_app.config["WEB_FOLDER"],s)}">
+                                + Folder {os.path.join(current_app.config["WEB_FOLDER"],s)}
+                            </button>
+                        </h2>
+                        <div id="collapseOne{i}" class="accordion-collapse collapse" aria-labelledby="headingOne{i}" data-bs-parent="#folderAccordion{i}">
+                            <div class="accordion-body">
+                                Loading...
+                            </div>
+                        </div>
+                    </div>
+                </div></td>
                 <td class="table-warning">Site is disabled</td>
                 \n</tr>"""
             else:

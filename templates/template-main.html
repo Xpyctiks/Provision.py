@@ -43,9 +43,9 @@
   <tr class="table-warning">
     <th scope="col" style="width: 55px;">ID</th>
     <th scope="col" style="width: 395px;">Actions:</th>
-    <th scope="col">Site:</th>
+    <th scope="col" style="width: 195px;">Site:</th>
     <th scope="col">Path:</th>
-    <th scope="col">Status:</th>
+    <th scope="col" style="width: 95px;">Status:</th>
   </tr>
 </thead>
 <tbody>
@@ -84,7 +84,19 @@
       modal.show();
     }
   });
-  </script>
+document.addEventListener('show.bs.collapse', async function (event) {
+    let button = event.target.previousElementSibling.querySelector("button");
+    let path = button.dataset.path;
+
+    let body = event.target.querySelector(".accordion-body");
+    body.innerHTML = "Загрузка...";
+
+    let response = await fetch(`/action?showstructure=${encodeURIComponent(path)}`);
+    let html = await response.text();
+
+    body.innerHTML = html;
+});
+</script>
 </main>
 </body>
 </html>
