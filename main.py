@@ -138,9 +138,9 @@ def setupNginx(file: str) -> None:
         finishJob(file)
 
 def unZip_3(file: str) -> None:
-    "Getting the site name from the archive name"
+    #Getting the site name from the archive name
     filename = os.path.basename(file)[:-4]
-    "Getting the full path to the folder"
+    #Getting the full path to the folder
     finalPath = os.path.join(application.config["WEB_FOLDER"],filename)
     logging.info(f"Unpacking {file} to {finalPath}")
     try:

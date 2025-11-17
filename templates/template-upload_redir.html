@@ -14,7 +14,7 @@
 <div>
 <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="/">Add new redirects page:</a>
+    <a class="navbar-brand" href="/">Додавання редіректів:</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -28,10 +28,10 @@
         </li>
         <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
       </ul>
-      <a href="/" class="btn btn-success">Return to main</a>
-      <a href="/redirects_manager?site={{sitename|safe}}" class="btn btn-info">Return to redirects manager</a>
+      <a href="/" class="btn btn-success">На головну</a>
+      <a href="/redirects_manager?site={{sitename|safe}}" class="btn btn-info">Назад до менеджера редіректів</a>
       <form class="d-flex" action="/logout" method="POST">
-        <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">{{current_user.realname}}&nbsp;Logout</button>
+        <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">{{current_user.realname}}&nbsp;Вихід</button>
       </form>
     </div>
   </div>
@@ -39,38 +39,38 @@
 </div>
 <div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 33vw;">
 <div class="card-header">
-  <strong>Add new redirects for {{sitename|safe}}:</strong>
+  <strong>Додавання редіректів для {{sitename|safe}}:</strong>
 </div>
 <div class="card-body">
   <form action="/upload_redirects" method="POST" enctype="multipart/form-data">
-  <h5 class="card-title">Step 1:</h5>
-  <p class="card-text">You can upload a CSV file with your redirects.</p>
-  <span class="badge rounded-pill bg-info text-dark">Example of CSV file:</span>
-  <p>Make redirect from <font color=blue>https://site.com</font><font color=red>/news/latest/</font> to <font color=blue>https://site.com</font><font color=orange>/hottest/latest/</font>:</p>
-  <p><strong>Create any file, for example some_file.csv. Add line inside the file:</strong></p>
+  <h5 class="card-title">Крок 1:</h5>
+  <p class="card-text">Можете завантажити .CSV файл з вашими редіректами.</p>
+  <span class="badge rounded-pill bg-info text-dark">Приклад вмісту .CSV файлу:</span>
+  <p>Хочемо зробити редірект з <font color=blue>https://site.com</font><font color=red>/news/latest/</font> на <font color=blue>https://site.com</font><font color=orange>/hottest/latest/</font>:</p>
+  <p><strong>Створіть новій текстовий файл, наприклад some_file.csv. Додайте строку в файл:</strong></p>
   <p><strong>/news/latest/,/hottest/latest/</strong></p>
-  <p>one redirect per line. The domain is set in header and doesn't need to be set in the CSV file</p>
-  <input type="file" class="form-control form-control-sm" name="fileUpload" id="fileUpload"><br>
-  <p class="card-text">or add single record right here:</p>
+  <p>один редірект на кожну строку. Сам домен в шляху "звідки редірект" не потрібно вказувати.Тільки вже в "редірект куди".</p>
+  <input type="file" class="form-control form-control-sm" name="fileUpload" id="fileUpload">
+  <p class="card-text">або додайте один редірект прям ось тут:</p>
   <div class="input-group mb-3">
-    <span class="input-group-text" id="RedirectFromField">Redirect from:</span>
+    <span class="input-group-text" id="RedirectFromField">Редірект з: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{sitename|safe}}</span>
     <input type="text" class="form-control" placeholder="/page/subpage/oldpage/" name="RedirectFromField">
   </div>
   <div class="input-group mb-3">
-    <span class="input-group-text" id="RedirectToField" >Redirect to:&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    <span class="input-group-text" id="RedirectToField" >Редірект куди: {{sitename|safe}}</span>
     <input type="text" class="form-control" placeholder="/page/newpage/" name="RedirectToField">
   </div>
-  <p class="card-text">If you selected a file, this file will be submitted.Data from text forms will be ignored.<br>If you didn't selected a file, text froms data will be submitted.</p>
-  <h5 class="card-title">Step 2:</h5>
+  <p class="card-text">Якщо був обран файл, то цей файл і буде завантажений.Текстові поля вище будут ігноруватися.<br>Якщо файл не обран,то дані із текстових полів вище будуть заватажені.</p>
+  <h5 class="card-title">Крок 2:</h5>
   <div class="mb-3">
-  <span class="badge rounded-pill bg-info text-dark">Select a template for the redirect:</span>
+  <span class="badge rounded-pill bg-info text-dark">Оберіть тип редіректу:</span>
     <select class="form-select form-select-sm" name="templateField">
-        <option value="strict">Strict (only exactly this path will does redirect) =</option>
-        <option value="catch all">Catch all (redirects everything which starts with this path) ~</option>
+        <option value="strict">= Точний (точна вказана сторінка,ніякі інші)</option>
+        <option value="catch all">~ Всі схожі (редірект всього,що починається з заданої строки і далі не важливо що)</option>
     </select>
     </div>
     <input type="hidden" name="sitename" value="{{sitename|safe}}">
-    <button type="submit" class="btn btn-info" name="addnewSubmit" value="addnewSubmit">Submit</button>
+    <button type="submit" class="btn btn-info" name="addnewSubmit" value="addnewSubmit">Відправити</button>
   </form>
 </div>
 <script>

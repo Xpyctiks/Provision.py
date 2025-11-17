@@ -14,7 +14,7 @@
 <div>
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
     <div class="container-fluid" style="height: 45px;">
-      <a class="navbar-brand" href="/">Redirects manager for site {{sitename|safe}} :</a>
+      <a class="navbar-brand" href="/">Менеджер редіректів для {{sitename|safe}} :</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -22,14 +22,14 @@
         <ul class="navbar-nav me-auto mb-2 mb-md-0">
           <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
           <form action="/action" method="post">
-            <button class="btn {{applyButton|safe}}" type="submit" id="applyChanges" name="applyChanges" value="apply" style="margin-left: -15px;">Apply changes</button>
+            <button class="btn {{applyButton|safe}}" type="submit" id="applyChanges" name="applyChanges" value="apply" style="margin-left: -15px;">Застосувати</button>
             <input type="hidden" name="sitename" value="{{sitename|safe}}">
           </form>
         </ul>
-        <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">Go to main</a>
-        <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">Add or upload new redirects</a>
+        <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">На головну</a>
+        <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">Додати/завантажити нові редіректи</a>
         <form class="d-flex" action="/logout" method="POST">
-          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">{{current_user.realname}}&nbsp;Logout</button>
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
     </div>
@@ -39,11 +39,11 @@
 <thead>
     <tr>
       <th scope="col">#</th>
-      <th scope="col">Redirect from:</th>
-      <th scope="col" style="width: 55px;">Select:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox"></th>
-      <th scope="col">Redirect to:</th>
-      <th scope="col" style="width: 70px;">Type:</th>
-      <th scope="col" style="width: 150px;">Action:</th>
+      <th scope="col">Редірект з:</th>
+      <th scope="col" style="width: 55px;">Вибрати:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox"></th>
+      <th scope="col">Редірект куди:</th>
+      <th scope="col" style="width: 70px;">Тип:</th>
+      <th scope="col" style="width: 150px;">Дія:</th>
     </tr>
 </thead>
 <tbody>
@@ -58,7 +58,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="myModalLabel">Information:</h5>
+          <h5 class="modal-title" id="myModalLabel">Інформація:</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
         </div>
         <div class="modal-body">

@@ -13,20 +13,20 @@
 <main>
     <div id="loginContainer" style="width: 400px; height: 400px; margin-left: 40vw; margin-top: 25vh;">
         <p class="display-6" style="text-align: center; margin-left: 1px;">1000 sites provision system</p>
-        <span class="badge rounded-pill bg-primary" style="font-size: 14px; margin-bottom: 15px; margin-left: 100px;">Authorization is needed here:</span>
+        <span class="badge rounded-pill bg-primary" style="font-size: 14px; margin-bottom: 15px; margin-left: 100px;">Необхідна авторизація:</span>
         <form action="" method="POST">
         <div class="input-group mb-3">
-            <span class="input-group-text">Username</span>
+            <span class="input-group-text">Юзер</span>
             <input type="text" class="form-control" id="username" name="username" autocomplete="on">
         </div>
         <div class="input-group mb-3">
-            <span class="input-group-text">Password&nbsp;</span>
+            <span class="input-group-text">Пароль&nbsp;</span>
             <input type="password" class="form-control" id="password" name="password" autocomplete="on">
         </div>
         <button style="margin-left: 170px;" type="submit" id="login" name="login" class="btn btn-primary" onclick="showLoading()">Log In</button>
         </form>
         <div class="spinner-border text-primary" role="status" style="margin-left: 190px; margin-top: 15px; visibility: hidden;" id="spinner">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">Завантаження...</span>
         </div>
         {{loginError|safe}}
     </div>
@@ -36,7 +36,7 @@
         <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-            <h5 class="modal-title" id="myModalLabel">Information:</h5>
+            <h5 class="modal-title" id="myModalLabel">Інформация:</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
             <div class="modal-body">

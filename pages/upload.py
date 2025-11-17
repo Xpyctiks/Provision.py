@@ -11,7 +11,7 @@ def upload_file():
     if request.method == 'POST':
         if 'fileUpload[]' not in request.files:
             logging.error(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields")
-            flash('Upload: No <fileUpload> in the request fields', 'alert alert-danger')
+            flash('Завантаження: Файлу <fileUpload> немає в заголовках запиту', 'alert alert-danger')
             return redirect("/upload",301)
         else:
             #get name of the parent directory for the whole project
@@ -26,7 +26,7 @@ def upload_file():
                     filename = os.path.join(project_root,secure_filename(file.filename))
                     file.save(f"{filename}")
                     nameList += filename+","
-            flash('File(s) uploaded successfully!', 'alert alert-success')
+            flash('Файл(и) успішно завантажені!', 'alert alert-success')
             logging.info(f"Upload by {current_user.realname} IP:{request.remote_addr}: Files {nameList} uploaded to {project_root} successfully")
             asyncio.run(send_to_telegram(f"Files {nameList} uploaded successfully",f"⬆Provision\nUpload by {current_user.realname}:"))
             #now call this script from shell to start deploy procedure

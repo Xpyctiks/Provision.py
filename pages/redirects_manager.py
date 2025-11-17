@@ -29,7 +29,7 @@ def redirects():
             if not os.path.exists(file301):
                 with open(file301, 'w',encoding='utf8') as file3:
                     file3.write("")
-                flash(f"Empty redirects config file for {site} was created.",'alert alert-info')
+                flash(f"Новий порожній файл редіректів для {site} був створен автоматично.",'alert alert-info')
                 logging.info(f"Empty redirects config file {file301} for {site} was created.")
             table = ""
             i = 1
@@ -47,7 +47,7 @@ def redirects():
                 <td class="table-success">{match.group("target")}</td>
                 <td class="table-success">{match.group("typ")}</td>
                 <td class="table-success">
-                    <button class="btn btn-danger" type="submit" name="del_redir" value="{match.group("path")}">Delete</button>
+                    <button class="btn btn-danger" type="submit" name="del_redir" value="{match.group("path")}">Видалити</button>
                     <input type="hidden" name="sitename" value="{site}">
                 </td>
                 \n</tr>"""

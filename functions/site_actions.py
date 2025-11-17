@@ -448,9 +448,10 @@ def applyChanges(sitename: str):
         return redirect(f"/redirects_manager?site={sitename}",301)
 
 def count_redirects(site: str) -> str:
+    """This function is counts current available redirects for every site while general site list is loading"""
     try:
         with open(os.path.join("/etc/nginx/additional-configs","301-"+site+".conf"), "r", encoding="utf-8") as f:
-            count = (sum(1 for _ in f) / 3)
+            count = int(sum(1 for _ in f) / 3)
             return str(count)
     except Exception:
         return "0"

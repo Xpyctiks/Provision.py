@@ -42,7 +42,7 @@ def index():
                 </form>
                 <form method="post" action="/redirects_manager" id="redirect_form{s}">
                     <a href="/redirects_manager?site={s}" class="btn btn-info" type="submit" name="manager" value="{s}" style="margin-top: 5px; margin-left: 1px;" {button_state}
-                    title="Керування 301-и редіректами для цього сайту.">Керування редіректами\n(~{count_redirects(s)} шт. наявні)</a>
+                    title="Керування 301-и редіректами для цього сайту.">Керування редіректами\n(~{count_redirects(s)} шт. вже є)</a>
                     <div class="form-check form-switch">
                         <input type="hidden" name="redirect_checkbox" value="0">
                         <input type="hidden" name="sitename" value="{s}">
@@ -61,7 +61,7 @@ def index():
                         </h2>
                         <div id="collapseOne{i}" class="accordion-collapse collapse" aria-labelledby="headingOne{i}" data-bs-parent="#folderAccordion{i}">
                             <div class="accordion-body">
-                                Loading...
+                                Заватажую...
                             </div>
                         </div>
                     </div>
@@ -72,8 +72,11 @@ def index():
             elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
                 <td class="table-danger"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
-                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
+                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
+                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
+                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
+                </form>
                 <td class="table-danger">{s}</td>
                 <td class="table-danger">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger">PHP config error</td>
@@ -82,8 +85,11 @@ def index():
             elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
                 <td class="table-danger"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
-                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-warning">Re-enable site</button></form>
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
+                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
+                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
+                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
+                </form>
                 <td class="table-danger">{s}</td>
                 <td class="table-danger">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger">Nginx config error</td>
@@ -92,8 +98,13 @@ def index():
             elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-warning">{i}</th>
                 <td class="table-warning"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger">Delete site</button>
-                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success">Enable site</button></form>
+                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
+                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
+                    <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
+                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
+                    <button type="submit" value="{s}" name="clone" onclick="showLoading()" class="btn btn-success" 
+                    title="Взяти за основу даний сайт та зробити копію для іншого домену.">Клонувати</button>
+                </form>
                 <td class="table-warning">{s}</td>
                 <td class="table-warning">
                 <div class="accordion" id="folderAccordion{i}">
@@ -105,7 +116,7 @@ def index():
                         </h2>
                         <div id="collapseOne{i}" class="accordion-collapse collapse" aria-labelledby="headingOne{i}" data-bs-parent="#folderAccordion{i}">
                             <div class="accordion-body">
-                                Loading...
+                                Заватажую...
                             </div>
                         </div>
                     </div>

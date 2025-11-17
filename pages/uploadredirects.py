@@ -46,7 +46,7 @@ rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent
                 with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
                     file3.write("")
                 logging.info("Marker file for Apply button created")
-            flash(f"{redirectsCount} redirects added successfully!", 'alert alert-success')
+            flash(f"{redirectsCount} редіректів успішно додано!", 'alert alert-success')
             logging.info(f"-----------------------New redirects added successfully for {request.form.get('sitename').strip()}-----------------")
             return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
         #if this is submitted form and single redirect lines exist there
@@ -74,7 +74,7 @@ rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent
             return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
         else:
             logging.error("Some unknown error - not a file was uploaded and not single redirect was added. Looks like some fields are not set or messed.")
-            flash("Some unknown error - not a file was uploaded and not single redirect was added. Looks like some fields are not set or messed.",'alert alert-danger')
+            flash("Якась помилка - ні файл, ні текстові поля не були завантажені.Схоже на технічну помилку в коді.",'alert alert-danger')
             return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
     #if this is GET request - show page
     if request.method == 'GET':
