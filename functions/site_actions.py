@@ -80,7 +80,7 @@ def delete_site(sitename: str) -> None:
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
     else:
-        flash(f"Site {sitename} deleted successfully", 'alert alert-success')
+        flash(f"Сайт {sitename} успішно видалено", 'alert alert-success')
     logging.info(f"-----------------------Site delete of {sitename} is finished-----------------")
 
 def disable_site(sitename: str) -> None:
@@ -131,7 +131,7 @@ def disable_site(sitename: str) -> None:
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
     else:
-        flash(f"Site {sitename} disabled successfully", 'alert alert-success')
+        flash(f"Сайт {sitename} успішно деактивовано.", 'alert alert-success')
     logging.info(f"-----------------------Site disable of {sitename} is finished-----------------")
 
 def enable_site(sitename: str) -> None:
@@ -202,7 +202,7 @@ def enable_site(sitename: str) -> None:
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
     else:
-        flash(f"Site {sitename} enabled successfully", 'alert alert-success')
+        flash(f"Сайт {sitename} успішно активовано", 'alert alert-success')
     logging.info(f"-----------------------Site enable of {sitename} is finished-----------------")
 
 def enable_allredirects(sitename: str) -> None:
@@ -285,7 +285,7 @@ def enable_allredirects(sitename: str) -> None:
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
     else:
-        flash(f"Redirects for {sitename} enabled successfully", 'alert alert-success')
+        flash(f"Редірект усього успішно активовано для {sitename}", 'alert alert-success')
     logging.info(f"-----------------------Finished enabling all redirects to the main page for {sitename}-----------------")
 
 def disable_allredirects(sitename: str) -> None:
@@ -346,7 +346,7 @@ def disable_allredirects(sitename: str) -> None:
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
     else:
-        flash(f"Redirects for {sitename} disabled successfully", 'alert alert-success')
+        flash(f"Редірект усього деактивовано для {sitename}", 'alert alert-success')
     logging.info(f"-----------------------Finished disabling all redirects to the main page for {sitename}-----------------")
 
 def del_redirect(location: str,sitename:str):

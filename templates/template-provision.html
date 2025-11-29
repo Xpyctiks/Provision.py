@@ -36,32 +36,43 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 33vw;">
-<div class="card-header">
-  <strong>Додати новий сайт:</strong>
-</div>
-<div class="card-body">
-  <form action="/upload" method="POST" enctype="multipart/form-data">
-  <h5 class="card-title">крок 1:</h5>
-  <p class="card-text">Завантажте ZIP архів,в якому має бути мінімум наступне:</p>
-  <p><strong>public/:</strong> - (ВАЖЛИВО!) головна папка зі скриптами.</p>
-  <p><strong>site_name.crt</strong> - (ВАЖЛИВО!) файл сертифікату, ім'я має бути повним доменом сайту + .crt в кінці(site.com.crt наприклад)</p>
-  <p><strong>site_name.key</strong> - (ВАЖЛИВО!) файл ключа, ім'я має бути повним доменом сайту + .key в кінці(site.com.key наприклад)</p>
-  <p><strong>htpasswd</strong> - (ВАЖЛИВО!) файл з хешем паролю для доступа до адмінки</p>
-  <input type="file" class="form-control form-control-sm" name="fileUpload[]" id="fileUpload" accept=".zip" multiple><br>
-  <p class="card-text">Можна завантажити одразу багато файлів.<br>Всі файли та папки будуть розпаковані на сервері в веб папку.</p>
-  <p>Файл "rewrite" буде видалено після розпаковки.</p>
-  <p>Файли сертифікатів будуть переміщені до папки веб серверу.</p>
-  <h5 class="card-title">Крок 2:</h5>
-    <button type="submit" class="btn btn-info" style="margin-top: -45px;" name="buttonSubmit" value="buttonSubmit" onclick="showLoading()">Почати завантаження</button>
-    <p class="spinner-border text-primary" role="status" style="margin-left: 2px; visibility: hidden;" id="spinner">
-    </p>
-  </form>
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 14vw;">
+  <div class="card-header">
+    <strong>Автоматично розгорнути новий сайт з шаблону:</strong>
+  </div>
+  <div class="card-body">
+    <form action="/provision" method="POST">
+      <h5 class="card-title">Вкажіть домен майбутнього сайту:</h5>
+      <div class="input-group mb-3">
+        <span class="input-group-text">https://</span>
+        <input type="text" class="form-control" id="domain" name="domain" autocomplete="on">
+      </div>
+      <div class="mb-3 dropdown">
+        <h5 class="card-title">Оберіть репозіторій з якого розгортати сайт:</h5>
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="Template" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_template|safe}}</button>
+        <ul class="dropdown-menu" aria-labelledby="Template">
+          {{templates|safe}}
+        </ul>
+        <input type="hidden" name="selected_template" id="selected_template" value="{{first_template|safe}}">
+      </div>
+      <div style="margin-top: 40px;">
+        <button type="submit" class="btn btn-info" style="margin-top: -45px; margin-left: 200px; width: 400px;" name="buttonSubmit" value="Submit" onclick="showLoading()">Почати розгортання</button>
+      </div>
+      <p class="spinner-border text-primary" role="status" style="margin-left: 2px; visibility: hidden;" id="spinner"></p>
+    </form>
+  </div>
 </div>
 <script>
   function showLoading() {
-      document.getElementById("spinner").style.visibility = "visible";
+    document.getElementById("spinner").style.visibility = "visible";
   }
+  document.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', function () {
+          let value = this.getAttribute('data-value');
+          document.getElementById('selected_template').value = value;
+          document.getElementById('Template').innerText = value;
+      });
+  });
   </script>
 </main>
 </body>

@@ -33,7 +33,9 @@ with application.app_context():
     db.create_all()
 from functions.config_templates import create_nginx_config, create_php_config
 from functions.send_to_telegram import send_to_telegram
-from functions.upd_config import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken
+from functions.cli_management import delete_user,register_user,update_user,set_wwwUser,set_webFolder,set_wwwGroup,set_logpath,set_nginxCrtPath,set_nginxSitesPathAv,set_nginxSitesPathEn,\
+                                     set_phpFpmPath,set_phpPool,set_telegramChat,set_telegramToken,show_templates,show_users,flush_sessions,show_config,show_help,add_template,del_template,\
+                                     upd_template,default_template
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -297,46 +299,39 @@ if __name__ == "__main__":
                 set_phpFpmPath(sys.argv[3].strip())
             else:
                 print("Error! Enter path to Php-fpm executable")
+        elif sys.argv[1] == "show" and sys.argv[2] == "templates":
+            show_templates()
+        elif sys.argv[1] == "show" and sys.argv[2] == "users":
+            show_users()
         elif sys.argv[1] == "show" and sys.argv[2] == "config":
-            if (len(sys.argv) == 3):
-                print (f"""
-    Telegram ChatID:       {application.config["TELEGRAM_TOKEN"]}
-    Telegram Token:        {application.config["TELEGRAM_CHATID"]}
-    Log file:              {application.config["LOG_FILE"]}
-    SessionKey:            {application.config["SECRET_KEY"]}
-    Web root folder:       {application.config["WEB_FOLDER"]}
-    Nginx SSL folder:      {application.config["NGX_CRT_PATH"]}
-    WWW folders user:      {application.config["WWW_USER"]}
-    WWW folders group:     {application.config["WWW_GROUP"]}
-    Nginx Sites-Available: {application.config["NGX_SITES_PATHAV"]}
-    Nginx Sites-Enabled:   {application.config["NGX_SITES_PATHEN"]}
-    Php Pool.d folder:     {application.config["PHP_POOL"]}
-    Php-fpm executable:    {application.config["PHPFPM_PATH"]}
-    key: {application.secret_key}
-                """)
+            show_config()
+        elif sys.argv[1] == "flush" and sys.argv[2] == "sessions":
+            flush_sessions()
+        elif sys.argv[1] == "template" and sys.argv[2] == "add":
+            if (len(sys.argv) == 5):
+                add_template(sys.argv[3], sys.argv[4])
+            else:
+                print("Error! Enter Name and Repository address for a new template")
+        elif sys.argv[1] == "template" and sys.argv[2] == "del":
+            if (len(sys.argv) == 4):
+                del_template(sys.argv[3])
+            else:
+                print("Error! Enter Name of the template to delete")
+        elif sys.argv[1] == "template" and sys.argv[2] == "upd":
+            if (len(sys.argv) == 5):
+                upd_template(sys.argv[3], sys.argv[4])
+            else:
+                print("Error! Enter Name and New repository address for the template")
+        elif sys.argv[1] == "template" and sys.argv[2] == "default":
+            if (len(sys.argv) == 4):
+                default_template(sys.argv[3])
+            else:
+                print("Error! Enter Name of the template to set it as default one")
     #if we call the script from console with argument "main" to start provision process
     elif len(sys.argv) == 2 and sys.argv[1] == "main":
         main()
     #else just show help info.
     elif len(sys.argv) <= 2:
-        print(f"""Usage: \n{sys.argv[0]} set chat <chatID>
-\tAdd Telegram ChatID for notifications.
-{sys.argv[0]} set token <Token>
-\tAdd Telegram Token for notifications.
-{sys.argv[0]} set logpath <new log file path>
-\tAdd Telegram Token for notifications.
-{sys.argv[0]} user add <login> <password> <realname>
-\tAdd new user with its password and default permissions for all cache pathes.
-{sys.argv[0]} user setpwd <user> <new password>
-\tSet new password for existing user.
-{sys.argv[0]} user del <user>
-\tDelete existing user by its login
-{sys.argv[0]} cfaccount add <name> <token>
-\tAdd new CF account and its token
-{sys.argv[0]} cfaccount import <path to file>
-\tImport CF account records from file
-{sys.argv[0]} cfaccount del <name>
-\tDelete CF account entry\n
-Info: full script should be launched via UWSGI server. In CLI mode use can only use commands above.
-""")
+        show_help(sys.argv[0])
+        application.run("0.0.0.0",80,debug=True)
     quit(0)

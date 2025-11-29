@@ -26,3 +26,10 @@ class Settings(db.Model):
     nginxSitesPathEn = db.Column(db.String(512), nullable=False)
     phpPool = db.Column(db.String(512), nullable=False)
     phpFpmPath = db.Column(db.String(512), nullable=False)
+
+class Provision_templates(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+    repository = db.Column(db.String(512), nullable=False)
+    isdefault  = db.Column(db.Boolean(), default=False)
+    created = db.Column(db.DateTime,default=datetime.now)
