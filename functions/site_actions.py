@@ -3,7 +3,7 @@ from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config, create_php_config
 from flask_login import current_user
-import main
+import functions.variables
 
 def delete_site(sitename: str) -> None:
     """Site action: full delete selected site. Requires "sitename" as a parameter"""
@@ -32,7 +32,7 @@ def delete_site(sitename: str) -> None:
                 logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
             else:
                 logging.error(f"Nginx reload failed!. {result2.stderr}")
-                asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
+                asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
             error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
@@ -58,7 +58,7 @@ def delete_site(sitename: str) -> None:
                 logging.info(f"PHP reloaded successfully.")
             else:
                 logging.error(f"PHP reload failed!. {result3.stderr}")
-                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
+                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
             error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
@@ -107,7 +107,7 @@ def disable_site(sitename: str) -> None:
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
                 else:
                     logging.error(f"Nginx reload failed!. {result2.stderr}")
-                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
+                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             else:
                 logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
                 error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
@@ -129,7 +129,7 @@ def disable_site(sitename: str) -> None:
                     logging.info(f"PHP reloaded successfully.")
                 else:
                     logging.error(f"PHP reload failed!. {result3.stderr}")
-                    asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
+                    asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             else:
                 logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
                 error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
@@ -193,7 +193,7 @@ def enable_site(sitename: str) -> None:
                 logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
             else:
                 logging.error(f"Nginx reload failed!. {result2.stderr}")
-                asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
+                asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
             error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
@@ -209,7 +209,7 @@ def enable_site(sitename: str) -> None:
                 logging.info(f"PHP reloaded successfully.")
             else:
                 logging.error(f"PHP reload failed!. {result3.stderr}")
-                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
+                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
             error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
@@ -291,7 +291,7 @@ def enable_allredirects(sitename: str) -> None:
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
                 else:
                     logging.error(f"Nginx reload failed!. {result2.stderr}")
-                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
+                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             else:
                 logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
                 error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
@@ -355,7 +355,7 @@ def disable_allredirects(sitename: str) -> None:
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
                 else:
                     logging.error(f"Nginx reload failed!. {result2.stderr}")
-                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
+                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             else:
                 logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
                 error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"

@@ -1,7 +1,7 @@
 from flask import redirect,Blueprint,request
 from flask_login import login_required
 import os
-from functions.site_actions import disable_site, delete_site, enable_site, del_redirect, del_selected_redirects, applyChanges
+from functions.site_actions import *
 
 action_bp = Blueprint("action", __name__)
 @action_bp.route("/action", methods=['POST'])

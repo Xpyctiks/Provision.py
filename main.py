@@ -5,8 +5,6 @@ from flask_login import LoginManager
 import os,sys,glob,logging
 from datetime import timedelta
 
-JOB_COUNTER = JOB_TOTAL = 1
-JOB_ID = ""
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 application = Flask(__name__)
@@ -33,7 +31,7 @@ login_manager.init_app(application)
 with application.app_context():
     db.create_all()
 from functions.cli_management import *
-from functions.provision import *
+from functions.provision import preStart_0
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -42,15 +40,8 @@ from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
 def main() -> None:
-    global JOB_TOTAL
     load_config(application)
-    genJobID()
-    path = os.path.abspath(os.path.dirname(__file__))
-    extension = "*.zip"
-    files = glob.glob(os.path.join(path, extension))
-    JOB_TOTAL = len(files)
-    logging.info(f"-----------------------Starting pre-check(JOB ID:{JOB_ID}). Total {JOB_TOTAL} archive(s) found-----------------")
-    findZip_1()
+    preStart_0()
 
 if __name__ == "__main__":
     application.app_context().push()

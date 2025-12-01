@@ -1,7 +1,8 @@
 from flask import render_template,request,redirect,flash,Blueprint
-from flask_login import login_required
+from flask_login import login_required,current_user
 import logging
 from db.database import Provision_templates
+from functions.provision import start_autoprovision
 
 provision_bp = Blueprint("provision", __name__)
 @provision_bp.route("/provision", methods=['GET','POST'])
@@ -36,6 +37,13 @@ def provision():
             return redirect("/provision",301)
         #starts main provision actions
         if request.form['domain'] and request.form['selected_template'] and request.form['buttonSubmit']:
-            flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-success')
-            return redirect("/provision",301)
+            #Getting repository's git path after we know its name as given in the request
+            repo = Provision_templates.query.filter_by(name=request.form['selected_template'].strip()).first()
+            if repo:
+                start_autoprovision(request.form['domain'].strip(),repo.repository,current_user.realname)
+                return redirect("/",301)
+            else:
+                flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
+                logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")
+            return redirect("/",301)
         return redirect("/",301)

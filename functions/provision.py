@@ -2,27 +2,69 @@
 import os,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
 from functions.config_templates import create_nginx_config, create_php_config
 from functions.send_to_telegram import send_to_telegram
-from flask import current_app
-import main
+from flask import current_app,flash
+import functions.variables
 
-def genJobID() -> None:  
+def genJobID() -> None:
     length = 16
     characters = string.ascii_letters + string.digits
-    main.JOB_ID = ''.join(random.choice(characters) for _ in range(length)).lower()
+    functions.variables.JOB_ID = ''.join(random.choice(characters) for _ in range(length)).lower()
 
 def finishJob(file: str) -> None:
-    filename = os.path.join(os.path.abspath(os.path.dirname(__name__)),os.path.basename(file))
-    os.remove(filename)
-    logging.info(f"Archive #{main.JOB_COUNTER} of {main.JOB_TOTAL} - {filename} removed")
-    if main.JOB_COUNTER == main.JOB_TOTAL:
-        asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {main.JOB_TOTAL} done.",f"🏁Provision job finish ({main.JOB_ID}):"))
-        logging.info(f"----------------------------------------End of JOB ID:{main.JOB_ID}--------------------------------------------")
-        quit()
-    else:
-        logging.info(f">>>End of JOB #{main.JOB_COUNTER}")
-        asyncio.run(send_to_telegram(f"JOB #{main.JOB_COUNTER} of {main.JOB_TOTAL} finished successfully",f"Provision job {main.JOB_ID}:"))
-        main.JOB_COUNTER += 1
-        findZip_1()
+    try:
+        filename = os.path.join(os.path.abspath(os.path.dirname(__name__)),os.path.basename(file))
+        #if this is zip file, not autoprovision, and the file exists - delete it
+        if os.path.exists(filename):
+            os.remove(filename)
+            logging.info(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
+        if functions.variables.JOB_COUNTER == functions.variables.JOB_TOTAL:
+            asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
+            logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
+            #quit only if we use zip files. if web provision - no to interrupt flow
+            if functions.variables.JOB_ID != f"Autoprovision":
+                quit()
+        else:
+            logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
+            asyncio.run(send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:"))
+            functions.variables.JOB_COUNTER += 1
+            findZip_1()
+    except Exception as msg:
+        logging.error(msg)
+
+def start_autoprovision(domain: str, template: str, realname: str):
+    logging.info(f"---------------------------Starting automatic deploy for site {domain} from template {template} by {realname}----------------------------")
+    finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
+    functions.variables.JOB_ID = f"Autoprovision"
+    try:
+        if os.path.exists(finalPath):
+            logging.error(f"Site {domain} already exists! Remove it before new deploy!")
+            flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
+            logging.info(f"--------------------Automatic deploy for site {domain} from template {template} by {realname} finshed with error-----------------------")
+            quit()
+        os.makedirs(finalPath)
+        logging.info(f"New directory {finalPath} created")
+        os.chdir(finalPath)
+        logging.info(f"We are in {finalPath}")
+        result = subprocess.run(["sudo","git","clone",f"{template}","."], capture_output=True, text=True)
+        if result.returncode != 0:
+            logging.error(f"Error while git clone command: {result.stderr}")
+            asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+            flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
+            quit()
+        logging.info("Git clone done successfully!")
+        #######################################################################################
+        crtPath = "/tmp/actavodirect.com.crt"
+        keyPath = "/tmp/actavodirect.com.key"
+        crtPath2 = os.path.join(current_app.config["WEB_FOLDER"],domain,domain+".crt")
+        keyPath2 = os.path.join(current_app.config["WEB_FOLDER"],domain,domain+".key")
+        shutil.copy(crtPath,crtPath2)
+        shutil.copy(keyPath,keyPath2)
+        ####################################################################################
+        #we add .zip to domain for backward compatibility with another functions of the system
+        setupNginx(domain+".zip")
+    except Exception as msg:
+        logging.error(f"Autoprovision Error: {msg}")
+        asyncio.run(send_to_telegram(f"Autoprovision function error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
 
 def setupPHP(file: str) -> None:
     logging.info(f"Configuring PHP...")
@@ -43,14 +85,15 @@ def setupPHP(file: str) -> None:
                 finishJob(file)
             else:
                 logging.error(f"PHP reload failed!. {result.stderr}")
+                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
                 finishJob(file)
         else:
             logging.error(f"Error while reloading PHP: {result.stdout.strip()} {result.stderr.strip()}")
-            asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
+            asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             finishJob(file)
     except Exception as msg:
         logging.error(f"Error while configuring PHP. Error: {msg}")
-        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({main.JOB_ID}):"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         finishJob(file)
 
 def setupNginx(file: str) -> None:
@@ -78,7 +121,7 @@ def setupNginx(file: str) -> None:
             logging.info(f"File for redirects {redirect_file} created successfully!")
         else:
             logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
-            asyncio.run(send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({main.JOB_ID}):"))
+            asyncio.run(send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({functions.variables.JOB_ID}):"))
         config = create_nginx_config(filename)
         with open(os.path.join(current_app.config["NGX_SITES_PATHAV"],filename), 'w',encoding='utf8') as fileC:
             fileC.write(config)
@@ -95,11 +138,11 @@ def setupNginx(file: str) -> None:
             setupPHP(file)
         else:
             logging.error(f"Error while reloading Nginx: {result.stderr.strip()}")
-            asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
+            asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             finishJob(file)
     except Exception as msg:
         logging.error(f"Error while configuring Nginx. Error: {msg}")
-        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({main.JOB_ID}):"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         finishJob(file)
 
 def unZip_3(file: str) -> None:
@@ -123,12 +166,12 @@ def unZip_3(file: str) -> None:
             setupNginx(file)
     except Exception as msg:
         logging.error(f"Error while unpacking {file}. Error: {msg}")
-        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({main.JOB_ID}):"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         finishJob(file)
 
 def checkZip_2(file: str) -> None:
-    logging.info(f">>>Start processing of archive #{main.JOB_COUNTER} of {main.JOB_TOTAL} total - {file}")
-    asyncio.run(send_to_telegram(f"Archive #{main.JOB_COUNTER} of {main.JOB_TOTAL}: {file}",f"🎢Provisoin job start({main.JOB_ID}):"))
+    logging.info(f">>>Start processing of archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} total - {file}")
+    asyncio.run(send_to_telegram(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL}: {file}",f"🎢Provisoin job start({functions.variables.JOB_ID}):"))
     #Getting site name from archive name
     fileName = os.path.basename(file)[:-4]
     #Preparing full path - path to general web folder + site name
@@ -157,15 +200,15 @@ def checkZip_2(file: str) -> None:
         if found < 3:
             print(f"Either {fileName}.crt or {fileName}.key or public/ is absent in {file}")
             logging.error(f"Either {fileName}.crt or {fileName}.key or public/ is absent in {file}")
-            asyncio.run(send_to_telegram(f"Job #{main.JOB_COUNTER} error: Either {fileName}.crt or {fileName}.key or public/ is absent in {file}",f"🚒Provision job error:"))
-            logging.info(f">>>End of JOB #{main.JOB_COUNTER}")
+            asyncio.run(send_to_telegram(f"Job #{functions.variables.JOB_COUNTER} error: Either {fileName}.crt or {fileName}.key or public/ is absent in {file}",f"🚒Provision job error:"))
+            logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
             finishJob(file)
         else:
             logging.info(f"Minimum reqired {fileName}.crt, {fileName}.key, public/ are present in {file}")
             unZip_3(file)
     except Exception as msg:
         logging.error(f"Error while checking {file}. Error: {msg}")
-        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({main.JOB_ID}):"))
+        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         finishJob(file)
 
 def findZip_1() -> None:
@@ -174,3 +217,12 @@ def findZip_1() -> None:
     files = glob.glob(os.path.join(path, extension))
     for file in files:
         checkZip_2(file)
+
+def preStart_0() -> None:
+    genJobID()
+    path = os.path.abspath(os.path.dirname(__file__))
+    extension = "*.zip"
+    files = glob.glob(os.path.join(path, extension))
+    functions.variables.JOB_TOTAL = len(files)
+    logging.info(f"-----------------------Starting pre-check(JOB ID:{functions.variables.JOB_ID}). Total {functions.variables.JOB_TOTAL} archive(s) found-----------------")
+    findZip_1()
