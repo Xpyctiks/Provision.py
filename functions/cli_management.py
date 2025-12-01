@@ -210,6 +210,36 @@ def set_nginxSitesPathEn(data: str) -> None:
         logging.error(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
 
+def set_nginxPath(data: str) -> None:
+    """CLI only function: sets Nginx main configs directory"""
+    logging.info("Starting CLI functions: set_nginxPath")
+    try:
+        t = Settings(id=1,nginxPath=data)
+        db.session.merge(t)
+        db.session.commit()
+        load_config(current_app)
+        updated = db.session.get(Settings, 1)
+        print(f"Nginx Path updated successfully to: \"{updated.nginxPath}\"")
+        logging.info(f"Nginx Path updated to \"{updated.nginxPath}\"")
+    except Exception as err:
+        logging.error(f"Nginx Path \"{data}\" set error: {err}")
+        print(f"Nginx Path \"{data}\" set error: {err}")
+
+def set_nginxAddConfDir(data: str) -> None:
+    """CLI only function: sets the directory for additional config files"""
+    logging.info("Starting CLI functions: set_nginxAddConfDir")
+    try:
+        t = Settings(id=1,nginxAddConfDir=data)
+        db.session.merge(t)
+        db.session.commit()
+        load_config(current_app)
+        updated = db.session.get(Settings, 1)
+        print(f"Nginx Additional configs dir. updated successfully to: \"{updated.nginxAddConfDir}\"")
+        logging.info(f"Nginx Additional configs dir. updated to \"{updated.nginxAddConfDir}\"")
+    except Exception as err:
+        logging.error(f"Nginx Additional configs dir. \"{data}\" set error: {err}")
+        print(f"Nginx Additional configs dir. \"{data}\" set error: {err}")
+
 def set_phpPool(data: str) -> None:
     """CLI only function: sets PHP pool.d/ folder path in database"""
     logging.info("Starting CLI functions: set_phpPool")
@@ -253,19 +283,21 @@ def flush_sessions() -> None:
 def show_config() -> None:
     """CLI only function: shows all current config from the database"""
     print (f"""
-Telegram ChatID:       {current_app.config["TELEGRAM_TOKEN"]}
-Telegram Token:        {current_app.config["TELEGRAM_CHATID"]}
-Log file:              {current_app.config["LOG_FILE"]}
-SessionKey:            {current_app.config["SECRET_KEY"]}
-Web root folder:       {current_app.config["WEB_FOLDER"]}
-Nginx SSL folder:      {current_app.config["NGX_CRT_PATH"]}
-WWW folders user:      {current_app.config["WWW_USER"]}
-WWW folders group:     {current_app.config["WWW_GROUP"]}
-Nginx Sites-Available: {current_app.config["NGX_SITES_PATHAV"]}
-Nginx Sites-Enabled:   {current_app.config["NGX_SITES_PATHEN"]}
-Php Pool.d folder:     {current_app.config["PHP_POOL"]}
-Php-fpm executable:    {current_app.config["PHPFPM_PATH"]}
-key:                   {current_app.secret_key}
+Telegram ChatID:         {current_app.config["TELEGRAM_TOKEN"]}
+Telegram Token:          {current_app.config["TELEGRAM_CHATID"]}
+Log file:                {current_app.config["LOG_FILE"]}
+SessionKey:              {current_app.config["SECRET_KEY"]}
+Web root folder:         {current_app.config["WEB_FOLDER"]}
+Nginx SSL folder:        {current_app.config["NGX_CRT_PATH"]}
+WWW folders user:        {current_app.config["WWW_USER"]}
+WWW folders group:       {current_app.config["WWW_GROUP"]}
+Nginx Sites-Available:   {current_app.config["NGX_SITES_PATHAV"]}
+Nginx Sites-Enabled:     {current_app.config["NGX_SITES_PATHEN"]}
+Nginx conf. main dir:    {current_app.config["NGX_PATH"]}
+Nginx add. configs dir:  {current_app.config["NGX_ADD_CONF_DIR"]}
+Php Pool.d folder:       {current_app.config["PHP_POOL"]}
+Php-fpm executable:      {current_app.config["PHPFPM_PATH"]}
+key:                     {current_app.secret_key}
     """)
 
 def show_help(programm: str) -> None:
@@ -317,6 +349,8 @@ def del_template(name: str) -> None:
     try:
         template = Provision_templates.query.filter_by(name=name).first()
         if template:
+            if template.isdefault == True:
+                print("Warning, that was the Default template. You need to make another template the default one!")
             db.session.delete(template)
             db.session.commit()
             load_config(current_app)

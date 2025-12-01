@@ -3,6 +3,7 @@ from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config, create_php_config
 from flask_login import current_user
+import main
 
 def delete_site(sitename: str) -> None:
     """Site action: full delete selected site. Requires "sitename" as a parameter"""
@@ -29,6 +30,9 @@ def delete_site(sitename: str) -> None:
             result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result2.stderr):
                 logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+            else:
+                logging.error(f"Nginx reload failed!. {result2.stderr}")
+                asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
             error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
@@ -52,19 +56,22 @@ def delete_site(sitename: str) -> None:
             result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result3.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
+            else:
+                logging.error(f"PHP reload failed!. {result3.stderr}")
+                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
-            error_message += f"Error while reloading PHP: {result2.stderr.strip()}"
+            error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
             asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision site delete error({sitename}):"))
         #--------------Delete of the site folder
         path = os.path.join(current_app.config["WEB_FOLDER"],sitename)
         if not os.path.isdir(path):
             logging.error(f"Site folder delete error - {path} - is not a directory!")
-            error_message += f"Site folder delete error - {path} - is not a directory!"
+            error_message += f"Помилка видалення папки сайту - {path} - це не є папка!"
         directory_path = os.path.abspath(path)
         if directory_path in ('/', '/home', '/root', '/etc', '/var', '/tmp', os.path.expanduser("~")):
             logging.error(f"Site folder delete error: {path} - too dangerous directory is selected!")
-            error_message += f"Site folder delete error: {path} - too dangerous directory is selected!"
+            error_message += f"Помилка видалення папки сайту: {path} - обрана занадто опасна папка!"
         for filename in os.listdir(path):
             file_path = os.path.join(path, filename)
             if os.path.isfile(file_path) or os.path.islink(file_path):
@@ -75,7 +82,7 @@ def delete_site(sitename: str) -> None:
         logging.info(f"Site folder {path} deleted successfully")
     except Exception as msg:
         logging.error(f"Error while site delete. Error: {msg}")
-        error_message += f"Error while site delete. Error: {msg}"
+        error_message += f"Глобальна помилка видалення сайту: {msg}"
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision site delete error({sitename}):"))
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
@@ -98,13 +105,16 @@ def disable_site(sitename: str) -> None:
                 result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
                 if  re.search(r".*started.*",result2.stderr):
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+                else:
+                    logging.error(f"Nginx reload failed!. {result2.stderr}")
+                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
             else:
                 logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
-                error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
+                error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
                 asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision site disable error({sitename}):"))
         else:
             logging.error(f"Nginx site disable error - symlink {ngx} is not exist")
-            error_message += f"Error while reloading Nginx"
+            error_message += f"Помилка при перезавантаженні веб сервера Nginx"
         #php disable
         php = os.path.join(current_app.config["PHP_POOL"],sitename+".conf")
         if os.path.isfile(php) or os.path.islink(php):
@@ -117,16 +127,19 @@ def disable_site(sitename: str) -> None:
                 result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
                 if  result3.returncode == 0:
                     logging.info(f"PHP reloaded successfully.")
+                else:
+                    logging.error(f"PHP reload failed!. {result3.stderr}")
+                    asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
             else:
                 logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
-                error_message += f"Error while reloading PHP: {result2.stderr.strip()}"
+                error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
                 asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision site disable error({sitename}):"))
         else:
             logging.error(f"PHP site conf. disable error - symlink {php} is not exist")
-            error_message += f"Error while reloading PHP"
+            error_message += f"Помилка при перезавантаженні PHP"
     except Exception as msg:
         logging.error(f"Error while site disable. Error: {msg}")
-        error_message += f"Error while site disable. Error: {msg}"
+        error_message += f"Глобальна помилка про спробі деактивації сайту: {msg}"
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision site disable error({sitename}):"))
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
@@ -178,9 +191,12 @@ def enable_site(sitename: str) -> None:
             result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
             if  re.search(r".*started.*",result2.stderr):
                 logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+            else:
+                logging.error(f"Nginx reload failed!. {result2.stderr}")
+                asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
-            error_message += f"Error while reloading Nginx: {result1.stderr.strip()}"
+            error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
             asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision site disable error({sitename}):"))
         #start of checks - php
         result2 = subprocess.run(["sudo",current_app.config['PHPFPM_PATH'],"-t"], capture_output=True, text=True)
@@ -191,13 +207,16 @@ def enable_site(sitename: str) -> None:
             result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
             if  result3.returncode == 0:
                 logging.info(f"PHP reloaded successfully.")
+            else:
+                logging.error(f"PHP reload failed!. {result3.stderr}")
+                asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({main.JOB_ID}):"))
         else:
             logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
-            error_message += f"Error while reloading PHP: {result2.stderr.strip()}"
+            error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
             asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision site disable error({sitename}):"))
     except Exception as msg:
         logging.error(f"Global error while site enable. Error: {msg}")
-        error_message += f"Global error while site disable. Error: {msg}"
+        error_message += f"Глобальна помилка при спробі активації сайту: {msg}"
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision site enable global error({sitename}):"))
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
@@ -270,17 +289,20 @@ def enable_allredirects(sitename: str) -> None:
                 result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
                 if  re.search(r".*started.*",result2.stderr):
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+                else:
+                    logging.error(f"Nginx reload failed!. {result2.stderr}")
+                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
             else:
                 logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-                error_message += f"Error reloading Nginx:  {result1.stderr.strip()}"
+                error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
                 asyncio.run(send_to_telegram(f"Error reloading Nginx",f"🚒Provision Error"))
         else:
             logging.error(f"Error enabling all redirects to the main page of {sitename}: {ngx_av} is not exists!")
-            error_message += f"Error enabling all redirects to the main page of {sitename}: {ngx_av} is not exists!"
+            error_message += f"Помилка активації редиректу всіх сторінок на головну для {sitename}: {ngx_av} не існує!"
             asyncio.run(send_to_telegram(f"{ngx_av} is not exists!",f"🚒Error enabling all redirects to the main page of {sitename}:"))
     except Exception as msg:
         logging.error(f"Global Error enabling all redirects to the main page of {sitename}: {msg}")
-        error_message += f"Global Error enabling all redirects to the main page of {sitename}: {msg}"
+        error_message += f"Глобална помилка активації редиректу всіх сторінок на головну для {sitename}: {msg}"
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision Error enabling all redirects to the main page of {sitename}:"))
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
@@ -331,17 +353,20 @@ def disable_allredirects(sitename: str) -> None:
                 result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
                 if  re.search(r".*started.*",result2.stderr):
                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+                else:
+                    logging.error(f"Nginx reload failed!. {result2.stderr}")
+                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({main.JOB_ID}):"))
             else:
                 logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-                error_message += f"Error reloading Nginx:  {result1.stderr.strip()}"
+                error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
                 asyncio.run(send_to_telegram(f"Error reloading Nginx",f"🚒Provision Error"))
         else:
             logging.error(f"Error disabling all redirects to the main page of {sitename}: {ngx_av} is not exists!")
-            error_message += f"Error disabling all redirects to the main page of {sitename}: {ngx_av} is not exists!"
+            error_message += f"Помилка деактивації редиректу всіх сторінок на головну для {sitename}: {ngx_av} не існує!"
             asyncio.run(send_to_telegram(f"{ngx_av} is not exists!",f"🚒Error disabling all redirects to the main page of {sitename}:"))
     except Exception as msg:
         logging.error(f"Global Error disabling all redirects to the main page of {sitename}: {msg}")
-        error_message += f"Global Error disabling all redirects to the main page of {sitename}: {msg}"
+        error_message += f"Глобальна помилка деактивації редиректу всіх сторінок на головну для {sitename}: {msg}"
         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision Error disabling all redirects to the main page of {sitename}:"))
     if len(error_message) > 0:
         flash(error_message, 'alert alert-danger')
@@ -353,7 +378,7 @@ def del_redirect(location: str,sitename:str):
     """Redirect-manager page: deletes one redirect,selected by Delete button on it.Don't applies changes immediately. Requires redirect "from location" and "sitename" as a parameter"""
     try:
         logging.info(f"-----------------------Delete single redirect for {sitename} by {current_user.realname}-----------------")
-        file301 = os.path.join("/etc/nginx/additional-configs","301-" + sitename + ".conf")
+        file301 = os.path.join(current_app.config["NGX_ADD_CONF_DIR"],"301-" + sitename + ".conf")
         #get into the site's config and uncomment one string
         if os.path.exists(file301):
             logging.info(f"Starting delete operation for {location}...")
@@ -391,7 +416,7 @@ def del_selected_redirects(array: str,sitename:str):
     """Redirect-manager page: deletes array of selected by checkboxes redirects.Don't applies changes immediately. Requires redirect locations array and "sitename" as a parameter"""
     try:
         logging.info(f"-----------------------Delete selected bulk redirects for {sitename} by {current_user.realname}-----------------")
-        file301 = os.path.join("/etc/nginx/additional-configs","301-" + sitename + ".conf")
+        file301 = os.path.join(current_app.config["NGX_ADD_CONF_DIR"],"301-" + sitename + ".conf")
         #get into the site's config and uncomment one string
         if os.path.exists(file301):
             #start of parsing array() and remove selected routes
@@ -440,6 +465,12 @@ def applyChanges(sitename: str):
             if os.path.exists("/tmp/provision.marker"):
                 os.unlink("/tmp/provision.marker")
             return redirect(f"/redirects_manager?site={sitename}",301)
+        else:
+            logging.info(f"Nginx reload error!. Result: {result2.stderr.strip()}")
+            flash(f"Помилка застосування нової конфігурації веб сервером!.",'alert alert-danger')
+            logging.info(f"-----------------------Applying changes in Nginx finished with error!-----------------")
+            asyncio.run(send_to_telegram(f"Changes apply error: Nginx has bad configuration",f"🚒Provision Error"))
+            return redirect(f"/redirects_manager?site={sitename}",301)
     else:
         logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
         asyncio.run(send_to_telegram(f"Changes apply error: Nginx has bad configuration",f"🚒Provision Error"))
@@ -450,7 +481,7 @@ def applyChanges(sitename: str):
 def count_redirects(site: str) -> str:
     """This function is counts current available redirects for every site while general site list is loading"""
     try:
-        with open(os.path.join("/etc/nginx/additional-configs","301-"+site+".conf"), "r", encoding="utf-8") as f:
+        with open(os.path.join(current_app.config["NGX_ADD_CONF_DIR"],"301-"+site+".conf"), "r", encoding="utf-8") as f:
             count = int(sum(1 for _ in f) / 3)
             return str(count)
     except Exception:

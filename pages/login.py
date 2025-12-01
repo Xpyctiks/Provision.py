@@ -28,7 +28,7 @@ def login():
             logging.error(f"Login: Wrong password \"{password}\" for user \"{username}\", IP:{request.remote_addr}")
             asyncio.run(send_to_telegram("🚷Provision:",f"Login error.Wrong password for user \"{username}\", IP:{request.remote_addr}"))
             flash('Невірний юзер або пароль!', 'alert alert-danger')
-            return render_template("template-login.html")    
+            return render_template("template-login.html")
     if current_user.is_authenticated:
         logging.info(f"not POST: User {current_user.username} IP:{request.remote_addr} is already logged in. Redirecting to the main page.")
         return redirect('/',301)

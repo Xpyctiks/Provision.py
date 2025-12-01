@@ -36,33 +36,38 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 33vw;">
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 27vw;">
 <div class="card-header">
   <strong>Додати новий сайт:</strong>
 </div>
 <div class="card-body">
-  <form action="/upload" method="POST" enctype="multipart/form-data">
-  <h5 class="card-title">крок 1:</h5>
-  <p class="card-text">Завантажте ZIP архів,в якому має бути мінімум наступне:</p>
+  <form action="/upload" method="POST" enctype="multipart/form-data" id="postform">
+  <h3 class="card-title">Крок 1:</h3>
+  <p class="card-text">Завантажте ZIP архів,в якому в корні має бути мінімум наступне:</p>
   <p><strong>public/:</strong> - (ВАЖЛИВО!) головна папка зі скриптами.</p>
   <p><strong>site_name.crt</strong> - (ВАЖЛИВО!) файл сертифікату, ім'я має бути повним доменом сайту + .crt в кінці(site.com.crt наприклад)</p>
   <p><strong>site_name.key</strong> - (ВАЖЛИВО!) файл ключа, ім'я має бути повним доменом сайту + .key в кінці(site.com.key наприклад)</p>
-  <p><strong>htpasswd</strong> - (ВАЖЛИВО!) файл з хешем паролю для доступа до адмінки</p>
   <input type="file" class="form-control form-control-sm" name="fileUpload[]" id="fileUpload" accept=".zip" multiple><br>
   <p class="card-text">Можна завантажити одразу багато файлів.<br>Всі файли та папки будуть розпаковані на сервері в веб папку.</p>
   <p>Файл "rewrite" буде видалено після розпаковки.</p>
   <p>Файли сертифікатів будуть переміщені до папки веб серверу.</p>
-  <h5 class="card-title">Крок 2:</h5>
-    <button type="submit" class="btn btn-info" style="margin-top: -45px;" name="buttonSubmit" value="buttonSubmit" onclick="showLoading()">Почати завантаження</button>
-    <p class="spinner-border text-primary" role="status" style="margin-left: 2px; visibility: hidden;" id="spinner">
-    </p>
+    <button type="submit" class="btn btn-info" style="margin-top: -5px; width: 700px; margin-left: 20px;" name="buttonSubmit" value="buttonSubmit" onclick="showLoading()">Почати завантаження</button>
   </form>
 </div>
 <script>
-  function showLoading() {
-      document.getElementById("spinner").style.visibility = "visible";
-  }
-  </script>
+  document.getElementById("postform").addEventListener("submit", function(event) {
+    const input = document.getElementById("fileUpload");
+    const value = input.value.trim();
+    if (value === "") {
+      input.classList.add("is-invalid");
+      input.classList.remove("is-valid");
+      event.preventDefault();
+    } else {
+      input.classList.remove("is-invalid");
+      input.classList.add("is-valid");
+    }
+  });
+</script>
 </main>
 </body>
 </html>

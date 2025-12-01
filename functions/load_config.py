@@ -15,6 +15,8 @@ def load_config(application):
                 "NGX_CRT_PATH": f"{config.nginxCrtPath}",
                 "NGX_SITES_PATHAV": f"{config.nginxSitesPathAv}",
                 "NGX_SITES_PATHEN": f"{config.nginxSitesPathEn}",
+                "NGX_ADD_CONF_DIR": f"{config.nginxAddConfDir}",
+                "NGX_PATH": f"{config.nginxPath}",
                 "WWW_USER": f"{config.wwwUser}",
                 "WWW_GROUP": f"{config.wwwGroup}",
                 "PHP_POOL": f"{config.phpPool}",
@@ -22,6 +24,7 @@ def load_config(application):
                 "SECRET_KEY": f"{config.sessionKey}"
             })
             logging.basicConfig(filename=config.logFile,level=logging.DEBUG,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
+            logging.getLogger('werkzeug').setLevel(logging.WARNING)
             logging.info("Programm started succesfully. Configuration loaded.")
         except Exception as msg:
             print(f"Load-config error: {msg}")
@@ -45,6 +48,8 @@ def generate_default_config(application,CONFIG_DIR: str,DB_FILE: str):
                 wwwGroup = "www-data",
                 nginxSitesPathAv = "/etc/nginx/sites-available-drops/",
                 nginxSitesPathEn = "/etc/nginx/sites-enabled-drops/",
+                nginxAddConfDir = "/etc/nginx/additional-configs",
+                nginxPath = "/etc/nginx/",
                 phpPool = "/etc/php/8.2/fpm/pool.d/",
                 phpFpmPath = "/usr/sbin/php-fpm8.2"
                 )

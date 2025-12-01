@@ -24,6 +24,8 @@ class Settings(db.Model):
     wwwGroup = db.Column(db.String(64), nullable=False)
     nginxSitesPathAv = db.Column(db.String(512), nullable=False)
     nginxSitesPathEn = db.Column(db.String(512), nullable=False)
+    nginxAddConfDir = db.Column(db.String(256), nullable=False)
+    nginxPath = db.Column(db.String(256), nullable=False)
     phpPool = db.Column(db.String(512), nullable=False)
     phpFpmPath = db.Column(db.String(512), nullable=False)
 
