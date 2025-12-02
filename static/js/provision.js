@@ -74,3 +74,33 @@ document.getElementById('postform').addEventListener('submit', function (e) {
     }
     this.classList.add('was-validated');
 });
+
+document.getElementById("Validate").addEventListener("click", function () {
+    document.getElementById("modalResultBody").innerHTML = `
+    <div class="text-center">
+        <div class="spinner-border" role="status"></div>
+        <div>Завантаження...</div>
+    </div>`;
+    let modal = new bootstrap.Modal(document.getElementById('resultModal'));
+    modal.show();
+
+    let formData = new FormData();
+    formData.append("domain", document.getElementById("domain").value);
+    formData.append("selected_account", document.getElementById("selected_account").value);
+    formData.append("selected_server", document.getElementById("selected_server").value);
+    fetch("/validate", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("modalResultBody").innerHTML =
+            `<div class="alert alert-info">${data.message}</div>`;
+        modal.show();
+    })
+    .catch(error => {
+        document.getElementById("modalResultBody").innerHTML =
+            `<div class="alert alert-danger">Ошибка: ${error}</div>`;
+        modal.show();
+    });
+});
