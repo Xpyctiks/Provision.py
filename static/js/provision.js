@@ -14,6 +14,14 @@ document.querySelectorAll('.dropdown-item.account').forEach(item => {
     });
 }); 
 
+document.querySelectorAll('.dropdown-item.server').forEach(item => {
+    item.addEventListener('click', function () {
+        let value2 = this.getAttribute('data-value');
+        document.getElementById('selected_server').value = value2;
+        document.getElementById('Server').innerText = value2;
+    });
+});
+
 document.getElementById("postform").addEventListener("submit", function(event) {
     const input = document.getElementById("domain");
     const value = input.value.trim();
@@ -42,12 +50,27 @@ function deleteLoading() {
 }
 
 document.getElementById('postform').addEventListener('submit', function (e) {
-  let field = document.getElementById('selected_account');
-  if (!field.value) {
-    field.classList.add('is-invalid');
-    e.preventDefault();
-    e.stopPropagation();
-  } else {
-    field.classList.remove('is-invalid');
-  }
+    let account = document.getElementById('selected_account');
+    let template = document.getElementById('selected_template');
+    let server = document.getElementById('selected_server');
+    if (!account.value) {
+        account.setCustomValidity("invalid");
+    } else {
+        account.setCustomValidity("");
+    }
+    if (!template.value) {
+        template.setCustomValidity("invalid");
+    } else {
+        template.setCustomValidity("");
+    }
+    if (!server.value) {
+        server.setCustomValidity("invalid");
+    } else {
+        server.setCustomValidity("");
+    }
+    if (!this.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    this.classList.add('was-validated');
 });

@@ -36,24 +36,42 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 18vw;">
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 23vw;">
   <div class="card-header">
     <strong>Автоматично розгорнути новий сайт з шаблону:</strong>
   </div>
   <div class="card-body">
-    <form action="/provision" method="POST" id="postform">
+    <form action="/provision" method="POST" id="postform" class="needs-validation" novalidate>
       <h5 class="card-title">Вкажіть домен майбутнього сайту:</h5>
       <div class="input-group mb-3">
         <span class="input-group-text">https://</span>
-        <input type="text" class="form-control" id="domain" name="domain" autocomplete="on">
+        <input type="text" class="form-control" id="domain" name="domain" autocomplete="on" required>
+        <div class="invalid-feedback">
+          Вкажіть домен.
+        </div>
       </div>
       <div class="mb-3 dropdown">
         <h5 class="card-title">Оберіть аккаунт CloudFlare на якому цей домен розташован:</h5>
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_cf|safe}}</button>
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 580px;">{{first_cf|safe}}</button>
+        <button class="btn btn-warning" type="button" id="Account" style="width: 168px;">Перевірити</button>
         <ul class="dropdown-menu" aria-labelledby="Account">
           {{cf_list|safe}}
         </ul>
-        <input type="hidden" name="selected_account" id="selected_account" value="{{first_account|safe}}">
+        <input type="hidden" name="selected_account" id="selected_account" value="{{first_cf|safe}}" required>
+        <div class="invalid-feedback">
+          Оберіть аккаунт CloudFlare.
+        </div>
+      </div>
+      <div class="mb-3 dropdown">
+        <h5 class="card-title">Оберіть на який сервер будуть вести DNS записи:</h5>
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="Server" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_server|safe}}</button>
+        <ul class="dropdown-menu" aria-labelledby="Account">
+          {{server_list|safe}}
+        </ul>
+        <input type="hidden" name="selected_server" id="selected_server" value="{{first_server|safe}}" required>
+        <div class="invalid-feedback">
+          Оберіть на який сервер будуть DNS записи
+        </div>
       </div>
       <div class="mb-3 dropdown">
         <h5 class="card-title">Оберіть репозіторій з якого розгортати сайт:</h5>
@@ -61,7 +79,10 @@
         <ul class="dropdown-menu" aria-labelledby="Template">
           {{templates|safe}}
         </ul>
-        <input type="hidden" name="selected_template" id="selected_template" value="{{first_template|safe}}">
+        <input type="hidden" name="selected_template" id="selected_template" value="{{first_template|safe}}" required>
+        <div class="invalid-feedback">
+          Оберіть репозиторій.
+        </div>
       </div>
       <div style="margin-top: 40px;">
         <button type="submit" class="btn btn-info" style="margin-top: -45px; margin-left: 200px; width: 400px;" name="buttonSubmit" value="Submit" onclick="showLoading()">Почати розгортання</button>

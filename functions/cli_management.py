@@ -339,6 +339,12 @@ def add_template(name: str,repository: str) -> None:
             db.session.commit()
             print(f"New template \"{name}\" - \"{repository}\" created successfully!")
             logging.info(f"New template \"{name}\" - \"{repository}\" created successfully!")
+        #check if there is only one just added record - set it as default
+        if len(Provision_templates.query.filter_by().all()) == 1:
+            tmp = Provision_templates.query.filter_by(name=name).first()
+            if tmp:
+                tmp.isdefault = True
+                db.session.commit()
     except Exception as err:
         logging.error(f"New repository \"{name}\" - \"{repository}\" creation error: {err}")
         print(f"New repository \"{name}\" - \"{repository}\" creation error: {err}")
@@ -442,6 +448,12 @@ def add_cloudflare(account: str,token: str) -> None:
             db.session.commit()
             print(f"New account \"{account}\" created successfully!")
             logging.info(f"New account \"{account}\" created successfully!")
+        #check if there is only one just added record - set it as default
+        if len(Cloudflare.query.filter_by().all()) == 1:
+            acc = Cloudflare.query.filter_by(account=account).first()
+            if acc:
+                acc.isdefault = True
+                db.session.commit()
     except Exception as err:
         logging.error(f"New account \"{account}\" creation error: {err}")
         print(f"New account \"{account}\" creation error: {err}")
@@ -460,7 +472,7 @@ def del_cloudflare(account: str) -> None:
             print(f"Cloudflare account \"{acc.account}\" deleted successfully!")
             logging.info(f"Cloudflare account \"{acc.account}\" deleted successfully!")
         else:
-            print(f"TemplCloudflare accountate \"{account}\" deletion error - no such account!")
+            print(f"Cloudflare account \"{account}\" deletion error - no such account!")
             logging.error(f"Cloudflare account \"{account}\" deletion error - no such account!")
             quit(1)
     except Exception as err:
@@ -528,3 +540,112 @@ def default_cloudflare(account: str) -> None:
     except Exception as err:
         logging.error(f"Set default account \"{account}\" error: {err}")
         print(f"Set default account \"{account}\" error: {err}")
+
+def add_servers(name: str,ip: str) -> None:
+    """CLI only function: adds a new server and its ip to the database"""
+    logging.info("Starting CLI functions: add_servers")
+    try:
+        if Servers.query.filter_by(name=name).first():
+            print(f"Server \"{name}\" creation error - already exists!")
+            logging.error(f"Server \"{name}\" creation error - already exists!")
+        else:
+            new_server = Servers(
+                name=name,
+                ip=ip,
+            )
+            db.session.add(new_server)
+            db.session.commit()
+            print(f"New Server \"{name}\" created successfully!")
+            logging.info(f"New Server \"{name}\" created successfully!")
+        #check if there is only one just added record - set it as default
+        if len(Servers.query.filter_by().all()) == 1:
+            srv = Servers.query.filter_by(name=name).first()
+            if srv:
+                srv.isdefault = True
+                db.session.commit()
+    except Exception as err:
+        logging.error(f"New Server \"{name}\" creation error: {err}")
+        print(f"New Server \"{name}\" creation error: {err}")
+
+def del_servers(name: str) -> None:
+    """CLI only function: deletes a Server from the database"""
+    logging.info("Starting CLI functions: del_servers")
+    try:
+        srv = Servers.query.filter_by(name=name).first()
+        if srv:
+            if srv.isdefault == True:
+                print("Warning, that was the Default Server. You need to make another Server the default one!")
+            db.session.delete(srv)
+            db.session.commit()
+            load_config(current_app)
+            print(f"Server \"{srv.name}\" deleted successfully!")
+            logging.info(f"Server \"{srv.name}\" deleted successfully!")
+        else:
+            print(f"Server \"{name}\" deletion error - no such Server!")
+            logging.error(f"Server \"{name}\" deletion error - no such Server!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"Server \"{name}\" deletion error: {err}")
+        print(f"Server \"{name}\" deletion error: {err}")
+
+def upd_servers(name: str, new_ip: str) -> None:
+    """CLI only function: updates a Server with the new token"""
+    logging.info("Starting CLI functions: upd_servers")
+    try:
+        srv = Servers.query.filter_by(name=name).first()
+        if srv:
+            srv.ip = new_ip
+            db.session.commit()
+            print(f"Server \"{name}\" updated successfully to {new_ip}!")
+            logging.info(f"Server \"{name}\" updated successfully to{new_ip}!")
+        else:
+            print(f"Server \"{name}\" update error - no such Server!")
+            logging.error(f"Server \"{name}\" update error - no such Server!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"Server \"{name}\" update error: {err}")
+        print(f"Server \"{name}\" update error: {err}")
+
+def show_servers() -> None:
+    """CLI only function: shows all available Servers from the database"""
+    logging.info("Starting CLI functions: show_servers")
+    try:
+        accs = Servers.query.order_by(Servers.name).all()
+        if len(accs) == 0:
+            print("No Servers found in DB!")
+            quit()
+        for i, s in enumerate(accs, 1):
+            print(f"ID: {s.id},\nServer: {s.name},\nIP: {s.ip},\nIsDefault: {s.isdefault},\nCreated: {s.created}\n--------------------------------------------------------")
+    except Exception as err:
+        logging.error(f"CLI show Server function error: {err}")
+        print(f"CLI show Server function error: {err}")
+
+def default_servers(name: str) -> None:
+    """CLI only function: sets a Server as the default one"""
+    logging.info("Starting CLI functions: default_servers")
+    try:
+        #Check is the new record, which will be the default one, exists at all
+        srv = Cloudflare.query.filter_by(name=name).first()
+        if not srv:
+            print(f"Server \"{name}\" doesn't exists! Can set it as the default one!")
+            logging.error(f"Server \"{name}\" doesn't exists! Can set it as the default one!")
+            quit(1)
+        #Check if it is already is the default one
+        default_srv = Servers.query.filter_by(isdefault=True).first()
+        if default_srv:
+            if default_srv.name == name:
+                print(f"Server \"{name}\" already is the default one!")
+                logging.error(f"Server \"{name}\" already is the default one!")
+                quit(1)
+        #Main function. First of all set all existing records as not default
+        Servers.query.update({Servers.isdefault: False})
+        #set one selected record as the default one
+        srv = Servers.query.filter_by(name=name).first()
+        if srv:
+            srv.isdefault = True
+            db.session.commit()
+            print(f"Server \"{name}\" is set as default one!")
+            logging.info(f"Server \"{name}\" is set as default one!")
+    except Exception as err:
+        logging.error(f"Set default Server \"{name}\" error: {err}")
+        print(f"Set default Server \"{name}\" error: {err}")
