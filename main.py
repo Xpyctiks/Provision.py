@@ -132,6 +132,8 @@ if __name__ == "__main__":
             show_users()
         elif sys.argv[1] == "show" and sys.argv[2] == "config":
             show_config()
+        elif sys.argv[1] == "show" and sys.argv[2] == "cloudflare":
+            show_cloudflare()
         elif sys.argv[1] == "flush" and sys.argv[2] == "sessions":
             flush_sessions()
         elif sys.argv[1] == "template" and sys.argv[2] == "add":
@@ -154,6 +156,26 @@ if __name__ == "__main__":
                 default_template(sys.argv[3])
             else:
                 print("Error! Enter Name of the template to set it as default one")
+        elif sys.argv[1] == "cloudflare" and sys.argv[2] == "add":
+            if (len(sys.argv) == 5):
+                add_cloudflare(sys.argv[3], sys.argv[4])
+            else:
+                print("Error! Enter Account username and token")
+        elif sys.argv[1] == "cloudflare" and sys.argv[2] == "del":
+            if (len(sys.argv) == 4):
+                del_cloudflare(sys.argv[3])
+            else:
+                print("Error! Enter account name to delete")
+        elif sys.argv[1] == "cloudflare" and sys.argv[2] == "upd":
+            if (len(sys.argv) == 5):
+                upd_cloudflare(sys.argv[3], sys.argv[4])
+            else:
+                print("Error! Enter account name and new token for it")
+        elif sys.argv[1] == "cloudflare" and sys.argv[2] == "default":
+            if (len(sys.argv) == 4):
+                default_cloudflare(sys.argv[3])
+            else:
+                print("Error! Enter account name to set it as default one")
     #if we call the script from console with argument "main" to start provision process
     elif len(sys.argv) == 2 and sys.argv[1] == "main":
         main()

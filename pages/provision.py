@@ -1,7 +1,7 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
 import logging
-from db.database import Provision_templates
+from db.database import Provision_templates, Cloudflare
 from functions.provision import start_autoprovision
 
 provision_bp = Blueprint("provision", __name__)
@@ -11,13 +11,14 @@ def provision():
     #Draw the main provision page interface
     if request.method == 'GET':
         try:
+            #parsing git repositories available
             templates = Provision_templates.query.order_by(Provision_templates.name).all()
             first_template = templates_list = ""
             if len(templates) == 0:
                 templates_list = first_template = "Шаблони відсутні у базі!"
             else:
                 for i, s in enumerate(templates, 1):
-                    templates_list += f"<li><a class=\"dropdown-item\" href=\"#\" data-value=\"{s.name}\">{s.name} ({s.repository})</a></li>\n\t\t"
+                    templates_list += f"<li><a class=\"dropdown-item template\" href=\"#\" data-value=\"{s.name}\">{s.name} ({s.repository})</a></li>\n\t\t"
             #Select one template which has Default=True setting in the database
             def_template = Provision_templates.query.filter_by(isdefault=True).first()
             if def_template:
@@ -25,10 +26,25 @@ def provision():
             else:
                 first_template = "Шаблон за замовчуванням не знайден! Виберіть вручну"
                 logging.error("Unknown error selecting default template!")
+            #parsing Cloudflare accounts available
+            cf = Cloudflare.query.order_by(Cloudflare.account).all()
+            first_cf = cf_list = ""
+            if len(cf) == 0:
+                cf_list = "Аккаунти відсутні у базі!"
+            else:
+                for i, s in enumerate(cf, 1):
+                    cf_list += f"<li><a class=\"dropdown-item account\" href=\"#\" data-value=\"{s.account}\">{s.account}</a></li>\n\t\t"
+            #Select one template which has Default=True setting in the database
+            def_cf = Cloudflare.query.filter_by(isdefault=True).first()
+            if def_cf:
+                first_cf = def_cf.account
+            else:
+                first_cf = ""
+                logging.error("Unknown error selecting default account!")
+            return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf)
         except Exception as err:
-            logging.error(f"CLI show templates function error: {err}")
-            print(f"CLI show templates function error: {err}")
-        return render_template("template-provision.html",templates=templates_list,first_template=first_template)
+            logging.error(f"Provision page render error: {err}")
+            print(f"Provision page render error: {err}")
     #Do some updates with a new data
     if request.method == 'POST':
         #check if we have all necessary data received

@@ -26,7 +26,7 @@
         <li>
           <a class="nav-link active" id="totalRecords" style="color: 0dcaf0;"></a>
         </li>
-        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
+        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px;"></span>
       </ul>
       <a href="/" class="btn btn-info">На головну</a>&nbsp;
       <form class="d-flex" action="/logout" method="POST">
@@ -36,7 +36,7 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 14vw;">
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 18vw;">
   <div class="card-header">
     <strong>Автоматично розгорнути новий сайт з шаблону:</strong>
   </div>
@@ -46,6 +46,14 @@
       <div class="input-group mb-3">
         <span class="input-group-text">https://</span>
         <input type="text" class="form-control" id="domain" name="domain" autocomplete="on">
+      </div>
+      <div class="mb-3 dropdown">
+        <h5 class="card-title">Оберіть аккаунт CloudFlare на якому цей домен розташован:</h5>
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_cf|safe}}</button>
+        <ul class="dropdown-menu" aria-labelledby="Account">
+          {{cf_list|safe}}
+        </ul>
+        <input type="hidden" name="selected_account" id="selected_account" value="{{first_account|safe}}">
       </div>
       <div class="mb-3 dropdown">
         <h5 class="card-title">Оберіть репозіторій з якого розгортати сайт:</h5>
@@ -58,7 +66,6 @@
       <div style="margin-top: 40px;">
         <button type="submit" class="btn btn-info" style="margin-top: -45px; margin-left: 200px; width: 400px;" name="buttonSubmit" value="Submit" onclick="showLoading()">Почати розгортання</button>
       </div>
-      <p class="spinner-border text-primary" role="status" style="margin-left: 2px; visibility: hidden;" id="spinner"></p>
     </form>
   </div>
 </div>
@@ -86,27 +93,7 @@
 </div>
 {% endif %}
 {% endwith %}
-<script>
-  document.querySelectorAll('.dropdown-item').forEach(item => {
-    item.addEventListener('click', function () {
-      let value = this.getAttribute('data-value');
-      document.getElementById('selected_template').value = value;
-      document.getElementById('Template').innerText = value;
-    });
-  });
-  document.getElementById("postform").addEventListener("submit", function(event) {
-  const input = document.getElementById("domain");
-  const value = input.value.trim();
-  if (value === "") {
-    input.classList.add("is-invalid");
-    input.classList.remove("is-valid");
-    event.preventDefault();
-  } else {
-    input.classList.remove("is-invalid");
-    input.classList.add("is-valid");
-  }
-});
-</script>
+<script src="{{ url_for('static', filename='js/provision.js') }}"></script>
 </main>
 </body>
 </html>

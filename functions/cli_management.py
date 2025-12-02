@@ -1,6 +1,6 @@
 import logging
 from db.db import db
-from db.database import Settings,User,Provision_templates
+from db.database import *
 from functions.load_config import load_config
 from flask import current_app
 from werkzeug.security import generate_password_hash
@@ -425,3 +425,106 @@ def default_template(name: str) -> None:
     except Exception as err:
         logging.error(f"Set default template \"{name}\" error: {err}")
         print(f"Set default template \"{name}\" error: {err}")
+
+def add_cloudflare(account: str,token: str) -> None:
+    """CLI only function: adds a new Cloudflare account and its token to the database"""
+    logging.info("Starting CLI functions: add_cloudflare")
+    try:
+        if Cloudflare.query.filter_by(account=account).first():
+            print(f"Account \"{account}\" creation error - already exists!")
+            logging.error(f"Account \"{account}\" creation error - already exists!")
+        else:
+            new_account = Cloudflare(
+                account=account,
+                token=token,
+            )
+            db.session.add(new_account)
+            db.session.commit()
+            print(f"New account \"{account}\" created successfully!")
+            logging.info(f"New account \"{account}\" created successfully!")
+    except Exception as err:
+        logging.error(f"New account \"{account}\" creation error: {err}")
+        print(f"New account \"{account}\" creation error: {err}")
+
+def del_cloudflare(account: str) -> None:
+    """CLI only function: deletes a Cloudflare account from the database"""
+    logging.info("Starting CLI functions: del_cloudflare")
+    try:
+        acc = Cloudflare.query.filter_by(account=account).first()
+        if acc:
+            if acc.isdefault == True:
+                print("Warning, that was the Default account. You need to make another account the default one!")
+            db.session.delete(acc)
+            db.session.commit()
+            load_config(current_app)
+            print(f"Cloudflare account \"{acc.account}\" deleted successfully!")
+            logging.info(f"Cloudflare account \"{acc.account}\" deleted successfully!")
+        else:
+            print(f"TemplCloudflare accountate \"{account}\" deletion error - no such account!")
+            logging.error(f"Cloudflare account \"{account}\" deletion error - no such account!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"Cloudflare account \"{account}\" deletion error: {err}")
+        print(f"Cloudflare account \"{account}\" deletion error: {err}")
+
+def upd_cloudflare(account: str, new_token: str) -> None:
+    """CLI only function: updates a Cloudflare account with the new token"""
+    logging.info("Starting CLI functions: upd_cloudflare")
+    try:
+        acc = Cloudflare.query.filter_by(account=account).first()
+        if acc:
+            acc.token = new_token
+            db.session.commit()
+            print(f"Account \"{account}\" updated successfully to {new_token}!")
+            logging.info(f"Account \"{account}\" updated successfully to{new_token}!")
+        else:
+            print(f"Account \"{account}\" update error - no such account!")
+            logging.error(f"Account \"{account}\" update error - no such account!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"Account \"{account}\" update error: {err}")
+        print(f"Account \"{account}\" update error: {err}")
+
+def show_cloudflare() -> None:
+    """CLI only function: shows all available Cloudflare accounts from the database"""
+    logging.info("Starting CLI functions: show_cloudflare")
+    try:
+        accs = Cloudflare.query.order_by(Cloudflare.account).all()
+        if len(accs) == 0:
+            print("No accounts found in DB!")
+            quit()
+        for i, s in enumerate(accs, 1):
+            print(f"ID: {s.id},\nAccount: {s.account},\nToken: {s.token},\nIsDefault: {s.isdefault},\nCreated: {s.created}\n--------------------------------------------------------")
+    except Exception as err:
+        logging.error(f"CLI show accounts function error: {err}")
+        print(f"CLI show accounts function error: {err}")
+
+def default_cloudflare(account: str) -> None:
+    """CLI only function: sets a Cloudflare account as the default one"""
+    logging.info("Starting CLI functions: default_cloudflare")
+    try:
+        #Check is the new record, which will be the default one, exists at all
+        acc = Cloudflare.query.filter_by(account=account).first()
+        if not acc:
+            print(f"Account \"{account}\" doesn't exists! Can set it as the default one!")
+            logging.error(f"Account \"{account}\" doesn't exists! Can set it as the default one!")
+            quit(1)
+        #Check if it is already is the default one
+        default_acc = Cloudflare.query.filter_by(isdefault=True).first()
+        if default_acc:
+            if default_acc.account == account:
+                print(f"Account \"{account}\" already is the default one!")
+                logging.error(f"Account \"{account}\" already is the default one!")
+                quit(1)
+        #Main function. First of all set all existing records as not default
+        Cloudflare.query.update({Cloudflare.isdefault: False})
+        #set one selected record as the default one
+        acc = Cloudflare.query.filter_by(account=account).first()
+        if acc:
+            acc.isdefault = True
+            db.session.commit()
+            print(f"Account \"{account}\" is set as default one!")
+            logging.info(f"Account \"{account}\" is set as default one!")
+    except Exception as err:
+        logging.error(f"Set default account \"{account}\" error: {err}")
+        print(f"Set default account \"{account}\" error: {err}")
