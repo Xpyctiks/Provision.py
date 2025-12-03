@@ -67,12 +67,11 @@ def provision():
             flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
             return redirect("/provision",301)
         #starts main provision actions
-        if request.form['domain'] and request.form['selected_template'] and request.form['buttonSubmit']:
+        if request.form['domain'] and request.form['selected_template'] and request.form['selected_server'] and request.form['selected_account'] and request.form['buttonSubmit']:
             #Getting repository's git path after we know its name as given in the request
             repo = Provision_templates.query.filter_by(name=request.form['selected_template'].strip()).first()
             if repo:
-                start_autoprovision(request.form['domain'].strip(),repo.repository,current_user.realname)
-                return redirect("/",301)
+                start_autoprovision(request.form['domain'].strip(),request.form['selected_account'].strip(),request.form['selected_server'].strip(),repo.repository,current_user.realname)
             else:
                 flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
                 logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")

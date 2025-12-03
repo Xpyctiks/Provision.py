@@ -8,9 +8,9 @@ validate_bp = Blueprint("validate", __name__)
 @login_required
 def do_validation():
     message = ""
-    domain = request.form.get("domain")
-    server = request.form.get("selected_server")
-    account = request.form.get("selected_account")
+    domain = request.form.get("domain").strip()
+    server = request.form.get("selected_server").strip()
+    account = request.form.get("selected_account").strip()
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:

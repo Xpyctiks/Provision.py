@@ -2,6 +2,7 @@
 import os,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
 from functions.config_templates import create_nginx_config, create_php_config
 from functions.send_to_telegram import send_to_telegram
+from functions.certificates import cloudflare_certificate
 from flask import current_app,flash
 import functions.variables
 
@@ -31,10 +32,13 @@ def finishJob(file: str) -> None:
     except Exception as msg:
         logging.error(msg)
 
-def start_autoprovision(domain: str, template: str, realname: str):
-    logging.info(f"---------------------------Starting automatic deploy for site {domain} from template {template} by {realname}----------------------------")
+def start_autoprovision(domain: str, selected_account: str, selected_server: str, template: str, realname: str):
+    logging.info(f"---------------------------Starting automatic deploy for site {domain}  by {realname}----------------------------")
+    logging.info(f"Cloudflare account: {selected_account}, IP of the server: {selected_server}, Template: {template}")
     finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
     functions.variables.JOB_ID = f"Autoprovision"
+    #First of all starting DNS and certificates check and setup procedure
+    cloudflare_certificate(domain,selected_account,selected_server)
     try:
         if os.path.exists(finalPath):
             logging.error(f"Site {domain} already exists! Remove it before new deploy!")
@@ -52,14 +56,6 @@ def start_autoprovision(domain: str, template: str, realname: str):
             flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
             quit()
         logging.info("Git clone done successfully!")
-        #######################################################################################
-        crtPath = "/tmp/actavodirect.com.crt"
-        keyPath = "/tmp/actavodirect.com.key"
-        crtPath2 = os.path.join(current_app.config["WEB_FOLDER"],domain,domain+".crt")
-        keyPath2 = os.path.join(current_app.config["WEB_FOLDER"],domain,domain+".key")
-        shutil.copy(crtPath,crtPath2)
-        shutil.copy(keyPath,keyPath2)
-        ####################################################################################
         #we add .zip to domain for backward compatibility with another functions of the system
         setupNginx(domain+".zip")
     except Exception as msg:
