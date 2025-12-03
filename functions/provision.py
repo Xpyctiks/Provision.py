@@ -38,29 +38,33 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
     finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
     functions.variables.JOB_ID = f"Autoprovision"
     #First of all starting DNS and certificates check and setup procedure
-    cloudflare_certificate(domain,selected_account,selected_server)
-    try:
-        if os.path.exists(finalPath):
-            logging.error(f"Site {domain} already exists! Remove it before new deploy!")
-            flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
-            logging.info(f"--------------------Automatic deploy for site {domain} from template {template} by {realname} finshed with error-----------------------")
-            quit()
-        os.makedirs(finalPath)
-        logging.info(f"New directory {finalPath} created")
-        os.chdir(finalPath)
-        logging.info(f"We are in {finalPath}")
-        result = subprocess.run(["sudo","git","clone",f"{template}","."], capture_output=True, text=True)
-        if result.returncode != 0:
-            logging.error(f"Error while git clone command: {result.stderr}")
-            asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
-            flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
-            quit()
-        logging.info("Git clone done successfully!")
-        #we add .zip to domain for backward compatibility with another functions of the system
-        setupNginx(domain+".zip")
-    except Exception as msg:
-        logging.error(f"Autoprovision Error: {msg}")
-        asyncio.run(send_to_telegram(f"Autoprovision function error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+    if cloudflare_certificate(domain,selected_account,selected_server):
+        try:
+            if os.path.exists(finalPath):
+                logging.error(f"Site {domain} already exists! Remove it before new deploy!")
+                flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
+                logging.info(f"--------------------Automatic deploy for site {domain} from template {template} by {realname} finshed with error-----------------------")
+                quit()
+            os.makedirs(finalPath)
+            logging.info(f"New directory {finalPath} created")
+            os.chdir(finalPath)
+            logging.info(f"We are in {finalPath}")
+            result = subprocess.run(["sudo","git","clone",f"{template}","."], capture_output=True, text=True)
+            if result.returncode != 0:
+                logging.error(f"Error while git clone command: {result.stderr}")
+                asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+                flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
+                quit()
+            logging.info("Git clone done successfully!")
+            #we add .zip to domain for backward compatibility with another functions of the system
+            setupNginx(domain+".zip")
+            return True
+        except Exception as msg:
+            logging.error(f"Autoprovision Error: {msg}")
+            asyncio.run(send_to_telegram(f"Autoprovision function error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+            return False
+    else:
+        return False
 
 def setupPHP(file: str) -> None:
     logging.info(f"Configuring PHP...")
@@ -95,17 +99,19 @@ def setupPHP(file: str) -> None:
 def setupNginx(file: str) -> None:
     logging.info(f"Configuring Nginx...Preparing certificates")
     filename = os.path.basename(file)[:-4]
-    crtPath = os.path.join(current_app.config["WEB_FOLDER"],filename,filename+".crt")
-    keyPath = os.path.join(current_app.config["WEB_FOLDER"],filename,filename+".key")
     try:
         #preparing certificates
-        shutil.copy(crtPath,current_app.config["NGX_CRT_PATH"])
-        os.remove(crtPath)
-        shutil.copy(keyPath,current_app.config["NGX_CRT_PATH"])
-        os.remove(keyPath)
+        #Check if we are using provision from zip file or autoprovision. If auto - skip copying the certificates, they are already in ssl folder
+        if functions.variables.JOB_ID != f"Autoprovision":
+            crtPath = os.path.join(current_app.config["WEB_FOLDER"],filename,filename+".crt")
+            keyPath = os.path.join(current_app.config["WEB_FOLDER"],filename,filename+".key")
+            shutil.copy(crtPath,current_app.config["NGX_CRT_PATH"])
+            os.remove(crtPath)
+            shutil.copy(keyPath,current_app.config["NGX_CRT_PATH"])
+            os.remove(keyPath)
+            logging.info(f"Certificate {crtPath} and key {keyPath} moved successfully to {current_app.config['NGX_CRT_PATH']}")
         os.chmod(current_app.config["NGX_CRT_PATH"]+filename+".crt", 0o600)
         os.chmod(current_app.config["NGX_CRT_PATH"]+filename+".key", 0o600)
-        logging.info(f"Certificate {crtPath} and key {keyPath} moved successfully to {current_app.config['NGX_CRT_PATH']}")
         #preparing folder
         os.system(f"sudo chown -R {current_app.config['WWW_USER']}:{current_app.config['WWW_GROUP']} {os.path.join(current_app.config['WEB_FOLDER'],filename)}")
         logging.info(f"Folders and files ownership of {os.path.join(current_app.config['WEB_FOLDER'],filename)} changed to {current_app.config['WWW_USER']}:{current_app.config['WWW_GROUP']}")

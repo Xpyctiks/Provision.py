@@ -1,6 +1,6 @@
-from flask import render_template,request,redirect,flash,Blueprint
+from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
-import logging
+import logging,os
 from db.database import Provision_templates, Cloudflare, Servers
 from functions.provision import start_autoprovision
 
@@ -68,10 +68,24 @@ def provision():
             return redirect("/provision",301)
         #starts main provision actions
         if request.form['domain'] and request.form['selected_template'] and request.form['selected_server'] and request.form['selected_account'] and request.form['buttonSubmit']:
+            finalPath = os.path.join(current_app.config["WEB_FOLDER"],request.form['domain'].strip())
+            if os.path.exists(finalPath):
+                logging.error(f"Site {request.form['domain'].strip()} already exists! Remove it before new deploy!")
+                flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
+                logging.info(f"--------------------Automatic deploy for site {request.form['domain'].strip()} from template {request.form['selected_template'].strip()} by {current_user.realname} finshed with error-----------------------")
+                return redirect("/provision",301)
             #Getting repository's git path after we know its name as given in the request
             repo = Provision_templates.query.filter_by(name=request.form['selected_template'].strip()).first()
             if repo:
-                start_autoprovision(request.form['domain'].strip(),request.form['selected_account'].strip(),request.form['selected_server'].strip(),repo.repository,current_user.realname)
+                #starting autoprovision. If everything is ok, redirect to root page
+                if start_autoprovision(request.form['domain'].strip(),request.form['selected_account'].strip(),request.form['selected_server'].strip(),repo.repository,current_user.realname):
+                    flash(f"Сайт {request.form['domain']} успішно встановлено!",'alert alert-success')
+                    logging.info(f"Site {request.form['domain'].strip()} provisioned successfully!")
+                    return redirect("/",301)
+                else:
+                    logging.error(f"Error while site {request.form['domain'].strip()} provision!")
+                    flash(f"Помилки при запуску сайту {request.form['domain']}, дивіться логи!",'alert alert-danger')
+                    return redirect("/provision",301)
             else:
                 flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
                 logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")
