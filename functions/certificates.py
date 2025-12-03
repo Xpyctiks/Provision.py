@@ -5,7 +5,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
-from flask import current_app,redirect,flash
+from flask import current_app
 from db.database import Cloudflare, Servers
 
 def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):

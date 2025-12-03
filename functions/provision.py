@@ -40,11 +40,7 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
     #First of all starting DNS and certificates check and setup procedure
     if cloudflare_certificate(domain,selected_account,selected_server):
         try:
-            if os.path.exists(finalPath):
-                logging.error(f"Site {domain} already exists! Remove it before new deploy!")
-                flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
-                logging.info(f"--------------------Automatic deploy for site {domain} from template {template} by {realname} finshed with error-----------------------")
-                quit()
+
             os.makedirs(finalPath)
             logging.info(f"New directory {finalPath} created")
             os.chdir(finalPath)

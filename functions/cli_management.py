@@ -6,6 +6,76 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 from sqlalchemy import text
 
+def help_set() -> None:
+    """CLI only function: shows hints for SET command"""
+    print (f"""
+Possible completion:
+    chat             <telegram_chat_id>
+    token            <telegram_token>
+    log              <path_and_filename>
+    webFolder        <full_path>
+    nginxCrtPath     <full_path>
+    wwwUser          <user>
+    wwwGroup         <group>
+    nginxSitesPathAv <full_path>
+    nginxSitesPathEn <full_path>
+    nginxPath        <full_path>
+    nginxAddConfDir  <full_path>
+    phpPool          <full_path>
+    phpFpmPath       <full_path>
+    """)
+
+def help_user() -> None:
+    """CLI only function: shows hints for USER command"""
+    print (f"""
+Possible completion:
+    add    <login> <password> <realName>
+    setpwd <login> <new_password>
+    del    <login>
+    """)
+
+def help_show() -> None:
+    """CLI only function: shows hints for SHOW command"""
+    print (f"""
+Possible completion:
+    config
+    users
+    config
+    cloudflare
+    servers
+    templates
+    """)
+
+def help_templates() -> None:
+    """CLI only function: shows hints for TEMPLATES command"""
+    print (f"""
+Possible completion:
+    add     <name> <git_repo_address>
+    upd     <name> <new_git_repo_address>
+    del     <name>
+    default <name>
+    """)
+
+def help_cloudflare() -> None:
+    """CLI only function: shows hints for CLOUDFLARE command"""
+    print (f"""
+Possible completion:
+    add     <email> <api_token>
+    upd     <email> <new_api_token>
+    del     <email>
+    default <email>
+    """)
+
+def help_servers() -> None:
+    """CLI only function: shows hints for SERVERS command"""
+    print (f"""
+Possible completion:
+    add     <server_name> <IP_address>
+    upd     <server_name> <new_IP_address>
+    del     <server_name>
+    default <server_name>
+    """)
+
 def set_telegramChat(tgChat: str) -> None:
     """CLI only function: sets Telegram ChatID value in database"""
     logging.info("Starting CLI functions: set_telegramChat")
@@ -302,24 +372,18 @@ key:                     {current_app.secret_key}
 
 def show_help(programm: str) -> None:
     """CLI only function: shows program CLI commands usage information"""
-    print(f"""Usage: \n{programm} set chat <chatID>
-\tAdd Telegram ChatID for notifications.
-{programm} set token <Token>
-\tAdd Telegram Token for notifications.
-{programm} set logpath <new log file path>
-\tAdd Telegram Token for notifications.
-{programm} user add <login> <password> <realname>
-\tAdd new user with its password and default permissions for all cache pathes.
-{programm} user setpwd <user> <new password>
-\tSet new password for existing user.
-{programm} user del <user>
-\tDelete existing user by its login
-{programm} cfaccount add <name> <token>
-\tAdd new CF account and its token
-{programm} cfaccount import <path to file>
-\tImport CF account records from file
-{programm} cfaccount del <name>
-\tDelete CF account entry\n
+    print(f"""Usage: \n{programm} set 
+\tGet info about all SET options.
+{programm} show
+\tGet info about all SHOW options.
+{programm} user
+\tGet info about all USER options.
+{programm} templates
+\tGet info about all TEMPLATES options.
+{programm} cloudflare
+\tGet info about all CLOUDFLARE options.
+{programm} servers
+\tGet info about all SERVERS options.
 Info: full script should be launched via UWSGI server. In CLI mode use can only use commands above.
     """)
 

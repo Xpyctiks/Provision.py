@@ -2,7 +2,7 @@
 
 from flask import Flask
 from flask_login import LoginManager
-import os,sys,glob,logging
+import os,sys
 from datetime import timedelta
 
 CONFIG_DIR = "/etc/provision/"
@@ -138,22 +138,22 @@ if __name__ == "__main__":
             show_servers()
         elif sys.argv[1] == "flush" and sys.argv[2] == "sessions":
             flush_sessions()
-        elif sys.argv[1] == "template" and sys.argv[2] == "add":
+        elif sys.argv[1] == "templates" and sys.argv[2] == "add":
             if (len(sys.argv) == 5):
                 add_template(sys.argv[3], sys.argv[4])
             else:
                 print("Error! Enter Name and Repository address for a new template")
-        elif sys.argv[1] == "template" and sys.argv[2] == "del":
+        elif sys.argv[1] == "templates" and sys.argv[2] == "del":
             if (len(sys.argv) == 4):
                 del_template(sys.argv[3])
             else:
                 print("Error! Enter Name of the template to delete")
-        elif sys.argv[1] == "template" and sys.argv[2] == "upd":
+        elif sys.argv[1] == "templates" and sys.argv[2] == "upd":
             if (len(sys.argv) == 5):
                 upd_template(sys.argv[3], sys.argv[4])
             else:
                 print("Error! Enter Name and New repository address for the template")
-        elif sys.argv[1] == "template" and sys.argv[2] == "default":
+        elif sys.argv[1] == "templates" and sys.argv[2] == "default":
             if (len(sys.argv) == 4):
                 default_template(sys.argv[3])
             else:
@@ -182,27 +182,38 @@ if __name__ == "__main__":
             if (len(sys.argv) == 5):
                 add_servers(sys.argv[3], sys.argv[4])
             else:
-                print("Error! Enter Account username and token")
+                print("Error! Enter server name and IP")
         elif sys.argv[1] == "servers" and sys.argv[2] == "del":
             if (len(sys.argv) == 4):
                 del_servers(sys.argv[3])
             else:
-                print("Error! Enter account name to delete")
+                print("Error! Enter server name to delete")
         elif sys.argv[1] == "servers" and sys.argv[2] == "upd":
             if (len(sys.argv) == 5):
                 upd_servers(sys.argv[3], sys.argv[4])
             else:
-                print("Error! Enter account name and new token for it")
+                print("Error! Enter server name and new IP for it")
         elif sys.argv[1] == "servers" and sys.argv[2] == "default":
             if (len(sys.argv) == 4):
                 default_servers(sys.argv[3])
             else:
-                print("Error! Enter account name to set it as default one")
+                print("Error! Enter server name to set it as default one")
     #if we call the script from console with argument "main" to start provision process
     elif len(sys.argv) == 2 and sys.argv[1] == "main":
         main()
+    elif len(sys.argv) == 2 and sys.argv[1] == "set":
+        help_set()
+    elif len(sys.argv) == 2 and sys.argv[1] == "user":
+        help_user()
+    elif len(sys.argv) == 2 and sys.argv[1] == "show":
+        help_show()
+    elif len(sys.argv) == 2 and sys.argv[1] == "templates":
+        help_templates()
+    elif len(sys.argv) == 2 and sys.argv[1] == "servers":
+        help_servers()
+    elif len(sys.argv) == 2 and sys.argv[1] == "cloudflare":
+        help_cloudflare()
     #else just show help info.
     elif len(sys.argv) <= 2:
         show_help(sys.argv[0])
-        application.run("0.0.0.0",80,debug=True)
     quit(0)
