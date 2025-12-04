@@ -4,6 +4,7 @@ from functions.config_templates import create_nginx_config, create_php_config
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
 from flask import current_app,flash
+from flask_login import current_user
 import functions.variables
 
 def genJobID() -> None:
@@ -19,7 +20,7 @@ def finishJob(file: str) -> None:
             os.remove(filename)
             logging.info(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
         if functions.variables.JOB_COUNTER == functions.variables.JOB_TOTAL:
-            asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
+            asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
             logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
             #quit only if we use zip files. if web provision - no to interrupt flow
             if functions.variables.JOB_ID != f"Autoprovision":
