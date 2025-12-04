@@ -1,7 +1,10 @@
 from flask import render_template,Blueprint,current_app
-import logging,os
+import logging,os,re
 from flask_login import login_required
 from functions.site_actions import count_redirects
+
+def natural_key(s):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
 
 root_bp = Blueprint("root", __name__)
 @root_bp.route("/", methods=['GET'])
@@ -14,7 +17,7 @@ def index():
             name for name in os.listdir(current_app.config["WEB_FOLDER"])
             if os.path.isdir(os.path.join(current_app.config["WEB_FOLDER"], name))
         ]
-        for i, s in enumerate(sites_list, 1):
+        for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
             #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
             #variable with full path to nginx sites-enabled symlink to the site
             ngx_site = os.path.join(current_app.config["NGX_SITES_PATHEN"],s)
