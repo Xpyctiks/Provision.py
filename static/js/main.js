@@ -25,3 +25,11 @@ document.getElementById("closeAll").addEventListener("click", function () {
         bsCollapse.hide();
     });
 });
+
+function showLoading() {
+    document.getElementById("spinnerLoading").style.visibility = "visible";
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("spinnerLoading").style.visibility = "hidden";
+});
