@@ -16,9 +16,9 @@ After=network.target
 [Service]
 User=root
 Group=root
-WorkingDirectory=/opt/provision
+WorkingDirectory=/opt/Provision.py
 Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/usr/bin/gunicorn -c /opt/provision/gunicorn_config.py main:application
+ExecStart=/usr/bin/gunicorn -c /opt/Provision.py/gunicorn_config.py main:application
 StandardOutput=append:/var/log/gunicorn/provision.log
 StandardError=append:/var/log/gunicorn/provision-error.log
 
@@ -34,7 +34,7 @@ import os
 venv_path = "/usr/local/"
 sys.path.insert(0, os.path.join(venv_path, "lib/python3.11/site-packages"))
 #change to yours
-sys.path.insert(0, "/opt/provision")
+sys.path.insert(0, "/opt/Provision.py")
 
 bind = "0.0.0.0:8880"
 workers = 1

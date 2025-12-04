@@ -40,7 +40,6 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
     #First of all starting DNS and certificates check and setup procedure
     if cloudflare_certificate(domain,selected_account,selected_server):
         try:
-
             os.makedirs(finalPath)
             logging.info(f"New directory {finalPath} created")
             os.chdir(finalPath)
