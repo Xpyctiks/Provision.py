@@ -77,8 +77,10 @@ server {{
   }}
 
   location /admin/ {{
+    root {os.path.join(current_app.config["WEB_FOLDER"],filename)}/public;
     auth_basic "Prove you are who you are";
     auth_basic_user_file {os.path.join(current_app.config["NGX_PATH"],".htpasswd")};
+    try_files $uri $uri/ /index.php?$args;
     location ~* ^/admin/.+\.php$ {{
       include snippets/fastcgi-php.conf;
       fastcgi_pass unix:/var/run/php/{filename}.sock;
