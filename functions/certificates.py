@@ -70,7 +70,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
             return False
     except Exception as msg:
         logging.error(f"Cloudflare_certificate global error: {msg}")
-        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error:{msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
         return False
 
 def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):
@@ -104,7 +104,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
                 logging.info(f"API request to update DNS record {domain} to {ip} successfully completed.")
             else:
                 logging.error(f"Error while API request to update DNS record {domain} to {ip}! {r.text}")
-                asyncio.run(send_to_telegram(f"Error while API request to update DNS record {domain} to {ip}",f"🚒Provision job error:"))
+                asyncio.run(send_to_telegram(f"Error while API request to update DNS record {domain} to {ip} By {current_app.realname}",f"🚒Provision job error:"))
                 return False
         #staring update of www.@ record
         elif name_to_name.get(domain) == "www."+domain:
@@ -122,12 +122,12 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
                 logging.info(f"API request to update DNS record www.{domain} to {ip} successfully completed.")
             else:
                 logging.error(f"Error while API request to update DNS record www.{domain} to {ip}! {r.text}")
-                asyncio.run(send_to_telegram(f"Error while API request to update DNS record www.{domain} to {ip}",f"🚒Provision job error:"))
+                asyncio.run(send_to_telegram(f"Error while API request to update DNS record www.{domain} to {ip} By {current_app.realname}",f"🚒Provision job error:"))
                 return False
         return True
     except Exception as msg:
         logging.error(f"Set_dns_records global error: {msg}")
-        asyncio.run(send_to_telegram(f"Set_dns_records global error:{msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Set_dns_records global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
         return False
 
 def create_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):
@@ -158,7 +158,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
             logging.info(f"API request to create DNS record {domain} with {ip} successfully completed.")
         else:
             logging.error(f"Error while API request to create DNS record {domain} with {ip}! {r.text}")
-            asyncio.run(send_to_telegram(f"Error while API request to create DNS record {domain} with {ip}",f"🚒Provision job error:"))
+            asyncio.run(send_to_telegram(f"Error while API request to create DNS record {domain} with {ip} By {current_app.realname}",f"🚒Provision job error:"))
         logging.info(f"Setting up www.{domain} record...")
         data = {
             "type": "A",
@@ -177,7 +177,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
         return True
     except Exception as msg:
         logging.error(f"Set_dns_records global error: {msg}")
-        asyncio.run(send_to_telegram(f"Set_dns_records global error:{msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Set_dns_records global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
         return False
 
 def generate_key_and_csr(domain: str):
@@ -210,7 +210,7 @@ def generate_key_and_csr(domain: str):
         return private_key_pem, csr_pem
     except Exception as msg:
         logging.error(f"Generate_key_and_csr global error: {msg}")
-        asyncio.run(send_to_telegram(f"Generate_key_and_csr global error:{msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Generate_key_and_csr global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
         return False
 
 def request_cloudflare_cert(csr_pem,domain: str,email: str, token: str):
@@ -232,7 +232,7 @@ def request_cloudflare_cert(csr_pem,domain: str,email: str, token: str):
         return r.json()
     except Exception as msg:
         logging.error(f"Request_certificate global error: {msg}")
-        asyncio.run(send_to_telegram(f"Request_certificate global error:{msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Request_certificate global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
         return False
 
 def issue_cert(domain: str,account: str, token: str):
@@ -242,7 +242,7 @@ def issue_cert(domain: str,account: str, token: str):
         response = request_cloudflare_cert(csr,domain,account,token)
         if not response.get("success"):
             logging.error(f"Issue cert. global error: {json.dumps(response, indent=2)}")
-            asyncio.run(send_to_telegram(f"Issue cert. global error!",f"🚒Provision job error:"))
+            asyncio.run(send_to_telegram(f"Issue cert. global error! By {current_app.realname}",f"🚒Provision job error:"))
             return False
         cert = response["result"]["certificate"]
         key = key.decode()
@@ -258,5 +258,5 @@ def issue_cert(domain: str,account: str, token: str):
         return True
     except Exception as msg:
         logging.error(f"Issue_certificate global error: {msg}")
-        asyncio.run(send_to_telegram(f"Issue_certificate global error:{msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Issue_certificate global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
         return False
