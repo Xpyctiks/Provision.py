@@ -70,6 +70,7 @@ def provision():
         if request.form['domain'] and request.form['selected_template'] and request.form['selected_server'] and request.form['selected_account'] and request.form['buttonSubmit']:
             finalPath = os.path.join(current_app.config["WEB_FOLDER"],request.form['domain'].strip())
             if os.path.exists(finalPath):
+                logging.info(f"---------------------------Starting automatic deploy for site {request.form['domain'].strip()}  by {current_user.realname}----------------------------")
                 logging.error(f"Site {request.form['domain'].strip()} already exists! Remove it before new deploy!")
                 flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
                 logging.info(f"--------------------Automatic deploy for site {request.form['domain'].strip()} from template {request.form['selected_template'].strip()} by {current_user.realname} finshed with error-----------------------")
