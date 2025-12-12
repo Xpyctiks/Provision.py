@@ -1,4 +1,4 @@
-from flask import redirect,Blueprint,request
+from flask import redirect,Blueprint,request,render_template
 from flask_login import login_required
 import os
 from functions.site_actions import *
@@ -44,3 +44,6 @@ def showstructure():
             html += f"<li>{item}</li>"
     html += "</ul>"
     return html
+
+def showClonePage():
+    return render_template("template-clone.html")

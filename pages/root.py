@@ -25,6 +25,7 @@ def index():
             #variable with full path to php pool config of the site
             php_site = os.path.join(current_app.config["PHP_POOL"],s+".conf")
             #check of nginx and php have active links and configs of the site
+            #<button type="submit" value="{s}" name="clone" formaction="/clone" formmethod="post" onclick="showLoading()" class="btn btn-success" 
             checkbox_state = ""
             button_state = "enabled"
             if os.path.islink(ngx_site) and os.path.isfile(php_site):
@@ -40,8 +41,8 @@ def index():
                     title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
                     <button type="submit" value="{s}" name="disable" onclick="showLoading()" class="btn btn-warning" 
                     title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">Вимкнути</button>
-                    <button type="submit" value="{s}" name="clone" onclick="showLoading()" class="btn btn-success" 
-                    title="Взяти за основу даний сайт та зробити копію для іншого домену.">Клонувати</button>
+                    <a name="clone" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={s}">Клонувати</a>
+                    <title="Взяти за основу даний сайт та зробити копію для іншого домену.">
                 </form>
                 <form method="post" action="/redirects_manager" id="redirect_form{s}">
                     <a href="/redirects_manager?site={s}" class="btn btn-info" type="submit" name="manager" value="{s}" style="margin-top: 5px; margin-left: 1px;" {button_state}
@@ -105,7 +106,7 @@ def index():
                     title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
                     title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
-                    <button style="margin: inherit; margin-top: 4px;" type="submit" value="{s}" name="clone" onclick="showLoading()" class="btn btn-success" 
+                    <button style="margin: inherit; margin-top: 4px;" type="submit" value="{s}" name="clone" formaction="/clone" formmethod="post" onclick="showLoading()" class="btn btn-success" 
                     title="Взяти за основу даний сайт та зробити копію для іншого домену.">Клонувати</button>
                 </form>
                 <td class="table-warning">{s}</td>

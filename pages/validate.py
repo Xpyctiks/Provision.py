@@ -1,5 +1,5 @@
 from flask import Blueprint,request
-from flask_login import login_required
+from flask_login import login_required,current_user
 import json,requests,logging
 from db.database import Cloudflare, Servers
 
@@ -11,6 +11,8 @@ def do_validation():
     domain = request.form.get("domain").strip()
     server = request.form.get("selected_server").strip()
     account = request.form.get("selected_account").strip()
+    if len(domain) == 0:
+        return f'{{"message": "[❌] {current_user.realname}, ти хоча би домен введи що б було що перевіряти."}}'
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:

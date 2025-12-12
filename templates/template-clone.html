@@ -36,12 +36,12 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 23vw;">
-  <div class="card-header">
-    <strong>Автоматично розгорнути новий сайт з шаблону:</strong>
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 20vw;">
+  <div class="card-header" style="background-color: darkorange;">
+    <h4>Клонуємо сайт {{ source_site|safe }} :</h4>
   </div>
   <div class="card-body">
-    <form action="/provision" method="POST" id="postform" class="needs-validation" novalidate>
+    <form action="/clone" method="POST" id="postform" class="needs-validation" novalidate>
       <h5 class="card-title">Вкажіть домен майбутнього сайту:</h5>
       <div class="input-group mb-3">
         <span class="input-group-text">https://</span>
@@ -51,7 +51,7 @@
         </div>
       </div>
       <div class="mb-3 dropdown">
-        <h5 class="card-title">Оберіть аккаунт CloudFlare на якому цей домен розташован:</h5>
+        <h5 class="card-title">Оберіть аккаунт CloudFlare на якому новий домен розташован:</h5>
         <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 580px;">{{first_cf|safe}}</button>
         <button class="btn btn-warning" type="button" id="Validate" value="Validate" style="width: 168px;">Перевірити</button>
         <ul class="dropdown-menu" aria-labelledby="Account">
@@ -73,19 +73,8 @@
           Оберіть на який сервер будуть DNS записи
         </div>
       </div>
-      <div class="mb-3 dropdown">
-        <h5 class="card-title">Оберіть репозіторій з якого розгортати сайт:</h5>
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="Template" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_template|safe}}</button>
-        <ul class="dropdown-menu" aria-labelledby="Template">
-          {{templates|safe}}
-        </ul>
-        <input type="hidden" name="selected_template" id="selected_template" value="{{first_template|safe}}" required>
-        <div class="invalid-feedback">
-          Оберіть репозиторій.
-        </div>
-      </div>
       <div style="margin-top: 40px;">
-        <button type="submit" class="btn btn-info" style="margin-top: -45px; margin-left: 200px; width: 400px;" name="buttonSubmit" value="Submit" onclick="showLoading()">Почати розгортання</button>
+        <button type="submit" class="btn btn-warning" style="margin-top: -30px; margin-left: 200px; width: 400px;" name="buttonStartClone" value="{{ source_site|safe }}" onclick="showLoading()">Почати клонування</button>
       </div>
     </form>
   </div>
