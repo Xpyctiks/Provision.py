@@ -12,7 +12,7 @@ def do_validation():
     server = request.form.get("selected_server").strip()
     account = request.form.get("selected_account").strip()
     if len(domain) == 0:
-        return f'{{"message": "[❌] {current_user.realname}, ти хоча би домен введи що б було що перевіряти."}}'
+        return f'{{"message": "🤦 {current_user.realname}, ти хоча би домен введи що б було що перевіряти."}}'
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:

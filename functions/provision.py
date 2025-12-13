@@ -55,6 +55,7 @@ def finishJob(file: str) -> None:
             os.remove(filename)
             logging.info(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
         if functions.variables.JOB_COUNTER == functions.variables.JOB_TOTAL:
+            setSiteOwner(os.path.basename(file)[:-4])
             asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
             logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
             #quit only if we use zip files. if web provision - no to interrupt flow
@@ -64,6 +65,7 @@ def finishJob(file: str) -> None:
             logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
             asyncio.run(send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:"))
             functions.variables.JOB_COUNTER += 1
+            setSiteOwner(os.path.basename(file)[:-4])
             findZip_1()
     except Exception as msg:
         logging.error(msg)
@@ -85,8 +87,13 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
                 logging.error(f"Error while git clone command: {result.stderr}")
                 asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
                 flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
-                quit()
+                return False
             logging.info("Git clone done successfully!")
+            result2 = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
+            if result2.returncode != 0:
+                logging.error(f"Error while git add safe.directory: {result.stderr}")
+                asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+            logging.info("Git add safe directory done successfully!")
             #we add .zip to domain for backward compatibility with another functions of the system
             setupNginx(domain+".zip")
             return True

@@ -488,3 +488,36 @@ def count_redirects(site: str) -> str:
             return str(count)
     except Exception:
         return "0"
+
+def makePull(domain: str, pullArray: list = []) -> bool:
+    """Root page: makes git pull to update the site code. Can receive single domain name or a list of."""
+    try:
+        if len(pullArray) == 0:
+            logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname}-----------------")
+            path = os.path.join(current_app.config["WEB_FOLDER"],domain)
+            if os.path.exists(path):
+                os.chdir(path)
+                logging.info(f"Successfully got into {path}")
+                result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
+                if result.returncode != 0:
+                    logging.error(f"Git pull for {domain} returned error: {result.stderr}")
+                    asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull error:"))
+                    flash(f"Помилка оновлення коду із репозиторію {path}: {result.stderr}.",'alert alert-danger')
+                    logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
+                    return False
+                else:
+                    flash(f"Код для сайту {domain} успішно оновлено із репозиторію!.",'alert alert-success')
+                    logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
+                    return True
+            else:
+                logging.error(f"Git pull for {domain} returned error: site folder {path} not exists!")
+                asyncio.run(send_to_telegram(f"Git pull for {domain} returned error: site folder {path} not exists!",f"🚒Provision pull error:"))
+                flash(f"Помилка оновлення коду із репозиторію: папка {domain} чомусь не існує!",'alert alert-danger')
+                logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
+                return False
+        return True
+    except Exception as msg:
+        logging.error(f"Makepull() Global Error:", "{msg}")
+        asyncio.run(send_to_telegram(f"makePull() global error: {msg}",f"🚒Provision pull error:"))
+        logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
+        return False

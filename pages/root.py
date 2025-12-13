@@ -3,6 +3,8 @@ import logging,os,re
 from flask_login import login_required
 from functions.site_actions import count_redirects
 from functions.pages_forms import getSiteOwner, getSiteCreated
+
+#allows to sort with natural keys - when after 10 goes 11, not 20
 def natural_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
 
@@ -33,21 +35,20 @@ def index():
                         if line.lstrip().startswith("if ( $request_uri !="):
                             button_state = "disabled"
                 table += f"""\n<tr>\n<th scope="row" class="table-success">{i}</th>
-                <td class="table-success"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
-                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
-                    <button type="submit" value="{s}" name="disable" onclick="showLoading()" class="btn btn-warning" 
-                    title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">Вимкнути</button>
-                    <a name="clone" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={s}">Клонувати</a>
-                    <title="Взяти за основу даний сайт та зробити копію для іншого домену.">
-                </form>
-                <form method="post" action="/redirects_manager" id="redirect_form{s}">
-                    <a href="/redirects_manager?site={s}" class="btn btn-info" type="submit" name="manager" value="{s}" style="margin-top: 5px; margin-left: 1px;" {button_state}
-                    title="Керування 301-и редіректами для цього сайту.">Керування редіректами\n(~{count_redirects(s)} шт. вже є)</a>
+                <form method="post" action="/action" id="main_form"></form>
+                <form method="post" action="/redirects_manager" id="redirect_form{s}"></form>
+                <td class="table-success">
+                    <button type="submit" value="{s}" name="delete" form="main_form" onclick="showLoading()" class="btn btn-danger" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
+                    <button type="submit" value="{s}" name="disable" form="main_form" onclick="showLoading()" class="btn btn-warning" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>
+                    <a name="clone" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={s}" style="width: 139px;" title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</a>
+                    <button type="submit" value="{s}" name="gitPull" form="main_form" onclick="showLoading()" class="btn btn-primary" style="margin-top: 5px; title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button>
+                    <a href="/redirects_manager?site={s}" class="btn btn-info" type="submit" name="manager" value="{s}" style="margin-top: 5px; width: 236px;" {button_state} title="Керування 301-и редіректами для цього сайту.">🚥Редіректи\n(~{count_redirects(s)} шт. вже є)</a><br>
                     <input type="hidden" name="sitename" value="{s}">
-                    Створено: {getSiteCreated(s)}                  
-                </form>
-                <td class="table-success">{s}</td>
+                    <u>Сайт розгорнут: {getSiteCreated(s)}</u>
+                <td class="table-success">
+                    <input class="form-check-input chk" type="checkbox" name="selected" value="{s}" form="main_form">
+                    {s}
+                </td>
                 <td class="table-success">
                 <div class="accordion" id="folderAccordion{i}">
                     <div class="accordion-item">
@@ -64,46 +65,47 @@ def index():
                     </div>
                 </div></td>
                 <td class="table-success">{getSiteOwner(s)}</td>
-                <td class="table-success">OK</td>
+                <td class="table-success">✅OK</td>
                 \n</tr>"""
             #if nginx is ok but php is not
             elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
                 <td class="table-danger"><form method="post" action="/action">
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
-                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
+                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
                     title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
                 </form>
                 <td class="table-danger">{s}</td>
                 <td class="table-danger">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger"></td>
-                <td class="table-danger">PHP config error</td>
+                <td class="table-danger">🚨Помилка конфігураціх РНР</td>
                 \n</tr>"""
             #if php is ok but nginx is not
             elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
                 <td class="table-danger"><form method="post" action="/action">
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
-                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
+                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
-                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
+                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>
                 </form>
                 <td class="table-danger">{s}</td>
                 <td class="table-danger">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
-                <td class="table-danger"></td>
-                <td class="table-danger">Nginx config error</td>
+                <td class="table-danger">{getSiteOwner(s)}</td>
+                <td class="table-danger">🚨Помилка конфігураціх Nginx</td>
                 \n</tr>"""
             #if really disabled
             elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-warning">{i}</th>
                 <td class="table-warning"><form method="post" action="/action">
                     <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
-                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">Видалити</button>
+                    title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
-                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
-                    <button style="margin: inherit; margin-top: 4px;" type="submit" value="{s}" name="clone" formaction="/clone" formmethod="post" onclick="showLoading()" class="btn btn-success" 
-                    title="Взяти за основу даний сайт та зробити копію для іншого домену.">Клонувати</button>
+                    title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>
+                    <button style="margin: inherit; margin-top: 1px;" type="submit" value="{s}" name="clone" formaction="/clone" formmethod="post" onclick="showLoading()" class="btn btn-success" 
+                    title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</button>
+                    Створено: {getSiteCreated(s)}
                 </form>
                 <td class="table-warning">{s}</td>
                 <td class="table-warning">
@@ -121,16 +123,17 @@ def index():
                         </div>
                     </div>
                 </div></td>
-                <td class="table-warning"></td>
-                <td class="table-warning">Site is disabled</td>
+                <td class="table-warning">{getSiteOwner(s)}</td>
+                <td class="table-warning">🚧Сайт вимкнено</td>
                 \n</tr>"""
             else:
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
-                <td class="table-danger">General</td>
-                <td class="table-danger">Error</td>
-                <td class="table-danger"></td>
-                <td class="table-danger">Important folders are not available or not exist</td>
+                <td class="table-danger">ЗАГАЛЬНА</td>
+                <td class="table-danger">ПОМИЛКА</td>
+                <td class="table-danger">СИСТЕМИ</td>
+                <td class="table-danger">Важливі файли або папки не існують</td>
                 \n</tr>"""
         return render_template("template-main.html",table=table)
     except Exception as msg:
         logging.error(f"Error in index(/): {msg}")
+    return "root.py ERROR!"

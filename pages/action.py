@@ -23,6 +23,11 @@ def do_action():
     elif (request.form.get('applyChanges')):
         applyChanges(request.form['sitename'].strip())
         return redirect(f"/redirects_manager?site={request.form['sitename'].strip()}",301)
+    elif (request.form.get('gitPull') and not request.form.get('selected')):
+        makePull(request.form['gitPull'].strip())
+    elif (request.form.get('gitPull') and request.form.get('selected')):
+        pullArray = request.form.getlist("selected")
+        makePull(request.form['gitPull'].strip(),pullArray)
     return redirect("/",301)
 
 @action_bp.route("/action", methods=['GET'])

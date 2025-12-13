@@ -91,7 +91,7 @@ def getSiteCreated(domain: str) -> str:
         if owner:
             return owner.created.strftime("%d-%m-%Y %H:%M:%S")
         else:
-            return "поки що не ясно 💔"
+            return "поки що не ясно 🤷🏼‍♂️"
     except Exception as err:
         logging.error(f"getSiteCreated(): general error: {err}")
         return "ERROR!"
