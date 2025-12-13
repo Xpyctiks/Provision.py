@@ -33,3 +33,14 @@ function showLoading() {
 document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("spinnerLoading").style.visibility = "hidden";
 });
+
+window.addEventListener("pageshow", function (event) {
+    if (event.persisted) {
+        resetLoadingState();
+    }
+});
+
+function resetLoadingState() {
+    const loader = document.getElementById("loader");
+    loader.classList.remove("active");
+}

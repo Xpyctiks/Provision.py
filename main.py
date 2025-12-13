@@ -136,6 +136,8 @@ if __name__ == "__main__":
             show_cloudflare()
         elif sys.argv[1] == "show" and sys.argv[2] == "servers":
             show_servers()
+        elif sys.argv[1] == "show" and sys.argv[2] == "owners":
+            show_owners()
         elif sys.argv[1] == "flush" and sys.argv[2] == "sessions":
             flush_sessions()
         elif sys.argv[1] == "templates" and sys.argv[2] == "add":
@@ -198,6 +200,21 @@ if __name__ == "__main__":
                 default_servers(sys.argv[3])
             else:
                 print("Error! Enter server name to set it as default one")
+        elif sys.argv[1] == "owner" and sys.argv[2] == "add":
+            if (len(sys.argv) == 5):
+                add_owner(int(sys.argv[3]), sys.argv[4])
+            else:
+                print("Error! Enter server name and IP")
+        elif sys.argv[1] == "owner" and sys.argv[2] == "del":
+            if (len(sys.argv) == 4):
+                del_owner(sys.argv[3])
+            else:
+                print("Error! Enter server name to delete")
+        elif sys.argv[1] == "owner" and sys.argv[2] == "upd":
+            if (len(sys.argv) == 5):
+                upd_owner(sys.argv[3], int(sys.argv[4]))
+            else:
+                print("Error! Enter server name and new IP for it")
     #if we call the script from console with argument "main" to start provision process
     elif len(sys.argv) == 2 and sys.argv[1] == "main":
         main()
@@ -213,6 +230,8 @@ if __name__ == "__main__":
         help_servers()
     elif len(sys.argv) == 2 and sys.argv[1] == "cloudflare":
         help_cloudflare()
+    elif len(sys.argv) == 2 and sys.argv[1] == "owner":
+        help_owner()
     #else just show help info.
     elif len(sys.argv) <= 2:
         show_help(sys.argv[0])

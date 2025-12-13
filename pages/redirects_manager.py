@@ -1,25 +1,11 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required
-from functions.site_actions import enable_allredirects, disable_allredirects
 import os,logging,re
 
 redirects_bp = Blueprint("redirects_manager", __name__)
 @redirects_bp.route("/redirects_manager", methods=['GET','POST'])
 @login_required
 def redirects():
-    if request.method == 'POST':
-        if not request.form.get('manager') and request.form.get('redirect_checkbox'):
-            #parsing list of "redirect_checkbox" values because there can be 2 at the same time
-            values = request.form.getlist("redirect_checkbox")
-            checkbox_enabled = "1" in values
-            if checkbox_enabled:
-                enable_allredirects(request.form.get("sitename").strip())
-                return redirect("/",301)
-            else:
-                disable_allredirects(request.form.get("sitename").strip())
-                return redirect("/",301)
-        else:
-            return redirect("/",301)
     #if this is GET request - show page
     if request.method == 'GET':
         args = request.args
@@ -60,3 +46,4 @@ def redirects():
             return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton)
         else:
             return redirect("/",301)
+    return "redirects_manager.py ERROR"

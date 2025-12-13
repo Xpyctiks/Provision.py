@@ -6,6 +6,41 @@ from functions.certificates import cloudflare_certificate
 from flask import current_app,flash
 from flask_login import current_user
 import functions.variables
+from db.database import Ownership,User
+from db.db import db
+
+def setSiteOwner(domain: str) -> bool:
+    """Sets a site owner to the user, who did the provision job"""
+    try:
+        #Get all users and find the ID for the our current user
+        users = User.query.filter_by(realname=current_user.realname).first()
+        if users:
+            owner = users.id
+        else:
+            logging.error(f"setSiteOwner() can not find info in Db about user {current_app.realname}!")
+            asyncio.run(send_to_telegram(f"setSiteOwner() can not find info in Db about user {current_app.realname}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+            return False
+        logging.info(f"Setting site {domain} owner to user {current_user.realname} with ID {owner}")
+        #check if the current user is already an owner of the given domain
+        check = Ownership.query.filter_by(domain=domain).first()
+        if check:
+            if check.id == owner:
+                logging.info(f"User {current_user.realname} with ID {owner} already is the owner of {domain}!")
+                return True
+        #else set it as the new one
+        else:
+            new_owner = Ownership(
+                domain=domain,
+                owner=owner
+            )
+            db.session.add(new_owner)
+            db.session.commit()
+            logging.info(f"User {current_user.realname} with ID {owner} successfully set as the owner of the {domain}")
+        return True
+    except Exception as msg:
+        logging.error(f"Error setting owner {owner} for domain {domain}: {msg}")
+        asyncio.run(send_to_telegram(f"Error setting owner {owner} for domain {domain}: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+        return False
 
 def genJobID() -> None:
     length = 16

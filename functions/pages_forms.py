@@ -1,5 +1,5 @@
 import logging,asyncio
-from db.database import Provision_templates, Cloudflare, Servers
+from db.database import *
 from functions.send_to_telegram import send_to_telegram
 
 def loadTemplatesList():
@@ -70,3 +70,28 @@ def loadServersList():
         logging.error(f"loadServersList() error: {err}")
         asyncio.run(send_to_telegram(f"loadServersList() error: {err}",f"🚒Provision page render:"))
         return "Error", "Error"
+
+def getSiteOwner(domain: str) -> str:
+    """While parsing the root page, this function returns a Realname of the owner for every domain in the list"""
+    try:
+        owner = Ownership.query.filter_by(domain=domain).first()
+        if owner:
+            user = User.query.filter_by(id=owner.owner).first()
+            return f"{user.realname}"
+        else:
+            return "Шукаю власника 💔"
+    except Exception as err:
+        logging.error(f"getSiteOwner(): general error: {err}")
+        return "ERROR!"
+
+def getSiteCreated(domain: str) -> str:
+    """While parsing the root page, this function returns a creation date of the every domain in the list"""
+    try:
+        owner = Ownership.query.filter_by(domain=domain).first()
+        if owner:
+            return owner.created.strftime("%d-%m-%Y %H:%M:%S")
+        else:
+            return "поки що не ясно 💔"
+    except Exception as err:
+        logging.error(f"getSiteCreated(): general error: {err}")
+        return "ERROR!"

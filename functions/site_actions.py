@@ -224,155 +224,157 @@ def enable_site(sitename: str) -> None:
         flash(f"Сайт {sitename} успішно активовано", 'alert alert-success')
     logging.info(f"-----------------------Site enable of {sitename} is finished-----------------")
 
-def enable_allredirects(sitename: str) -> None:
-    """Site action: Enables global redirect for all pages to the main page,personal redirects become disabled for the site.Applies changes immediately. Requires "sitename" as a parameter"""
-    error_message = ""
-    try:
-        logging.info(f"-----------------------Enabling all redirects to the main page for {sitename} by {current_user.realname}-----------------")
-        ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
-        logging.info(f"File: {ngx_av}")
-        #get into the site's config and uncomment one string
-        if os.path.exists(ngx_av):
-            #the first open - uncomment out redirects catch in root location
-            with open(ngx_av, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            new_lines = []
-            for line in lines:
-                stripped = line.lstrip()
-                if stripped.startswith("#") and "if ( $request_uri !=" in stripped:
-                    uncommented = line.replace("#", "", 1)
-                    new_lines.append(uncommented)
-                else:
-                    new_lines.append(line)
-            with open(ngx_av, "w", encoding="utf-8") as f:
-                f.writelines(new_lines)
-            logging.info(f"Redirects in root location of {sitename} Nginx config uncommented out successfully")
-            #the second open - uncomment out include of redirect file config to be sure
-            with open(ngx_av, "r", encoding="utf-8") as f2:
-                lines2 = f2.readlines()
-            new_lines2 = []
-            hasbeenfound = 0
-            for line2 in lines2:
-                stripped2 = line2.lstrip()
-                if stripped2.startswith("#") and f"include additional-configs/301-{sitename}.conf;" in stripped2:
-                    uncommented2 = line2.replace("#", "", 1)
-                    new_lines2.append(uncommented2)
-                    hasbeenfound = 1
-                    logging.info("inlude line found and uncommented")
-                else:
-                    new_lines2.append(line2)
-            #if there is no include at all (old config file)
-            if hasbeenfound == 0:
-                stripped2 = line2 = lines2 = uncommented2 = ""
-                with open(ngx_av, "r", encoding="utf-8") as f2:
-                    lines2 = f2.readlines()
-                new_lines2 = []
-                for line2 in lines2:
-                    stripped2 = line2.lstrip()
-                    if stripped2.startswith("charset utf8;"):
-                        uncommented2 = line2.replace("charset utf8;", f"charset utf8;\n    include additional-configs/301-{sitename}.conf;", 1)
-                        new_lines2.append(uncommented2)
-                        hasbeenfound = 2
-                    else:
-                        new_lines2.append(line2)
-            #here we log the creating of this line
-            if hasbeenfound == 2:
-                logging.info(f"There was no Include for additional-configs/301-{sitename}.conf. Created one.")
-            #if there was changes - write them down
-            if hasbeenfound != 0:
-                with open(ngx_av, "w", encoding="utf-8") as f:
-                    f.writelines(new_lines2)
-                logging.info(f"Redirects in root location of {sitename} Nginx config uncommented out successfully")
-            #start of checks - nginx
-            result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
-            if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-                result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
-                if  re.search(r".*started.*",result2.stderr):
-                    logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
-                else:
-                    logging.error(f"Nginx reload failed!. {result2.stderr}")
-                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
-            else:
-                logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-                error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
-                asyncio.run(send_to_telegram(f"Error reloading Nginx",f"🚒Provision Error"))
-        else:
-            logging.error(f"Error enabling all redirects to the main page of {sitename}: {ngx_av} is not exists!")
-            error_message += f"Помилка активації редиректу всіх сторінок на головну для {sitename}: {ngx_av} не існує!"
-            asyncio.run(send_to_telegram(f"{ngx_av} is not exists!",f"🚒Error enabling all redirects to the main page of {sitename}:"))
-    except Exception as msg:
-        logging.error(f"Global Error enabling all redirects to the main page of {sitename}: {msg}")
-        error_message += f"Глобална помилка активації редиректу всіх сторінок на головну для {sitename}: {msg}"
-        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision Error enabling all redirects to the main page of {sitename}:"))
-    if len(error_message) > 0:
-        flash(error_message, 'alert alert-danger')
-    else:
-        flash(f"Редірект усього успішно активовано для {sitename}", 'alert alert-success')
-    logging.info(f"-----------------------Finished enabling all redirects to the main page for {sitename}-----------------")
+#DEPRECATED FUNCTION. LEFT JUST FOR SOME CASE IN FUTURE
+# def enable_allredirects(sitename: str) -> None:
+#     """Site action: Enables global redirect for all pages to the main page,personal redirects become disabled for the site.Applies changes immediately. Requires "sitename" as a parameter"""
+#     error_message = ""
+#     try:
+#         logging.info(f"-----------------------Enabling all redirects to the main page for {sitename} by {current_user.realname}-----------------")
+#         ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
+#         logging.info(f"File: {ngx_av}")
+#         #get into the site's config and uncomment one string
+#         if os.path.exists(ngx_av):
+#             #the first open - uncomment out redirects catch in root location
+#             with open(ngx_av, "r", encoding="utf-8") as f:
+#                 lines = f.readlines()
+#             new_lines = []
+#             for line in lines:
+#                 stripped = line.lstrip()
+#                 if stripped.startswith("#") and "if ( $request_uri !=" in stripped:
+#                     uncommented = line.replace("#", "", 1)
+#                     new_lines.append(uncommented)
+#                 else:
+#                     new_lines.append(line)
+#             with open(ngx_av, "w", encoding="utf-8") as f:
+#                 f.writelines(new_lines)
+#             logging.info(f"Redirects in root location of {sitename} Nginx config uncommented out successfully")
+#             #the second open - uncomment out include of redirect file config to be sure
+#             with open(ngx_av, "r", encoding="utf-8") as f2:
+#                 lines2 = f2.readlines()
+#             new_lines2 = []
+#             hasbeenfound = 0
+#             for line2 in lines2:
+#                 stripped2 = line2.lstrip()
+#                 if stripped2.startswith("#") and f"include additional-configs/301-{sitename}.conf;" in stripped2:
+#                     uncommented2 = line2.replace("#", "", 1)
+#                     new_lines2.append(uncommented2)
+#                     hasbeenfound = 1
+#                     logging.info("inlude line found and uncommented")
+#                 else:
+#                     new_lines2.append(line2)
+#             #if there is no include at all (old config file)
+#             if hasbeenfound == 0:
+#                 stripped2 = line2 = lines2 = uncommented2 = ""
+#                 with open(ngx_av, "r", encoding="utf-8") as f2:
+#                     lines2 = f2.readlines()
+#                 new_lines2 = []
+#                 for line2 in lines2:
+#                     stripped2 = line2.lstrip()
+#                     if stripped2.startswith("charset utf8;"):
+#                         uncommented2 = line2.replace("charset utf8;", f"charset utf8;\n    include additional-configs/301-{sitename}.conf;", 1)
+#                         new_lines2.append(uncommented2)
+#                         hasbeenfound = 2
+#                     else:
+#                         new_lines2.append(line2)
+#             #here we log the creating of this line
+#             if hasbeenfound == 2:
+#                 logging.info(f"There was no Include for additional-configs/301-{sitename}.conf. Created one.")
+#             #if there was changes - write them down
+#             if hasbeenfound != 0:
+#                 with open(ngx_av, "w", encoding="utf-8") as f:
+#                     f.writelines(new_lines2)
+#                 logging.info(f"Redirects in root location of {sitename} Nginx config uncommented out successfully")
+#             #start of checks - nginx
+#             result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
+#             if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
+#                 result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
+#                 if  re.search(r".*started.*",result2.stderr):
+#                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+#                 else:
+#                     logging.error(f"Nginx reload failed!. {result2.stderr}")
+#                     asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+#             else:
+#                 logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
+#                 error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
+#                 asyncio.run(send_to_telegram(f"Error reloading Nginx",f"🚒Provision Error"))
+#         else:
+#             logging.error(f"Error enabling all redirects to the main page of {sitename}: {ngx_av} is not exists!")
+#             error_message += f"Помилка активації редиректу всіх сторінок на головну для {sitename}: {ngx_av} не існує!"
+#             asyncio.run(send_to_telegram(f"{ngx_av} is not exists!",f"🚒Error enabling all redirects to the main page of {sitename}:"))
+#     except Exception as msg:
+#         logging.error(f"Global Error enabling all redirects to the main page of {sitename}: {msg}")
+#         error_message += f"Глобална помилка активації редиректу всіх сторінок на головну для {sitename}: {msg}"
+#         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision Error enabling all redirects to the main page of {sitename}:"))
+#     if len(error_message) > 0:
+#         flash(error_message, 'alert alert-danger')
+#     else:
+#         flash(f"Редірект усього успішно активовано для {sitename}", 'alert alert-success')
+#     logging.info(f"-----------------------Finished enabling all redirects to the main page for {sitename}-----------------")
 
-def disable_allredirects(sitename: str) -> None:
-    """Site action: Disables global redirect for all pages to the main page,personal redirects become available for the site.Applies changes immediately. Requires "sitename" as a parameter"""
-    error_message = ""
-    try:
-        logging.info(f"-----------------------Disabling all redirects to the main page for {sitename} by {current_user.realname}-----------------")
-        ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
-        logging.info(f"File: {ngx_av}")
-        #get into the site's config and uncomment one string
-        if os.path.exists(ngx_av):
-            #the first open - comment out redirects catch in root location
-            with open(ngx_av, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            new_lines = []
-            for line in lines:
-                stripped = line.lstrip()
-                if stripped.startswith("if ( $request_uri !="):
-                    uncommented = line.replace("if ( $request_uri !=", "#if ( $request_uri !=", 1)
-                    new_lines.append(uncommented)
-                else:
-                    new_lines.append(line)
-            with open(ngx_av, "w", encoding="utf-8") as f:
-                f.writelines(new_lines)
-            logging.info(f"Redirects in root location of {sitename} Nginx config commented out successfully")
-            #the second open - comment out include of redirect file config to be sure
-            with open(ngx_av, "r", encoding="utf-8") as f2:
-                lines2 = f2.readlines()
-            new_lines2 = []
-            for line2 in lines2:
-                stripped2 = line2.lstrip()
-                if stripped2.startswith(f"include additional-configs/301-{sitename}.conf;"):
-                    uncommented2 = line2.replace(f"include additional-configs/301-{sitename}.conf;", f"#include additional-configs/301-{sitename}.conf;", 1)
-                    new_lines2.append(uncommented2)
-                else:
-                    new_lines2.append(line2)
-            with open(ngx_av, "w", encoding="utf-8") as f:
-                f.writelines(new_lines2)
-            logging.info(f"Include of redirects file of {sitename} Nginx config commented out successfully")
-            #start of checks - nginx
-            result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
-            if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-                result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
-                if  re.search(r".*started.*",result2.stderr):
-                    logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
-                else:
-                    logging.error(f"Nginx reload failed!. {result2.stderr}")
-                    asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
-            else:
-                logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-                error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
-                asyncio.run(send_to_telegram(f"Error reloading Nginx",f"🚒Provision Error"))
-        else:
-            logging.error(f"Error disabling all redirects to the main page of {sitename}: {ngx_av} is not exists!")
-            error_message += f"Помилка деактивації редиректу всіх сторінок на головну для {sitename}: {ngx_av} не існує!"
-            asyncio.run(send_to_telegram(f"{ngx_av} is not exists!",f"🚒Error disabling all redirects to the main page of {sitename}:"))
-    except Exception as msg:
-        logging.error(f"Global Error disabling all redirects to the main page of {sitename}: {msg}")
-        error_message += f"Глобальна помилка деактивації редиректу всіх сторінок на головну для {sitename}: {msg}"
-        asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision Error disabling all redirects to the main page of {sitename}:"))
-    if len(error_message) > 0:
-        flash(error_message, 'alert alert-danger')
-    else:
-        flash(f"Редірект усього деактивовано для {sitename}", 'alert alert-success')
-    logging.info(f"-----------------------Finished disabling all redirects to the main page for {sitename}-----------------")
+#DEPRECATED FUNCTION. LEFT JUST FOR SOME CASE IN FUTURE
+# def disable_allredirects(sitename: str) -> None:
+#     """Site action: Disables global redirect for all pages to the main page,personal redirects become available for the site.Applies changes immediately. Requires "sitename" as a parameter"""
+#     error_message = ""
+#     try:
+#         logging.info(f"-----------------------Disabling all redirects to the main page for {sitename} by {current_user.realname}-----------------")
+#         ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
+#         logging.info(f"File: {ngx_av}")
+#         #get into the site's config and uncomment one string
+#         if os.path.exists(ngx_av):
+#             #the first open - comment out redirects catch in root location
+#             with open(ngx_av, "r", encoding="utf-8") as f:
+#                 lines = f.readlines()
+#             new_lines = []
+#             for line in lines:
+#                 stripped = line.lstrip()
+#                 if stripped.startswith("if ( $request_uri !="):
+#                     uncommented = line.replace("if ( $request_uri !=", "#if ( $request_uri !=", 1)
+#                     new_lines.append(uncommented)
+#                 else:
+#                     new_lines.append(line)
+#             with open(ngx_av, "w", encoding="utf-8") as f:
+#                 f.writelines(new_lines)
+#             logging.info(f"Redirects in root location of {sitename} Nginx config commented out successfully")
+#             #the second open - comment out include of redirect file config to be sure
+#             with open(ngx_av, "r", encoding="utf-8") as f2:
+#                 lines2 = f2.readlines()
+#             new_lines2 = []
+#             for line2 in lines2:
+#                 stripped2 = line2.lstrip()
+#                 if stripped2.startswith(f"include additional-configs/301-{sitename}.conf;"):
+#                     uncommented2 = line2.replace(f"include additional-configs/301-{sitename}.conf;", f"#include additional-configs/301-{sitename}.conf;", 1)
+#                     new_lines2.append(uncommented2)
+#                 else:
+#                     new_lines2.append(line2)
+#             with open(ngx_av, "w", encoding="utf-8") as f:
+#                 f.writelines(new_lines2)
+#             logging.info(f"Include of redirects file of {sitename} Nginx config commented out successfully")
+#             #start of checks - nginx
+#             result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
+#             if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
+#                 result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
+#                 if  re.search(r".*started.*",result2.stderr):
+#                     logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+#                 else:
+#                     logging.error(f"Nginx reload failed!. {result2.stderr}")
+#                     asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+#             else:
+#                 logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
+#                 error_message += f"Помилка при перезавантаженні веб сервера Nginx:  {result1.stderr.strip()}"
+#                 asyncio.run(send_to_telegram(f"Error reloading Nginx",f"🚒Provision Error"))
+#         else:
+#             logging.error(f"Error disabling all redirects to the main page of {sitename}: {ngx_av} is not exists!")
+#             error_message += f"Помилка деактивації редиректу всіх сторінок на головну для {sitename}: {ngx_av} не існує!"
+#             asyncio.run(send_to_telegram(f"{ngx_av} is not exists!",f"🚒Error disabling all redirects to the main page of {sitename}:"))
+#     except Exception as msg:
+#         logging.error(f"Global Error disabling all redirects to the main page of {sitename}: {msg}")
+#         error_message += f"Глобальна помилка деактивації редиректу всіх сторінок на головну для {sitename}: {msg}"
+#         asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision Error disabling all redirects to the main page of {sitename}:"))
+#     if len(error_message) > 0:
+#         flash(error_message, 'alert alert-danger')
+#     else:
+#         flash(f"Редірект усього деактивовано для {sitename}", 'alert alert-success')
+#     logging.info(f"-----------------------Finished disabling all redirects to the main page for {sitename}-----------------")
 
 def del_redirect(location: str,sitename:str):
     """Redirect-manager page: deletes one redirect,selected by Delete button on it.Don't applies changes immediately. Requires redirect "from location" and "sitename" as a parameter"""

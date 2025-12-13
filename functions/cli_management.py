@@ -6,6 +6,16 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 from sqlalchemy import text
 
+def help_owner() -> None:
+    """CLI only function: shows hints for OWNER command"""
+    print (f"""
+Possible completion:
+    add    <domain> <database ID>
+    upd    <domain> <new_database_ID>
+    del    <domain>
+        Important: <ID> means unique user ID from its database record in Users table. Integer value only.
+    """)
+
 def help_set() -> None:
     """CLI only function: shows hints for SET command"""
     print (f"""
@@ -713,3 +723,85 @@ def default_servers(name: str) -> None:
     except Exception as err:
         logging.error(f"Set default Server \"{name}\" error: {err}")
         print(f"Set default Server \"{name}\" error: {err}")
+
+def add_owner(id: int, domain: str) -> None:
+    """CLI only function: adds an owner for the given domain"""
+    logging.info("Starting CLI functions: add_owner")
+    try:
+        #Check if the user with given ID exists
+        usr = User.query.filter_by(id=id).first()
+        if not usr:
+            print(f"Error! User with the given ID {id} is not exists!")
+            quit()
+        #Check if the given domain is already owned by the given user
+        check = Ownership.query.filter_by(domain=domain).all()
+        for i, c in enumerate(check,1):
+            if c.owner == id:
+                print(f"Domain \"{domain}\" already owned by user with id {id}!")
+                logging.error(f"Domain \"{domain}\" already owned by user with id {id}!")
+                quit()
+        #Else start addition procedure
+        new_owner = Ownership(
+            domain=domain,
+            owner=id,
+        )
+        db.session.add(new_owner)
+        db.session.commit()
+        print(f"Domain \"{domain}\" now is owned by user with ID {id}!")
+        logging.info(f"Domain \"{domain}\" now is owned by user with ID {id}!")
+    except Exception as err:
+        logging.error(f"Add_owner() general error: {err}")
+        print(f"Add_owner() general error: {err}")
+
+def del_owner(domain: str) -> None:
+    """CLI only function: deletes an owner for a selected domain from database"""
+    logging.info("Starting CLI functions: del_owner")
+    try:
+        check = Ownership.query.filter_by(domain=domain).first()
+        if check:
+            db.session.delete(check)
+            db.session.commit()
+            print(f"Ownership for domain \"{domain}\" deleted successfully!")
+            logging.info(f"Ownership for domain \"{domain}\" deleted successfully!")
+        else:
+            print(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
+            logging.error(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"Ownership for domain \"{domain}\" general error: {err}")
+        print(f"Ownership for domain \"{domain}\" general error: {err}")
+
+def upd_owner(domain: str, new_owner: int) -> None:
+    """CLI only function: updates a domain with the new owner"""
+    logging.info("Starting CLI functions: upd_owner")
+    try:
+        check = Ownership.query.filter_by(domain=domain).first()
+        if check:
+            check.owner = new_owner
+            db.session.commit()
+            print(f"Domain \"{domain}\" owner updated successfully to {new_owner}!")
+            logging.info(f"Domain \"{domain}\" updated successfully to{new_owner}!")
+        else:
+            print(f"Domain \"{domain}\" owner update error - no such domain!")
+            logging.error(f"Domain \"{domain}\" owner update error - no such domain!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"Domain \"{domain}\" owner update general error: {err}")
+        print(f"Domain \"{domain}\" owner update general error: {err}")
+
+def show_owners() -> None:
+    """CLI only function: shows all domains and their owners from the database"""
+    logging.info("Starting CLI functions: show_owners")
+    try:
+        accs = Ownership.query.order_by(Ownership.domain).all()
+        if len(accs) == 0:
+            print("No domains with owners found in DB!")
+            quit()
+        print("-------------------------------------------------------------------------------------------------------")
+        for i, s in enumerate(accs, 1):
+            realn = User.query.filter_by(id=s.id).first()
+            print(f"ID: {s.id},Domain: {s.domain},Owner: {realn.realname}(ID:{s.owner}),Created: {s.created}")
+        print("-------------------------------------------------------------------------------------------------------")
+    except Exception as err:
+        logging.error(f"CLI show owner function error: {err}")
+        print(f"CLI show owner function error: {err}")
