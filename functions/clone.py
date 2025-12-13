@@ -23,6 +23,8 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
                 flash('Помилка при копіюванні {srcPath} в {dstPath}','alert alert-danger')
                 return False
             logging.info(f"Copying {srcPath} to {dstPath} is done successfully!")
+            #Set the global variable to the name of the source site. This value will be applied to DB record while setSiteOwner() procedure
+            functions.variables.CLONED_FROM = source_site
             setupNginx(domain+".zip")
             return True
         except Exception as msg:

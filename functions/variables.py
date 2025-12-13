@@ -1,2 +1,3 @@
 JOB_COUNTER = JOB_TOTAL = 1
 JOB_ID = ""
+CLONED_FROM = ""

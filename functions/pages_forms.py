@@ -88,8 +88,14 @@ def getSiteCreated(domain: str) -> str:
     """While parsing the root page, this function returns a creation date of the every domain in the list"""
     try:
         owner = Ownership.query.filter_by(domain=domain).first()
+        #If the domain found in the DB
         if owner:
-            return owner.created.strftime("%d-%m-%Y %H:%M:%S")
+            if owner.cloned == "":
+                #if the site is not cloned one
+                return owner.created.strftime("%d-%m-%Y %H:%M:%S")
+            else:
+                #if the site is a cloned one
+                return f"{owner.created.strftime('%d-%m-%Y %H:%M:%S')}.<br>Клон {owner.cloned}"
         else:
             return "поки що не ясно 🤷🏼‍♂️"
     except Exception as err:

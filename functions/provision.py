@@ -29,10 +29,18 @@ def setSiteOwner(domain: str) -> bool:
                 return True
         #else set it as the new one
         else:
-            new_owner = Ownership(
-                domain=domain,
-                owner=owner
-            )
+            #check the global variable if this is cloned site
+            if functions.variables.CLONED_FROM != "":
+                new_owner = Ownership(
+                    domain=domain,
+                    owner=owner,
+                    cloned = functions.variables.CLONED_FROM
+                )
+            else:
+                new_owner = Ownership(
+                    domain=domain,
+                    owner=owner,
+                )
             db.session.add(new_owner)
             db.session.commit()
             logging.info(f"User {current_user.realname} with ID {owner} successfully set as the owner of the {domain}")
