@@ -58,5 +58,4 @@ def provision():
                 flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
                 logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")
             return redirect("/",301)
-        return redirect("/",301)
-    return ""
+

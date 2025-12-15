@@ -4,6 +4,42 @@ document.addEventListener("DOMContentLoaded", function () {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
     }
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+        const mainSite = btn.dataset.site;
+        const selectedSites = Array.from(
+            document.querySelectorAll(".selected-site:checked")
+        ).map(chk => chk.value);
+        if (!selectedSites.includes(mainSite)) {
+            selectedSites.push(mainSite);
+        }
+        const sitesList = selectedSites.join(", ");
+        if (!confirm(
+            `Ви дійсно хочете видалити наступні сайти?\n\n${sitesList}`
+        )) {
+            e.preventDefault();
+            }
+        });
+    });
+
+    document.querySelectorAll(".gitpull-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+        const mainSite = btn.dataset.site;
+        const selectedSites = Array.from(
+            document.querySelectorAll(".selected-site:checked")
+        ).map(chk => chk.value);
+        if (!selectedSites.includes(mainSite)) {
+            selectedSites.push(mainSite);
+        }
+        const sitesList = selectedSites.join(", ");
+        if (!confirm(
+            `Оновити код до актуального на наступних сайтах?\n\n${sitesList}`
+        )) {
+            e.preventDefault();
+            }
+        });
+    });
 });
 
 document.addEventListener('show.bs.collapse', async function (event) {

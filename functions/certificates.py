@@ -9,6 +9,7 @@ from flask import current_app
 from db.database import Cloudflare, Servers
 
 def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):
+    """Main function to automatically get and save certificates"""
     try:
         #preparing account token by the selected account
         logging.info("Starting certificates pre-check")
@@ -74,6 +75,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         return False
 
 def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):
+    """Updates DNS records via API to the selected one"""
     headers = {
         "X-Auth-Email": selected_account,
         "X-Auth-Key": token,
@@ -131,6 +133,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
         return False
 
 def create_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):
+    """Creates new DNS records via Cloudflare API"""
     try:
         logging.info(f"Setting up new DNS record for domain {domain}, account {selected_account}, zone {zone_id}, ip {ip}")
         url2 = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name={domain}"
@@ -236,6 +239,7 @@ def request_cloudflare_cert(csr_pem,domain: str,email: str, token: str):
         return False
 
 def issue_cert(domain: str,account: str, token: str):
+    """Main certificate issue function"""
     try:
         logging.info(f"Starting certificate issue for domain {domain} on the account {account}")
         key, csr = generate_key_and_csr(domain)

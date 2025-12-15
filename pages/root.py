@@ -38,15 +38,15 @@ def index():
                 <form method="post" action="/action" id="main_form"></form>
                 <form method="post" action="/redirects_manager" id="redirect_form{s}"></form>
                 <td class="table-success">
-                    <button type="submit" value="{s}" name="delete" form="main_form" onclick="showLoading()" class="btn btn-danger" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
+                    <button type="submit" value="{s}" data-site="{s}" name="delete" form="main_form" onclick="showLoading()" class="btn btn-danger delete-btn" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="disable" form="main_form" onclick="showLoading()" class="btn btn-warning" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>
                     <a name="clone" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={s}" style="width: 139px;" title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</a>
-                    <button type="submit" value="{s}" name="gitPull" form="main_form" onclick="showLoading()" class="btn btn-primary" style="margin-top: 5px; title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button>
+                    <button type="submit" value="{s}" id="gitPullButton" name="gitPull" form="main_form" onclick="showLoading()" class="btn btn-primary gitpull-btn" style="margin-top: 5px; title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button>
                     <a href="/redirects_manager?site={s}" class="btn btn-info" type="submit" name="manager" value="{s}" style="margin-top: 5px; width: 236px;" {button_state} title="Керування 301-и редіректами для цього сайту.">🚥Редіректи\n(~{count_redirects(s)} шт. вже є)</a><br>
                     <input type="hidden" name="sitename" value="{s}">
                     <u>Сайт розгорнут: {getSiteCreated(s)}</u>
                 <td class="table-success">
-                    <input class="form-check-input chk" type="checkbox" name="selected" value="{s}" form="main_form">
+                    <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{s}" form="main_form">
                     {s}
                 </td>
                 <td class="table-success">
@@ -71,12 +71,15 @@ def index():
             elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
                 <td class="table-danger"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
+                    <button type="submit" value="{s}" data-site="{s}" name="delete" onclick="showLoading()" class="btn btn-danger delete-btn" 
                     title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
                     title="Активувати сайт - він буде оброблятися при запитах ззовні.">Активувати</button>
                 </form>
-                <td class="table-danger">{s}</td>
+                <td class="table-danger">                    
+                    <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{s}" form="main_form">
+                    {s}
+                </td>
                 <td class="table-danger">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger"></td>
                 <td class="table-danger">🚨Помилка конфігураціх РНР</td>
@@ -85,12 +88,15 @@ def index():
             elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-danger">{i}</th>
                 <td class="table-danger"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
+                    <button type="submit" value="{s}" data-site="{s}" name="delete" onclick="showLoading()" class="btn btn-danger delete-btn" 
                     title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
                     title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>
                 </form>
-                <td class="table-danger">{s}</td>
+                <td class="table-danger">                    
+                    <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{s}" form="main_form">
+                    {s}
+                </td>
                 <td class="table-danger">{os.path.join(current_app.config["WEB_FOLDER"],s)}</td>
                 <td class="table-danger">{getSiteOwner(s)}</td>
                 <td class="table-danger">🚨Помилка конфігураціх Nginx</td>
@@ -99,7 +105,7 @@ def index():
             elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 table += f"""\n<tr>\n<th scope="row" class="table-warning">{i}</th>
                 <td class="table-warning"><form method="post" action="/action">
-                    <button type="submit" value="{s}" name="delete" onclick="showLoading()" class="btn btn-danger" 
+                    <button type="submit" value="{s}" data-site="{s}" name="delete" onclick="showLoading()" class="btn btn-danger delete-btn" 
                     title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button type="submit" value="{s}" name="enable" onclick="showLoading()" class="btn btn-success" 
                     title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>
@@ -107,7 +113,10 @@ def index():
                     title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</button>
                     Створено: {getSiteCreated(s)}
                 </form>
-                <td class="table-warning">{s}</td>
+                <td class="table-warning">
+                    <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{s}" form="main_form">
+                    {s}
+                </td>
                 <td class="table-warning">
                 <div class="accordion" id="folderAccordion{i}">
                     <div class="accordion-item">

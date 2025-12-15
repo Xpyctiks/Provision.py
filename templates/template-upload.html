@@ -36,38 +36,46 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 27vw;">
-<div class="card-header">
-  <strong>Додати новий сайт:</strong>
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 30vw;">
+<div class="card-header" style="background-color: greenyellow;">
+  <strong>Додати новий сайт вручну:</strong>
 </div>
 <div class="card-body">
   <form action="/upload" method="POST" enctype="multipart/form-data" id="postform">
-  <h3 class="card-title">Крок 1:</h3>
-  <p class="card-text">Завантажте ZIP архів,в якому в корні має бути мінімум наступне:</p>
-  <p><strong>public/:</strong> - (ВАЖЛИВО!) головна папка зі скриптами.</p>
-  <p><strong>site_name.crt</strong> - (ВАЖЛИВО!) файл сертифікату, ім'я має бути повним доменом сайту + .crt в кінці(site.com.crt наприклад)</p>
-  <p><strong>site_name.key</strong> - (ВАЖЛИВО!) файл ключа, ім'я має бути повним доменом сайту + .key в кінці(site.com.key наприклад)</p>
-  <input type="file" class="form-control form-control-sm" name="fileUpload[]" id="fileUpload" accept=".zip" multiple><br>
-  <p class="card-text">Можна завантажити одразу багато файлів.<br>Всі файли та папки будуть розпаковані на сервері в веб папку.</p>
-  <p>Файл "rewrite" буде видалено після розпаковки.</p>
-  <p>Файли сертифікатів будуть переміщені до папки веб серверу.</p>
-    <button type="submit" class="btn btn-info" style="margin-top: -5px; width: 700px; margin-left: 20px;" name="buttonSubmit" value="buttonSubmit" onclick="showLoading()">Почати завантаження</button>
+    <p><h5>Завантажте ZIP архів,в якому в корні має бути мінімум наступне:</h5>
+    <strong>public/:</strong> - (ВАЖЛИВО!) головна папка зі скриптами.Веб сервер буде шукати головний файл index.php саме в цій папці. Будь які інші файли та папки можуть бути окрім цієї папки.<br></p>
+    <input type="file" class="form-control form-control-sm" name="fileUpload[]" id="fileUpload" accept=".zip" multiple><br>
+    <p class="card-text">Можна завантажити одразу багато файлів.<br>Кожен архів буде розпакован в папку із ім'ям домену, взятого із назви файлу архіву.</p>
+    <div class="mb-3 dropdown">
+      <h5 class="card-title">Оберіть аккаунт CloudFlare на якому новий домен розташован:</h5>
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 580px;">{{first_cf|safe}}</button>
+      <button class="btn btn-warning" type="button" id="Validate" value="Validate" style="width: 168px;" disabled><s>Перевірити</s></button>
+      <ul class="dropdown-menu" aria-labelledby="Account">
+        {{cf_list|safe}}
+      </ul>
+      <input type="hidden" name="selected_account" id="selected_account" value="{{first_cf|safe}}" required>
+      <div class="invalid-feedback">
+        Оберіть аккаунт CloudFlare.
+      </div>
+    </div>
+    <div class="mb-3 dropdown">
+      <h5 class="card-title">Оберіть на який сервер будуть вести DNS записи:</h5>
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="Server" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_server|safe}}</button>
+      <ul class="dropdown-menu" aria-labelledby="Account">
+        {{server_list|safe}}
+      </ul>
+      <input type="hidden" name="selected_server" id="selected_server" value="{{first_server|safe}}" required>
+      <div class="invalid-feedback">
+        Оберіть на який сервер будуть DNS записи
+      </div>
+    </div>
+    <p style="color: red;">Увага! Якщо завантажуються багато файлів одночасно - всі домени повинні бути на одному аккаунті CloudFlare, що обран вище!
+      Також всі ці файли повинні вести на один і той самий, обраний вище, сервер!
+    </p>
+    <button type="submit" class="btn" style="background-color: yellowgreen; margin-top: 5px; width: 700px; margin-left: 20px;" name="buttonSubmit" value="buttonSubmit" onclick="showLoading()">Почати автоматичне розгортання із файлу</button>
   </form>
 </div>
-<script>
-  document.getElementById("postform").addEventListener("submit", function(event) {
-    const input = document.getElementById("fileUpload");
-    const value = input.value.trim();
-    if (value === "") {
-      input.classList.add("is-invalid");
-      input.classList.remove("is-valid");
-      event.preventDefault();
-    } else {
-      input.classList.remove("is-invalid");
-      input.classList.add("is-valid");
-    }
-  });
-</script>
+<script src="{{ url_for('static', filename='js/provision.js') }}"></script>
 </main>
 </body>
 </html>

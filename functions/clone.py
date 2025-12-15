@@ -1,11 +1,12 @@
-import os,asyncio,logging,shutil
+import os,asyncio,logging,shutil,subprocess
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
-from functions.provision import setupNginx
+from functions.provision import setupNginx,finishJob
 from flask import current_app,flash
 import functions.variables
 
 def start_clone(domain: str, source_site: str, selected_account: str, selected_server: str, realname: str):
+    """Main function to clone any selected site to the new one, keeping all files and settings from the original site"""
     logging.info(f"---------------------------Starting clone of the site {source_site} to new site {domain} by {realname}----------------------------")
     logging.info(f"Cloudflare account: {selected_account}, IP of the server: {selected_server}")
     dstPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
@@ -23,9 +24,21 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
                 flash('Помилка при копіюванні {srcPath} в {dstPath}','alert alert-danger')
                 return False
             logging.info(f"Copying {srcPath} to {dstPath} is done successfully!")
+            #setting git safe value to allow this folder works with git
+            finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
+            result = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
+            if result.returncode != 0:
+                logging.error(f"Error while git add safe.directory: {result.stderr}")
+                asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision clone error:"))
+            else:
+                logging.info("Git add safe directory done successfully!")
             #Set the global variable to the name of the source site. This value will be applied to DB record while setSiteOwner() procedure
             functions.variables.CLONED_FROM = source_site
-            setupNginx(domain+".zip")
+            if not setupNginx(domain+".zip"):
+                logging.error("start_clone(): setupNginx() function returned an error!")
+                finishJob("",domain,selected_account,selected_server)
+                return False
+            finishJob("",domain,selected_account,selected_server)
             return True
         except Exception as msg:
             logging.error(f"start_clone() general error: {msg}")

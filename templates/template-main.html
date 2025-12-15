@@ -64,9 +64,9 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
-        <ul class=flashes style="margin-top: 33px;" id="message">
+        <ul class=flashes style="margin-top: 33px; white-space: pre-line;" id="message">
           {% for category, message in messages %}
-          <li class="{{ category }}">{{ message }}</li>
+          <li class="{{ category }}">{{ message|safe }}</li>
           {% endfor %}
         </ul>
       </div>    
