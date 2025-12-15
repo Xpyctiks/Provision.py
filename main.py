@@ -198,19 +198,19 @@ if __name__ == "__main__":
                 print("Error! Enter server name to set it as default one")
         elif sys.argv[1] == "owner" and sys.argv[2] == "add":
             if (len(sys.argv) == 5):
-                add_owner(int(sys.argv[3]), sys.argv[4])
+                add_owner(sys.argv[3], int(sys.argv[4]))
             else:
-                print("Error! Enter server name and IP")
+                print("Error! Enter domain name and owner's ID")
         elif sys.argv[1] == "owner" and sys.argv[2] == "del":
             if (len(sys.argv) == 4):
                 del_owner(sys.argv[3])
             else:
-                print("Error! Enter server name to delete")
+                print("Error! Enter domain name to delete")
         elif sys.argv[1] == "owner" and sys.argv[2] == "upd":
             if (len(sys.argv) == 5):
                 upd_owner(sys.argv[3], int(sys.argv[4]))
             else:
-                print("Error! Enter server name and new IP for it")
+                print("Error! Enter domain name and new owner ID for it")
     elif len(sys.argv) == 2 and sys.argv[1] == "set":
         help_set()
     elif len(sys.argv) == 2 and sys.argv[1] == "user":

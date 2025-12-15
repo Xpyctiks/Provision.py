@@ -724,7 +724,7 @@ def default_servers(name: str) -> None:
         logging.error(f"Set default Server \"{name}\" error: {err}")
         print(f"Set default Server \"{name}\" error: {err}")
 
-def add_owner(id: int, domain: str) -> None:
+def add_owner(domain: str, id: int) -> None:
     """CLI only function: adds an owner for the given domain"""
     logging.info("Starting CLI functions: add_owner")
     try:
