@@ -1,4 +1,4 @@
-import os,asyncio,logging,shutil,subprocess
+import os,asyncio,logging,shutil,subprocess,sqlite3
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
 from functions.provision import setupNginx,finishJob
@@ -38,6 +38,18 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
                 logging.error("start_clone(): setupNginx() function returned an error!")
                 finishJob("",domain,selected_account,selected_server)
                 return False
+            #the last moment - turn off indexing in Db of the clonned site
+            DB_PATH=os.path.join(dstPath,"database","database.db")
+            if os.path.exists(DB_PATH):
+                with sqlite3.connect(DB_PATH) as conn:
+                    cur = conn.cursor()
+                    cur.execute("""UPDATE settings SET value =  WHERE grupa = ? AND name = ?""", ("0", "seo", "allow_indexing"))
+                    if cur.rowcount == 0:
+                        cur.execute("""INSERT INTO settings (grupa, name, value) VALUES (?, ?, ?)""", ("seo", "allow_indexing", "0"))
+                    conn.commit()
+                    logging.info(f"SQLite3 database of the clonned site {DB_PATH} updated successfully!")
+            else:
+                logging.error(f"SQLite3 database of the clonned site {DB_PATH} is not exists! Skipping update...")
             finishJob("",domain,selected_account,selected_server)
             return True
         except Exception as msg:

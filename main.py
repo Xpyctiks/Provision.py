@@ -39,10 +39,6 @@ def load_user(user_id):
 from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
-def main() -> None:
-    load_config(application)
-    preStart_0()
-
 if __name__ == "__main__":
     application.app_context().push()
     if len(sys.argv) > 2:
@@ -215,9 +211,6 @@ if __name__ == "__main__":
                 upd_owner(sys.argv[3], int(sys.argv[4]))
             else:
                 print("Error! Enter server name and new IP for it")
-    #if we call the script from console with argument "main" to start provision process
-    elif len(sys.argv) == 2 and sys.argv[1] == "main":
-        main()
     elif len(sys.argv) == 2 and sys.argv[1] == "set":
         help_set()
     elif len(sys.argv) == 2 and sys.argv[1] == "user":
@@ -235,5 +228,4 @@ if __name__ == "__main__":
     #else just show help info.
     elif len(sys.argv) <= 2:
         show_help(sys.argv[0])
-    application.run("0.0.0.0",80,debug=True)
     quit(0)
