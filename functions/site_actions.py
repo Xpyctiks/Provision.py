@@ -386,7 +386,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                 result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
                 if result.returncode != 0:
                     logging.error(f"Git pull for {domain} returned error: {result.stderr}")
-                    asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull error:"))
+                    asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:"))
                     flash(f"Помилка оновлення коду із репозиторію {path}: {result.stderr}.",'alert alert-danger')
                     logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
                     return False
@@ -397,7 +397,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                     return True
             else:
                 logging.error(f"Git pull for {domain} returned error: site folder {path} not exists!")
-                asyncio.run(send_to_telegram(f"Git pull for {domain} returned error: site folder {path} not exists!",f"🚒Provision pull error:"))
+                asyncio.run(send_to_telegram(f"Git pull for {domain} returned error: site folder {path} not exists!",f"🚒Provision pull by {current_user.realname}:"))
                 flash(f"Помилка оновлення коду із репозиторію: папка {domain} чомусь не існує!",'alert alert-danger')
                 logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
                 return False
@@ -415,7 +415,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                     result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
                     if result.returncode != 0:
                         logging.error(f"Git pull for {domain} returned error: {result.stderr}")
-                        asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull error:"))
+                        asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:"))
                         message += f"[❌] Помилка оновлення коду для {curr_domain}\n"
                     else:
                         message += f"[✅] Код {curr_domain} успішно оновлено!\n"
@@ -425,6 +425,6 @@ def makePull(domain: str, pullArray: list = []) -> bool:
             return True
     except Exception as msg:
         logging.error(f"Makepull() Global Error:", "{msg}")
-        asyncio.run(send_to_telegram(f"makePull() global error: {msg}",f"🚒Provision pull error:"))
+        asyncio.run(send_to_telegram(f"makePull() global error: {msg}",f"🚒Provision pull by {current_user.realname}:"))
         logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
         return False

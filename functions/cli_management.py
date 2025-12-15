@@ -1,4 +1,4 @@
-import logging
+import logging,os
 from db.db import db
 from db.database import *
 from functions.load_config import load_config
@@ -736,10 +736,15 @@ def add_owner(domain: str, id: int) -> None:
         #Check if the given domain is already owned by the given user
         check = Ownership.query.filter_by(domain=domain).all()
         for i, c in enumerate(check,1):
-            if c.owner == id:
+            if c.owner == str(id):
                 print(f"Domain \"{domain}\" already owned by user with id {id}!")
                 logging.error(f"Domain \"{domain}\" already owned by user with id {id}!")
                 quit()
+        #check if the domain physically exists on the server
+        if not os.path.exists(os.path.join(current_app.config['WEB_FOLDER'],domain)):
+            print(f"Domain \"{domain}\" phisycally not exists on the server!")
+            logging.error(f"Domain \"{domain}\" phisycally not exists on the server!")
+            quit()
         #Else start addition procedure
         new_owner = Ownership(
             domain=domain,
