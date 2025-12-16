@@ -242,6 +242,12 @@ def issue_cert(domain: str,account: str, token: str):
     """Main certificate issue function"""
     try:
         logging.info(f"Starting certificate issue for domain {domain} on the account {account}")
+        #check if we already have certificates - do nothing
+        if os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".crt")) and os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".key")):
+            logging.info(f"{os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key'))} already exist on the server. Skipping certificates issue!")
+            return True
+        else:
+            logging.info(f"{os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key'))} are not exist on the server. Starting issue procedure...")
         key, csr = generate_key_and_csr(domain)
         response = request_cloudflare_cert(csr,domain,account,token)
         if not response.get("success"):

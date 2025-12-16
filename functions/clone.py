@@ -43,9 +43,9 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
             if os.path.exists(DB_PATH):
                 with sqlite3.connect(DB_PATH) as conn:
                     cur = conn.cursor()
-                    cur.execute("""UPDATE settings SET value =  WHERE grupa = ? AND name = ?""", ("0", "seo", "allow_indexing"))
+                    cur.execute("UPDATE settings SET value = '0' WHERE grupa = 'seo' AND name = 'allow_indexing'")
                     if cur.rowcount == 0:
-                        cur.execute("""INSERT INTO settings (grupa, name, value) VALUES (?, ?, ?)""", ("seo", "allow_indexing", "0"))
+                        cur.execute("INSERT INTO settings (grupa, name, value) VALUES ('seo', 'allow_indexing', '0')")
                     conn.commit()
                     logging.info(f"SQLite3 database of the clonned site {DB_PATH} updated successfully!")
             else:
@@ -53,8 +53,10 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
             finishJob("",domain,selected_account,selected_server)
             return True
         except Exception as msg:
+            finishJob("",domain,selected_account,selected_server)
             logging.error(f"start_clone() general error: {msg}")
             asyncio.run(send_to_telegram(f"start_clone() general error: {msg}",f"🚒Provision clone error:"))
             return False
     else:
+        finishJob("",domain,selected_account,selected_server)
         return False

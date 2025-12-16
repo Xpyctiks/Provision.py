@@ -1,6 +1,7 @@
-from flask import render_template,request,redirect,flash,Blueprint,current_app
+from flask import render_template,redirect,Blueprint,current_app,flash
 from flask_login import login_required
-import logging,os
+from functions.send_to_telegram import send_to_telegram
+import logging,os,asyncio
 
 logs_bp = Blueprint("logs", __name__)
 @logs_bp.route("/logs", methods=['GET'])
@@ -12,8 +13,11 @@ def showLogs():
                 log = f.read()
             return render_template("template-logs.html",log=log)
         else:
+            flash(f"Помилка відкриття файла логу {current_app.config['LOG_FILE']}",'alert alert-danger')
+            asyncio.run(send_to_telegram(f"Error opening log file {current_app.config['LOG_FILE']}!",f"🚒Provision log page:"))
             return redirect("/",301)
     except Exception as err:
-        print(err)
-        logging.error(f"Provision page provision() render error: {err}")
-        return ""
+        asyncio.run(send_to_telegram(f"Error opening log file {current_app.config['LOG_FILE']}!",f"🚒Provision log page:"))
+        logging.error(f"Logs page showLogs() gereral error: {err}")
+        flash(f"Загальна помилка при спробі відкриття файла логу {current_app.config['LOG_FILE']}",'alert alert-danger')
+        return redirect("/",301)
