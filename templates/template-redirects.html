@@ -22,14 +22,14 @@
         <ul class="navbar-nav me-auto mb-2 mb-md-0">
           <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
           <form action="/action" method="post">
-            <button class="btn {{applyButton|safe}}" type="submit" id="applyChanges" name="applyChanges" value="apply" style="margin-left: -15px;">Застосувати</button>
+            <button class="btn {{applyButton|safe}}" type="submit" id="applyChanges" name="applyChanges" value="apply" style="margin-left: -15px;">✅Застосувати</button>
             <input type="hidden" name="sitename" value="{{sitename|safe}}">
           </form>
         </ul>
-        <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">На головну</a>&nbsp;
-        <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">Додати/завантажити нові редіректи</a>&nbsp;
+        <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">⬅На головну</a>&nbsp;
+        <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">🚀Додати/завантажити нові редіректи</a>&nbsp;
         <form class="d-flex" action="/logout" method="POST">
-          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">{{current_user.realname}}&nbsp;Вихід</button>
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
     </div>
