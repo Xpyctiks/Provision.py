@@ -5,7 +5,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
-from flask import current_app
+from flask_login import current_user
 from db.database import Cloudflare, Servers
 
 def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):
@@ -23,7 +23,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
             logging.error(f"IP of the server {selected_server} is not found during validation procedure")
             return f'{{"message": "IP of the server {selected_server} is not found during validation procedure"}}'
         ip = srv.ip
-        url = "https://api.cloudflare.com/client/v4/zones"
+        url = "https://api.cloudflare.com/client/v4/zones?per_page=50"
         headers = {
             "X-Auth-Email": selected_account,
             "X-Auth-Key": token,
@@ -67,11 +67,11 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
                 return False
         else:
             logging.error(f"Domain {domain} is not exists on the CF account {selected_account}")
-            asyncio.run(send_to_telegram(f"Domain {domain} is not exists on the CF account {selected_account}",f"🚒Provision job by {current_app.realname} error:"))
+            asyncio.run(send_to_telegram(f"Domain {domain} is not exists on the CF account {selected_account}",f"🚒Provision job by {current_user.realname} error:"))
             return False
     except Exception as msg:
         logging.error(f"Cloudflare_certificate global error: {msg}")
-        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error by {current_app.realname}: {msg}",f"🚒Provision job by {current_app.realname} error:"))
+        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error by {current_user.realname}: {msg}",f"🚒Provision job by {current_user.realname} error:"))
         return False
 
 def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):
