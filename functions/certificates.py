@@ -6,6 +6,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from flask_login import current_user
+from flask import current_app
 from db.database import Cloudflare, Servers
 
 def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):
@@ -243,11 +244,11 @@ def issue_cert(domain: str,account: str, token: str):
     try:
         logging.info(f"Starting certificate issue for domain {domain} on the account {account}")
         #check if we already have certificates - do nothing
-        if os.path.exists(os.path.join(current_user.config['NGX_CRT_PATH'],domain+".crt")) and os.path.exists(os.path.join(current_user.config['NGX_CRT_PATH'],domain+".key")):
-            logging.info(f"{os.path.exists(os.path.join(current_user.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_user.config['NGX_CRT_PATH'],domain+'.key'))} already exist on the server. Skipping certificates issue!")
+        if os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".crt")) and os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".key")):
+            logging.info(f"{os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key'))} already exist on the server. Skipping certificates issue!")
             return True
         else:
-            logging.info(f"{os.path.exists(os.path.join(current_user.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_user.config['NGX_CRT_PATH'],domain+'.key'))} are not exist on the server. Starting issue procedure...")
+            logging.info(f"{os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key'))} are not exist on the server. Starting issue procedure...")
         key, csr = generate_key_and_csr(domain)
         response = request_cloudflare_cert(csr,domain,account,token)
         if not response.get("success"):
@@ -256,11 +257,11 @@ def issue_cert(domain: str,account: str, token: str):
             return False
         cert = response["result"]["certificate"]
         key = key.decode()
-        keyFile = os.path.join(current_user.config['NGX_CRT_PATH'],domain+".key")
+        keyFile = os.path.join(current_app.config['NGX_CRT_PATH'],domain+".key")
         with open(keyFile, "w") as f:
             f.write(key)
             logging.info(f"Certificate key {keyFile} saved.")
-        crtFile = os.path.join(current_user.config['NGX_CRT_PATH'],domain+".crt")
+        crtFile = os.path.join(current_app.config['NGX_CRT_PATH'],domain+".crt")
         with open(crtFile, "w") as f:
             f.write(cert)
             logging.info(f"Certificate {crtFile} saved.")
