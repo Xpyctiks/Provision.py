@@ -31,7 +31,6 @@ login_manager.init_app(application)
 with application.app_context():
     db.create_all()
 from functions.cli_management import *
-from functions.provision import preStart_0
 
 @login_manager.user_loader
 def load_user(user_id):

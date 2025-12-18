@@ -67,11 +67,11 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
                 return False
         else:
             logging.error(f"Domain {domain} is not exists on the CF account {selected_account}")
-            asyncio.run(send_to_telegram(f"Domain {domain} is not exists on the CF account {selected_account}",f"🚒Provision job error:"))
+            asyncio.run(send_to_telegram(f"Domain {domain} is not exists on the CF account {selected_account}",f"🚒Provision job by {current_app.realname} error:"))
             return False
     except Exception as msg:
         logging.error(f"Cloudflare_certificate global error: {msg}")
-        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error by {current_app.realname}: {msg}",f"🚒Provision job error:"))
+        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error by {current_app.realname}: {msg}",f"🚒Provision job by {current_app.realname} error:"))
         return False
 
 def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):

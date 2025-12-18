@@ -32,6 +32,7 @@ def do_validation():
     }
     #making request to check the domain's existance on the server
     r = requests.get(url, headers=headers).json()
+    logging.info(r)
     names = [item["name"] for item in r["result"]]
     if domain in names:
         message += "[✅] Домен існує на цьому сервері<br>"
