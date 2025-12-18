@@ -24,7 +24,7 @@ def do_validation():
         logging.error(f"IP of the server {server} is not found during validation procedure")
         return f'{{"message": "IP of the server {server} is not found during validation procedure"}}'
     ip = srv.ip
-    url = "https://api.cloudflare.com/client/v4/zones"
+    url = "https://api.cloudflare.com/client/v4/zones?per_page=50"
     headers = {
         "X-Auth-Email": account,
         "X-Auth-Key": token,
@@ -32,7 +32,6 @@ def do_validation():
     }
     #making request to check the domain's existance on the server
     r = requests.get(url, headers=headers).json()
-    logging.info(r)
     names = [item["name"] for item in r["result"]]
     if domain in names:
         message += "[✅] Домен існує на цьому сервері<br>"
