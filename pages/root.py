@@ -38,7 +38,7 @@ def index():
                 <form method="post" action="/action" id="main_form"></form>
                 <form method="post" action="/redirects_manager" id="redirect_form{s}"></form>
                 <td class="table-success">
-                    <button class="btn btn-danger delete-btn" data-bs-toggle="tooltip" data-bs-placement="top" type="button" value="{s}" data-site="{s}" name="delete" form="main_form" onclick="showLoading()" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
+                    <button class="btn btn-danger delete-btn" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{s}" data-site="{s}" name="delete" form="main_form" onclick="showLoading()" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
                     <button class="btn btn-warning" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{s}" name="disable" form="main_form" onclick="showLoading()"  title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>
                     <a name="clone" data-bs-toggle="tooltip" data-bs-placement="top" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={s}" style="width: 139px;" title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</a>
                     <button data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{s}" id="gitPullButton" name="gitPull" form="main_form" onclick="showLoading()" class="btn btn-primary gitpull-btn" style="margin-top: 5px;" title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button>
