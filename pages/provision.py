@@ -34,7 +34,7 @@ def provision():
         #starts main provision actions
         else:
             #cleans up the domain string
-            domain = request.form['domain'].strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+            domain = request.form['domain'].strip().removeprefix("https://").removeprefix("http://").rstrip("/").lower()
             finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
             if os.path.exists(finalPath):
                 logging.info(f"---------------------------Starting automatic deploy for site {domain} by {current_user.realname}----------------------------")
@@ -58,4 +58,3 @@ def provision():
                 flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
                 logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")
             return redirect("/",301)
-

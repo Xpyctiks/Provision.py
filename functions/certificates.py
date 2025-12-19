@@ -30,10 +30,13 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
             "X-Auth-Key": token,
             "Content-Type": "application/json"
         }
+        params = {
+            "name": domain,
+            "per_page": 1
+        }
         #making request to check the domain's existance on the server
-        r = requests.get(url, headers=headers).json()
-        names = [item["name"] for item in r["result"]]
-        if domain in names:
+        r = requests.get(url, headers=headers, params=params).json()
+        if r["success"] and r["result"]:
             logging.info(f"The selected domain {domain} exists on the account {selected_account}")
             if issue_cert(domain,selected_account,token):
                 logging.info("Starting preparation do DNS records setup...")

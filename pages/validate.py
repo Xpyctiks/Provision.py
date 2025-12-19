@@ -8,7 +8,7 @@ validate_bp = Blueprint("validate", __name__)
 @login_required
 def do_validation():
     message = ""
-    domain = request.form.get("domain").strip()
+    domain = request.form.get("domain").strip().lower()
     server = request.form.get("selected_server").strip()
     account = request.form.get("selected_account").strip()
     if len(domain) == 0:
@@ -30,10 +30,13 @@ def do_validation():
         "X-Auth-Key": token,
         "Content-Type": "application/json"
     }
+    params = {
+        "name": domain,
+        "per_page": 1
+    }
     #making request to check the domain's existance on the server
-    r = requests.get(url, headers=headers).json()
-    names = [item["name"] for item in r["result"]]
-    if domain in names:
+    r = requests.get(url, headers=headers,params=params).json()
+    if r["success"] and r["result"]:
         message += "[✅] Домен існує на цьому сервері<br>"
         #getting domain's zone id to check its A records futher
         name_to_id = {i["name"]: i["id"] for i in r["result"]}
