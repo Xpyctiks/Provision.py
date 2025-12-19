@@ -43,6 +43,9 @@ def do_validation():
         id = name_to_id.get(domain)
         url = f"https://api.cloudflare.com/client/v4/zones/{id}/dns_records"
         r = requests.get(url, headers=headers).json()
+        if not r.get("success") or not r.get("result"):
+            message += "[❌] Не вдалося отримати DNS записи<br>"
+            return json.dumps({"message": message})
         #getting all records of type A
         records = {item["name"]: item["content"] for item in r["result"] if item["type"] == "A"}
         for name, content in records.items():
