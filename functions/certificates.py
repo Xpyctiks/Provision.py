@@ -12,6 +12,7 @@ from db.database import Cloudflare, Servers
 def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):
     """Main function to automatically get and save certificates"""
     try:
+        domain = domain.lower()
         #preparing account token by the selected account
         logging.info("Starting certificates pre-check")
         tkn = Cloudflare.query.filter_by(account=selected_account).first()
@@ -39,12 +40,20 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         if r["success"] and r["result"]:
             logging.info(f"The selected domain {domain} exists on the account {selected_account}")
             if issue_cert(domain,selected_account,token):
-                logging.info("Starting preparation do DNS records setup...")
+                logging.info("Starting preparation to DNS records setup...")
                 #getting domain's zone id to check its A records futher
                 name_to_id = {i["name"]: i["id"] for i in r["result"]}
                 zone_id = name_to_id.get(domain)
                 url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
                 r = requests.get(url, headers=headers).json()
+                if not r.get("success") or not r.get("result"):
+                    logging.info(f"No result returned while check current DNS records.Looks like there are none of them. So trying to create new...")
+                    if create_dns_records(domain,selected_account,token,zone_id,ip):
+                        logging.info("DNS record setup finished sucessfully!")
+                        return True
+                    else:
+                        logging.error("DNS records setup error!")
+                        return False
                 #getting all records of type A
                 records = {item["name"]: item["content"] for item in r["result"] if item["type"] == "A"}
                 if records:
@@ -248,10 +257,10 @@ def issue_cert(domain: str,account: str, token: str):
         logging.info(f"Starting certificate issue for domain {domain} on the account {account}")
         #check if we already have certificates - do nothing
         if os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".crt")) and os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".key")):
-            logging.info(f"{os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key'))} already exist on the server. Skipping certificates issue!")
+            logging.info(f"{os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt')} and {os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key')} already exist on the server. Skipping certificates issue!")
             return True
         else:
-            logging.info(f"{os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt'))} and {os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key'))} are not exist on the server. Starting issue procedure...")
+            logging.info(f"{os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt')} and {os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key')} are not exist on the server. Starting issue procedure...")
         key, csr = generate_key_and_csr(domain)
         response = request_cloudflare_cert(csr,domain,account,token)
         if not response.get("success"):

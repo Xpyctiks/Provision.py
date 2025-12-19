@@ -7,6 +7,7 @@ import functions.variables
 
 def start_clone(domain: str, source_site: str, selected_account: str, selected_server: str, realname: str):
     """Main function to clone any selected site to the new one, keeping all files and settings from the original site"""
+    domain = domain.lower()
     logging.info(f"---------------------------Starting clone of the site {source_site} to new site {domain} by {realname}----------------------------")
     logging.info(f"Cloudflare account: {selected_account}, IP of the server: {selected_server}")
     dstPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
