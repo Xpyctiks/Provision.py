@@ -10,6 +10,7 @@ def do_action():
     #sites delete block
     if (request.form.get('delete') and not request.form.get('selected')):
         delete_site(request.form['delete'].strip())
+        return redirect(f"/",301)
     elif (request.form.get('delete') and request.form.get('selected')):
         array = request.form.getlist("selected")
         del_selected_sites(request.form['delete'].strip(),array)

@@ -41,7 +41,7 @@ def provision():
                 logging.error(f"Site {domain} already exists! Remove it before new deploy!")
                 flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
                 logging.info(f"--------------------Automatic deploy for site {domain} from template {request.form['selected_template'].strip()} by {current_user.realname} finshed with error-----------------------")
-                return redirect("/provision",301)
+                return redirect("/",301)
             #Getting repository's git path after we know its name as given in the request
             repo = Provision_templates.query.filter_by(name=request.form['selected_template'].strip()).first()
             if repo:
