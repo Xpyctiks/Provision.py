@@ -86,15 +86,13 @@ def delete_site(sitename: str) -> bool:
             except Exception as msg:
                 logging.error(f"File of folder {file_path}: {msg}")
                 status = 1
-        try:
-            os.rmdir(path)
-        except Exception as msg:
-            logging.error(f"Root folder {path} deletion error: {msg}")
-            status = 1
         #if we have errors during delete procedure - send an alert
         if status > 0:
             asyncio.run(send_to_telegram(f"Errors while deleting the site. Check logs!",f"🚒Provision site delete error({sitename}):"))
-        logging.info(f"Site folder {path} deletion finished.")
+            logging.error(f"Root folder {path} is not deleted because some files or folders are still inside.")
+        else:
+            os.rmdir(path)
+            logging.info(f"Root folder {path} deleted successfully!")
         owner = Ownership.query.filter_by(domain=sitename).first()
         if owner:
             db.session.delete(owner)
