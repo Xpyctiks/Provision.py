@@ -74,14 +74,23 @@ def delete_site(sitename: str) -> bool:
         if directory_path in ('/', '/home', '/root', '/etc', '/var', '/tmp', os.path.expanduser("~")):
             logging.error(f"Site folder delete error: {path} - too dangerous directory is selected!")
             error_message += f"Помилка видалення папки сайту: {path} - обрана занадто опасна папка!\n"
-        for filename in os.listdir(path):
-            file_path = os.path.join(path, filename)
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        os.rmdir(path)
-        logging.info(f"Site folder {path} deleted successfully")
+            return False
+        status = 0
+        try:
+            for filename in os.listdir(path):
+                file_path = os.path.join(path, filename)
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            os.rmdir(path)
+        except Exception as msg:
+            logging.error(f"File of folder {file_path}: {msg}")
+            status = 1
+        #if we have errors during delete procedure - send an alert
+        if status > 0:
+            asyncio.run(send_to_telegram(f"Errors while deleting the site. Check logs!",f"🚒Provision site delete error({sitename}):"))
+        logging.info(f"Site folder {path} deletion finished.")
         owner = Ownership.query.filter_by(domain=sitename).first()
         if owner:
             db.session.delete(owner)
