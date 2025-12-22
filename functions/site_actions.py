@@ -76,16 +76,20 @@ def delete_site(sitename: str) -> bool:
             error_message += f"Помилка видалення папки сайту: {path} - обрана занадто опасна папка!\n"
             return False
         status = 0
-        try:
-            for filename in os.listdir(path):
-                file_path = os.path.join(path, filename)
+        for filename in os.listdir(path):
+            file_path = os.path.join(path, filename)
+            try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
+            except Exception as msg:
+                logging.error(f"File of folder {file_path}: {msg}")
+                status = 1
+        try:
             os.rmdir(path)
         except Exception as msg:
-            logging.error(f"File of folder {file_path}: {msg}")
+            logging.error(f"Root folder {path} deletion error: {msg}")
             status = 1
         #if we have errors during delete procedure - send an alert
         if status > 0:
