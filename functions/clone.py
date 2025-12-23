@@ -27,12 +27,13 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
             logging.info(f"Copying {srcPath} to {dstPath} is done successfully!")
             #setting git safe value to allow this folder works with git
             finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
-            result = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
-            if result.returncode != 0:
-                logging.error(f"Error while git add safe.directory: {result.stderr}")
-                asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision clone error:"))
-            else:
-                logging.info("Git add safe directory done successfully!")
+            if os.path.exists(os.path.join(current_app.config["WEB_FOLDER"],domain,".git")):
+                result = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
+                if result.returncode != 0:
+                    logging.error(f"Error while git add safe.directory for {finalPath}: {result.stderr}")
+                    asyncio.run(send_to_telegram(f"Error while git add safe directory for {finalPath}!",f"🚒Provision clone error:"))
+                else:
+                    logging.info("Git add safe directory done successfully!")
             #Set the global variable to the name of the source site. This value will be applied to DB record while setSiteOwner() procedure
             functions.variables.CLONED_FROM = source_site
             if not setupNginx(domain+".zip"):

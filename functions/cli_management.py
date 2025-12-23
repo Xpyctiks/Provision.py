@@ -394,6 +394,8 @@ def show_help(programm: str) -> None:
 \tGet info about all CLOUDFLARE options.
 {programm} servers
 \tGet info about all SERVERS options.
+{programm} owner
+\tGet info about all sites OWNER options.
 Info: full script should be launched via UWSGI server. In CLI mode use can only use commands above.
     """)
 
