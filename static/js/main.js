@@ -113,3 +113,43 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
 var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl)
 })
+
+let domain = null;
+function openEditor(domain) {
+    fetch(`/robots?domain=${encodeURIComponent(domain)}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("editorTextarea").value = data.content;
+            document.getElementById("domain").value = domain
+        })
+        .catch(err => {
+            alert("Помилка завантаження");
+            console.error(err);
+        });
+}
+
+function saveEditor() {
+    const content = document.getElementById("editorTextarea").value;
+    const domain = document.getElementById("domain").value;
+    fetch("/robots", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            domain: domain,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "ok") {
+            alert("Збережено");
+            bootstrap.Modal.getInstance(
+              document.getElementById('editorModal')
+            ).hide();
+        } else {
+            alert(data.error);
+        }
+    });
+}

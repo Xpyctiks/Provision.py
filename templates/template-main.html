@@ -67,6 +67,8 @@
   {{site.table_type2|safe}}
       <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
       <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt
+</button>
   </td>
   {{site.table_type2|safe}}
   <div class="accordion" id="folderAccordion{{site.id|safe}}">
@@ -89,6 +91,24 @@
   {% endfor %}
 </tbody>
 </table>
+<div class="modal fade" id="editorModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Редактор robots.txt сайту</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <textarea id="editorTextarea" class="form-control" style="height: 60vh; font-family: monospace;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">❌ Відміна</button>
+        <button class="btn btn-success" onclick="saveEditor()">💾 Зберегти</button>
+        <input type="hidden" name="domain" value="test" id="domain">
+      </div>
+    </div>
+  </div>
+</div>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
