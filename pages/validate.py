@@ -1,6 +1,6 @@
 from flask import Blueprint,request
 from flask_login import login_required,current_user
-import json,requests,logging
+import json,requests,logging,tldextract
 from db.database import Cloudflare, Servers
 
 validate_bp = Blueprint("validate", __name__)
@@ -30,10 +30,24 @@ def do_validation():
         "X-Auth-Key": token,
         "Content-Type": "application/json"
     }
-    params = {
-        "name": domain,
-        "per_page": 1
-    }
+    #check if there is subdomain
+    d = tldextract.extract(domain)
+    if bool(d.subdomain):
+        domain2 = domain.strip().lower().rstrip(".")
+        d2 = tldextract.extract(domain2)
+        print("1")
+        print(d2)
+        params = {
+            "name": f"{d2.domain}.{d2.suffix}",
+            "per_page": 1
+        }
+        logging.info(f"Validation check: using domain {d2.domain}.{d2.suffix} as the root domain for validation of {domain}")
+    else:
+        logging.info(f"Validation check: {domain} is the root domain. Validating as is.")
+        params = {
+            "name": domain,
+            "per_page": 1
+        }
     #making request to check the domain's existance on the server
     r = requests.get(url, headers=headers,params=params).json()
     if r["success"] and r["result"]:

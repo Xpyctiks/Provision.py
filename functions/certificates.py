@@ -1,4 +1,4 @@
-import json,requests,logging,asyncio,os
+import json,requests,logging,asyncio,os,tldextract
 from cryptography import x509
 from functions.send_to_telegram import send_to_telegram
 from cryptography.x509.oid import NameOID
@@ -13,6 +13,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
     """Main function to automatically get and save certificates"""
     try:
         domain = domain.lower()
+        orig_domain = domain.lower()
         #preparing account token by the selected account
         logging.info("Starting certificates pre-check")
         tkn = Cloudflare.query.filter_by(account=selected_account).first()
@@ -31,6 +32,15 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
             "X-Auth-Key": token,
             "Content-Type": "application/json"
         }
+        #check if there is subdomain
+        d = tldextract.extract(domain)
+        if bool(d.subdomain):
+            domain2 = domain.strip().lower().rstrip(".")
+            d2 = tldextract.extract(domain2)
+            domain = f"{d2.domain}.{d2.suffix}"
+            logging.info(f"Cert. issue procedure: using domain {d2.domain}.{d2.suffix} as the root domain for issue of {domain}")
+        else:
+            logging.info(f"Cert. issue procedure: {domain} is the root domain. Validating as is.")
         params = {
             "name": domain,
             "per_page": 1
@@ -38,17 +48,17 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         #making request to check the domain's existance on the server
         r = requests.get(url, headers=headers, params=params).json()
         if r["success"] and r["result"]:
-            logging.info(f"The selected domain {domain} exists on the account {selected_account}")
+            logging.info(f"The selected domain {orig_domain} exists on the account {selected_account}")
             if issue_cert(domain,selected_account,token):
                 logging.info("Starting preparation to DNS records setup...")
                 #getting domain's zone id to check its A records futher
                 name_to_id = {i["name"]: i["id"] for i in r["result"]}
                 zone_id = name_to_id.get(domain)
-                url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
+                url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={orig_domain}"
                 r = requests.get(url, headers=headers).json()
                 if not r.get("success") or not r.get("result"):
-                    logging.info(f"No result returned while check current DNS records.Looks like there are none of them. So trying to create new...")
-                    if create_dns_records(domain,selected_account,token,zone_id,ip):
+                    logging.info(f"No result returned while check current DNS records for {orig_domain}.Looks like there are none of them. So trying to create new...")
+                    if create_dns_records(orig_domain,selected_account,token,zone_id,ip):
                         logging.info("DNS record setup finished sucessfully!")
                         return True
                     else:
@@ -80,21 +90,21 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
                 return False
         else:
             logging.error(f"Domain {domain} is not exists on the CF account {selected_account}")
-            asyncio.run(send_to_telegram(f"Domain {domain} is not exists on the CF account {selected_account}",f"🚒Provision job by {current_user.realname} error:"))
+            asyncio.run(send_to_telegram(f"Domain {domain} is not exists on the CF account {selected_account}",f"🚒Provision job by {current_user.realname}:"))
             return False
     except Exception as msg:
         logging.error(f"Cloudflare_certificate global error: {msg}")
-        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error by {current_user.realname}: {msg}",f"🚒Provision job by {current_user.realname} error:"))
+        asyncio.run(send_to_telegram(f"Cloudflare_certificate global error: {msg}",f"🚒Provision job by {current_user.realname}:"))
         return False
 
 def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str):
     """Updates DNS records via API to the selected one"""
-    headers = {
-        "X-Auth-Email": selected_account,
-        "X-Auth-Key": token,
-        "Content-Type": "application/json"
-    }
     try:
+        headers = {
+            "X-Auth-Email": selected_account,
+            "X-Auth-Key": token,
+            "Content-Type": "application/json"
+        }
         #staring update of @ record
         logging.info(f"Updating existing DNS record for domain {domain}, account {selected_account}, zone {zone_id} to IP {ip}")
         url2 = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name={domain}"
@@ -105,7 +115,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
         url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{name_to_id.get(domain)}"
         #if A record for @ is exists - replace it by the new one
         if name_to_name.get(domain) == domain:
-            logging.info(f"A record for {domain} exists and points to {name_to_content.get(domain)}")
+            logging.info(f"Updating A record for {domain} to {name_to_content.get(domain)}")
             data = {
                 "type": "A",
                 "name": f"{domain}",
@@ -121,9 +131,13 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
                 logging.error(f"Error while API request to update DNS record {domain} to {ip}! {r.text}")
                 asyncio.run(send_to_telegram(f"Error while API request to update DNS record {domain} to {ip} By {current_user.realname}",f"🚒Provision job error:"))
                 return False
-        #staring update of www.@ record
-        elif name_to_name.get(domain) == "www."+domain:
-            logging.info(f"11111111A record for www.{domain} exists and points to {name_to_content.get(domain)}")          
+        else:
+            logging.error(f"Update DNS records: A record for {domain} is not exists! Dunno why we are in this function.")
+            asyncio.run(send_to_telegram(f"Update DNS records: A record for {domain} is not exists! Dunno why we are in this function.",f"🚒Provision job by {current_user.realname}:"))
+        #staring update of www.@ record if the original domain is root domain, not consists of subdomain
+        d = tldextract.extract(domain)
+        if not bool(d.subdomain):
+            logging.info(f"Updation A record for www.{domain} to {name_to_content.get(domain)}")
             data = {
                 "type": "A",
                 "name": f"www.{domain}",
@@ -149,6 +163,16 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
     """Creates new DNS records via Cloudflare API"""
     try:
         logging.info(f"Setting up new DNS record for domain {domain}, account {selected_account}, zone {zone_id}, ip {ip}")
+        #check if there is subdomain
+        d = tldextract.extract(domain)
+        if bool(d.subdomain):
+            domain2 = domain.strip().lower().rstrip(".")
+            d2 = tldextract.extract(domain2)
+            root_domain = f"{d2.domain}.{d2.suffix}"
+            subdomain = d2.subdomain
+            logging.info(f"Create DNS records: using subdomain {subdomain} of {root_domain} to create records for...")
+        else:
+            logging.info(f"Create DNS records: {domain} is the root domain. Creating root records.")
         url2 = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name={domain}"
         headers = {
             "X-Auth-Email": selected_account,
@@ -175,21 +199,23 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
         else:
             logging.error(f"Error while API request to create DNS record {domain} with {ip}! {r.text}")
             asyncio.run(send_to_telegram(f"Error while API request to create DNS record {domain} with {ip} By {current_user.realname}",f"🚒Provision job error:"))
-        logging.info(f"Setting up www.{domain} record...")
-        data = {
-            "type": "A",
-            "name": f"www.{domain}",
-            "content": f"{ip}",
-            "ttl": 3600,
-            "proxied": True,
-            "comment": "Provision auto deploy."
-        }
-        r = requests.post(url,json=data,headers=headers)
-        if r.status_code == 200:
-            logging.info(f"API request to create DNS record www.{domain} with {ip} successfully completed.")
-        else:
-            logging.error(f"Error while API request to create DNS record www.{domain} with {ip}! {r.text}")
-            asyncio.run(send_to_telegram(f"Error while API request to create DNS record www.{domain} with {ip}",f"🚒Provision job error:"))
+        #check if we work with root domain - create www records, if subdomain - passthrough
+        if domain == root_domain:
+            logging.info(f"Setting up www.{domain} record...")
+            data = {
+                "type": "A",
+                "name": f"www.{domain}",
+                "content": f"{ip}",
+                "ttl": 3600,
+                "proxied": True,
+                "comment": "Provision auto deploy."
+            }
+            r = requests.post(url,json=data,headers=headers)
+            if r.status_code == 200:
+                logging.info(f"API request to create DNS record www.{domain} with {ip} successfully completed.")
+            else:
+                logging.error(f"Error while API request to create DNS record www.{domain} with {ip}! {r.text}")
+                asyncio.run(send_to_telegram(f"Error while API request to create DNS record www.{domain} with {ip}",f"🚒Provision job error:"))
         return True
     except Exception as msg:
         logging.error(f"Set_dns_records global error: {msg}")
