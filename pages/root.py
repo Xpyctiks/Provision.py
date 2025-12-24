@@ -13,7 +13,6 @@ root_bp = Blueprint("root", __name__)
 @login_required
 def index():
     try:
-        table = ""
         sites_list = []
         sites_list = [
             name for name in os.listdir(current_app.config["WEB_FOLDER"])
@@ -24,9 +23,13 @@ def index():
             #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
             #variable with full path to nginx sites-enabled symlink to the site
             ngx_site = os.path.join(current_app.config["NGX_SITES_PATHEN"],s)
-            ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],s)
             #variable with full path to php pool config of the site
             php_site = os.path.join(current_app.config["PHP_POOL"],s+".conf")
+            #check robots.txt for existance and change its button color
+            if os.path.exists(os.path.join(current_app.config['WEB_FOLDER'],s,"public","robots.txt")):
+                robots_button = "btn-primary"
+            else:
+                robots_button = "btn-light"
             #If everything is ok, main view:
             if os.path.islink(ngx_site) and os.path.isfile(php_site):
                 html_data.append({
@@ -39,7 +42,8 @@ def index():
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "✅OK"
+                    "site_status": "✅OK",
+                    "robots_button": robots_button
                 })
             #if nginx is ok but php is not
             elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
@@ -53,7 +57,8 @@ def index():
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "🚨Помилка конфігураціх РНР"
+                    "site_status": "🚨Помилка конфігураціх РНР",
+                    "robots_button": robots_button
                 })
             #if php is ok but nginx is not
             elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
@@ -67,7 +72,8 @@ def index():
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "🚨Помилка конфігураціх Nginx"
+                    "site_status": "🚨Помилка конфігураціх Nginx",
+                    "robots_button": robots_button
                 })
             #if really disabled
             elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
@@ -81,7 +87,8 @@ def index():
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "🚧Сайт вимкнено"
+                    "site_status": "🚧Сайт вимкнено",
+                    "robots_button": robots_button
                 })
             else:
                 html_data.append({
@@ -94,7 +101,8 @@ def index():
                     "id": i,
                     "accordeon_path": "ПОМИЛКА",
                     "getSiteOwner": "СИСТЕМИ",
-                    "site_status": "Важливі файли або папки не існують"
+                    "site_status": "Важливі файли або папки не існують",
+                    "robots_button": ""
                 })
         return render_template("template-main.html",html_data=html_data)
     except Exception as msg:

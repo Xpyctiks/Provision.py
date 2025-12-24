@@ -67,7 +67,7 @@
   {{site.table_type2|safe}}
       <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
       <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt
+      <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt
 </button>
   </td>
   {{site.table_type2|safe}}
