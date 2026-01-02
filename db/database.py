@@ -56,3 +56,9 @@ class Ownership(db.Model):
     owner = db.Column(db.String(50), nullable=False)
     created = db.Column(db.DateTime,default=datetime.now)
     cloned = db.Column(db.String(150), nullable=True,default="")
+
+class Domain_account(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    domain = db.Column(db.String(256), nullable=False,unique=True)
+    account = db.Column(db.String(150), nullable=False)
+    created = db.Column(db.DateTime,default=datetime.now)

@@ -133,6 +133,8 @@ if __name__ == "__main__":
             show_servers()
         elif sys.argv[1] == "show" and sys.argv[2] == "owners":
             show_owners()
+        elif sys.argv[1] == "show" and sys.argv[2] == "accounts":
+            show_accounts()
         elif sys.argv[1] == "flush" and sys.argv[2] == "sessions":
             flush_sessions()
         elif sys.argv[1] == "templates" and sys.argv[2] == "add":
@@ -210,6 +212,21 @@ if __name__ == "__main__":
                 upd_owner(sys.argv[3], int(sys.argv[4]))
             else:
                 print("Error! Enter domain name and new owner ID for it")
+        elif sys.argv[1] == "account" and sys.argv[2] == "add":
+            if (len(sys.argv) == 5):
+                add_account(sys.argv[3], sys.argv[4])
+            else:
+                print("Error! Enter Domain and Email address of the cloudflare account")
+        elif sys.argv[1] == "account" and sys.argv[2] == "del":
+            if (len(sys.argv) == 4):
+                del_account(sys.argv[3])
+            else:
+                print("Error! Enter Domain to delete")
+        elif sys.argv[1] == "account" and sys.argv[2] == "upd":
+            if (len(sys.argv) == 5):
+                upd_account(sys.argv[3], sys.argv[4])
+            else:
+                print("Error! Enter Domain and New cloudflare email address")
     elif len(sys.argv) == 2 and sys.argv[1] == "set":
         help_set()
     elif len(sys.argv) == 2 and sys.argv[1] == "user":

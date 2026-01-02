@@ -6,13 +6,25 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 from sqlalchemy import text
 
+def help_account() -> None:
+    """CLI only function: shows hints for ACCOUNT command"""
+    print (f"""
+Possible completion:
+    add    <domain> <Cloudflare account email>
+    del    <domain>
+    upd    <domain> <new Cloudflare account email>
+    upload <file with account information>
+           Format inside the file:
+           <domain> <email>
+    """)
+
 def help_owner() -> None:
     """CLI only function: shows hints for OWNER command"""
     print (f"""
 Possible completion:
     add    <domain> <database ID>
-    upd    <domain> <new_database_ID>
     del    <domain>
+    upd    <domain> <new_database_ID>
         Important: <ID> means unique user ID from its database record in Users table. Integer value only.
     """)
 
@@ -20,19 +32,19 @@ def help_set() -> None:
     """CLI only function: shows hints for SET command"""
     print (f"""
 Possible completion:
-    chat             <telegram_chat_id>
-    token            <telegram_token>
+    chat             <telegram_chat_id>   
     log              <path_and_filename>
-    webFolder        <full_path>
+    nginxAddConfDir  <full_path>
     nginxCrtPath     <full_path>
-    wwwUser          <user>
-    wwwGroup         <group>
+    nginxPath        <full_path>
+    phpPool          <full_path>
     nginxSitesPathAv <full_path>
     nginxSitesPathEn <full_path>
-    nginxPath        <full_path>
-    nginxAddConfDir  <full_path>
-    phpPool          <full_path>
     phpFpmPath       <full_path>
+    token            <telegram_token>
+    webFolder        <full_path>
+    wwwUser          <user>
+    wwwGroup         <group>
     """)
 
 def help_user() -> None:
@@ -40,20 +52,20 @@ def help_user() -> None:
     print (f"""
 Possible completion:
     add    <login> <password> <realName>
-    setpwd <login> <new_password>
     del    <login>
+    setpwd <login> <new_password>
     """)
 
 def help_show() -> None:
     """CLI only function: shows hints for SHOW command"""
     print (f"""
 Possible completion:
-    config
-    users
-    config
+    accounts
     cloudflare
+    config
     servers
     templates
+    users
     """)
 
 def help_templates() -> None:
@@ -61,9 +73,9 @@ def help_templates() -> None:
     print (f"""
 Possible completion:
     add     <name> <git_repo_address>
-    upd     <name> <new_git_repo_address>
-    del     <name>
     default <name>
+    del     <name>
+    upd     <name> <new_git_repo_address>
     """)
 
 def help_cloudflare() -> None:
@@ -71,9 +83,9 @@ def help_cloudflare() -> None:
     print (f"""
 Possible completion:
     add     <email> <api_token>
-    upd     <email> <new_api_token>
-    del     <email>
     default <email>
+    del     <email>
+    upd     <email> <new_api_token>
     """)
 
 def help_servers() -> None:
@@ -81,9 +93,9 @@ def help_servers() -> None:
     print (f"""
 Possible completion:
     add     <server_name> <IP_address>
-    upd     <server_name> <new_IP_address>
-    del     <server_name>
     default <server_name>
+    del     <server_name>
+    upd     <server_name> <new_IP_address>
     """)
 
 def set_telegramChat(tgChat: str) -> None:
@@ -95,7 +107,7 @@ def set_telegramChat(tgChat: str) -> None:
     load_config(current_app)
     print("Telegram ChatID added successfully")
     try:
-        logging.info(f"Telegram ChatID updated successfully!")
+        logging.info(f"cli>Telegram ChatID updated successfully!")
     except Exception as err:
         pass
 
@@ -108,7 +120,7 @@ def set_telegramToken(tgToken: str) -> None:
     load_config(current_app)
     print("Telegram Token added successfully")
     try:
-        logging.info(f"Telegram Token updated successfully!")
+        logging.info(f"cli>Telegram Token updated successfully!")
     except Exception as err:
         pass
 
@@ -122,7 +134,7 @@ def set_logpath(logpath: str) -> None:
     updated = db.session.get(Settings, 1)
     print(f"logPath updated successfully. New log path: \"{updated.logFile}\"")
     try:
-        logging.info(f"logPath updated to \"{updated.logFile}\"")
+        logging.info(f"cli>logPath updated to \"{updated.logFile}\"")
     except Exception as err:
         pass
 
@@ -132,7 +144,7 @@ def register_user(username: str,password: str,realname: str) -> None:
     try:
         if User.query.filter_by(username=username).first():
             print(f"User \"{username}\" creation error - already exists!")
-            logging.error(f"User \"{username}\" creation error - already exists!")
+            logging.error(f"cli>User \"{username}\" creation error - already exists!")
         else:
             new_user = User(
                 username=username,
@@ -143,9 +155,9 @@ def register_user(username: str,password: str,realname: str) -> None:
             db.session.commit()
             load_config(current_app)
             print(f"New user \"{username}\" - \"{realname}\" created successfully!")
-            logging.info(f"New user \"{username}\" - \"{realname}\" created successfully!")
+            logging.info(f"cli>New user \"{username}\" - \"{realname}\" created successfully!")
     except Exception as err:
-        logging.error(f"User \"{username}\" - \"{realname}\" creation error: {err}")
+        logging.error(f"cli>User \"{username}\" - \"{realname}\" creation error: {err}")
         print(f"User \"{username}\" - \"{realname}\" creation error: {err}")
 
 def update_user(username: str,password: str) -> None:
@@ -158,13 +170,13 @@ def update_user(username: str,password: str) -> None:
             db.session.merge(d)
             db.session.commit()
             print(f"Password for user \"{user.username}\" updated successfully!")
-            logging.info(f"Password for user \"{user.username}\" updated successfully!")
+            logging.info(f"cli>Password for user \"{user.username}\" updated successfully!")
         else:
             print(f"User \"{username}\" set password error - no such user!")
-            logging.error(f"User \"{username}\" set password error - no such user!")
+            logging.error(f"cli>User \"{username}\" set password error - no such user!")
             quit(1)
     except Exception as err:
-        logging.error(f"User \"{username}\" set password error: {err}")
+        logging.error(f"cli>User \"{username}\" set password error: {err}")
         print(f"User \"{username}\" set password error: {err}")
 
 def delete_user(username: str) -> None:
@@ -177,13 +189,13 @@ def delete_user(username: str) -> None:
             db.session.commit()
             load_config(current_app)
             print(f"User \"{user.username}\" deleted successfully!")
-            logging.info(f"User \"{user.username}\" deleted successfully!")
+            logging.info(f"cli>User \"{user.username}\" deleted successfully!")
         else:
             print(f"User \"{username}\" delete error - no such user!")
-            logging.error(f"User \"{username}\" delete error - no such user!")
+            logging.error(f"cli>User \"{username}\" delete error - no such user!")
             quit(1)
     except Exception as err:
-        logging.error(f"User \"{username}\" delete error: {err}")
+        logging.error(f"cli>User \"{username}\" delete error: {err}")
         print(f"User \"{username}\" delete error: {err}")
 
 def show_users() -> None:
@@ -197,7 +209,7 @@ def show_users() -> None:
         for i, s in enumerate(users, 1):
             print(f"ID: {s.id}, Login: {s.username}, RealName: {s.realname}, Created: {s.created}")
     except Exception as err:
-        logging.error(f"CLI show users function error: {err}")
+        logging.error(f"cli>CLI show users function error: {err}")
         print(f"CLI show users function error: {err}")
 
 def set_webFolder(data: str) -> None:
@@ -210,9 +222,9 @@ def set_webFolder(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Root web folder updated successfully. New path: \"{updated.webFolder}\"")
-        logging.info(f"Root web folder updated to \"{updated.webFolder}\"")
+        logging.info(f"cli>Root web folder updated to \"{updated.webFolder}\"")
     except Exception as err:
-        logging.error(f"Root web folder \"{data}\" set error: {err}")
+        logging.error(f"cli>Root web folder \"{data}\" set error: {err}")
         print(f"Root web folder \"{data}\" set error: {err}")
 
 def set_nginxCrtPath(data: str) -> None:
@@ -225,9 +237,9 @@ def set_nginxCrtPath(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Nginx SSL folder updated successfully. New path: \"{updated.nginxCrtPath}\"")
-        logging.info(f"Nginx SSL folder updated to \"{updated.nginxCrtPath}\"")
+        logging.info(f"cli>Nginx SSL folder updated to \"{updated.nginxCrtPath}\"")
     except Exception as err:
-        logging.error(f"Nginx SSL folder \"{data}\" set error: {err}")
+        logging.error(f"cli>Nginx SSL folder \"{data}\" set error: {err}")
         print(f"Nginx SSL folder \"{data}\" set error: {err}")
 
 def set_wwwUser(data: str) -> None:
@@ -240,9 +252,9 @@ def set_wwwUser(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"User for web folders updated successfully to: \"{updated.wwwUser}\"")
-        logging.info(f"User for web folders updated to \"{updated.wwwUser}\"")
+        logging.info(f"cli>User for web folders updated to \"{updated.wwwUser}\"")
     except Exception as err:
-        logging.error(f"User for web folders \"{data}\" set error: {err}")
+        logging.error(f"cli>User for web folders \"{data}\" set error: {err}")
         print(f"User for web folders \"{data}\" set error: {err}")
 
 def set_wwwGroup(data: str) -> None:
@@ -255,9 +267,9 @@ def set_wwwGroup(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Group for web folders updated successfully to: \"{updated.wwwGroup}\"")
-        logging.info(f"Group for web folders updated to \"{updated.wwwGroup}\"")
+        logging.info(f"cli>Group for web folders updated to \"{updated.wwwGroup}\"")
     except Exception as err:
-        logging.error(f"Group for web folders \"{data}\" set error: {err}")
+        logging.error(f"cli>Group for web folders \"{data}\" set error: {err}")
         print(f"Group for web folders \"{data}\" set error: {err}")
 
 def set_nginxSitesPathAv(data: str) -> None:
@@ -270,9 +282,9 @@ def set_nginxSitesPathAv(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Nginx Sites-available folder updated successfully to: \"{updated.nginxSitesPathAv}\"")
-        logging.info(f"Nginx Sites-available folder updated to \"{updated.nginxSitesPathAv}\"")
+        logging.info(f"cli>Nginx Sites-available folder updated to \"{updated.nginxSitesPathAv}\"")
     except Exception as err:
-        logging.error(f"Nginx Sites-available folder \"{data}\" set error: {err}")
+        logging.error(f"cli>Nginx Sites-available folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-available folder \"{data}\" set error: {err}")
 
 def set_nginxSitesPathEn(data: str) -> None:
@@ -285,9 +297,9 @@ def set_nginxSitesPathEn(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Nginx Sites-enabled folder updated successfully to: \"{updated.nginxSitesPathEn}\"")
-        logging.info(f"Nginx Sites-enabled folder updated to \"{updated.nginxSitesPathEn}\"")
+        logging.info(f"cli>Nginx Sites-enabled folder updated to \"{updated.nginxSitesPathEn}\"")
     except Exception as err:
-        logging.error(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
+        logging.error(f"cli>Nginx Sites-enabled folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
 
 def set_nginxPath(data: str) -> None:
@@ -300,9 +312,9 @@ def set_nginxPath(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Nginx Path updated successfully to: \"{updated.nginxPath}\"")
-        logging.info(f"Nginx Path updated to \"{updated.nginxPath}\"")
+        logging.info(f"cli>Nginx Path updated to \"{updated.nginxPath}\"")
     except Exception as err:
-        logging.error(f"Nginx Path \"{data}\" set error: {err}")
+        logging.error(f"cli>Nginx Path \"{data}\" set error: {err}")
         print(f"Nginx Path \"{data}\" set error: {err}")
 
 def set_nginxAddConfDir(data: str) -> None:
@@ -315,9 +327,9 @@ def set_nginxAddConfDir(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Nginx Additional configs dir. updated successfully to: \"{updated.nginxAddConfDir}\"")
-        logging.info(f"Nginx Additional configs dir. updated to \"{updated.nginxAddConfDir}\"")
+        logging.info(f"cli>Nginx Additional configs dir. updated to \"{updated.nginxAddConfDir}\"")
     except Exception as err:
-        logging.error(f"Nginx Additional configs dir. \"{data}\" set error: {err}")
+        logging.error(f"cli>Nginx Additional configs dir. \"{data}\" set error: {err}")
         print(f"Nginx Additional configs dir. \"{data}\" set error: {err}")
 
 def set_phpPool(data: str) -> None:
@@ -330,9 +342,9 @@ def set_phpPool(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"PHP Pool.d/ folder updated successfully to: \"{updated.phpPool}\"")
-        logging.info(f"PHP Pool.d/ folder updated to \"{updated.phpPool}\"")
+        logging.info(f"cli>PHP Pool.d/ folder updated to \"{updated.phpPool}\"")
     except Exception as err:
-        logging.error(f"PHP Pool.d/ folder \"{data}\" set error: {err}")
+        logging.error(f"cli>PHP Pool.d/ folder \"{data}\" set error: {err}")
         print(f"PHP Pool.d/ folder \"{data}\" set error: {err}")
 
 def set_phpFpmPath(data: str) -> None:
@@ -345,9 +357,9 @@ def set_phpFpmPath(data: str) -> None:
         load_config(current_app)
         updated = db.session.get(Settings, 1)
         print(f"Php-fpm executable path updated successfully to: \"{updated.phpFpmPath}\"")
-        logging.info(f"Php-fpm executable path updated to \"{updated.phpFpmPath}\"")
+        logging.info(f"cli>Php-fpm executable path updated to \"{updated.phpFpmPath}\"")
     except Exception as err:
-        logging.error(f"Php-fpm executable path \"{data}\" set error: {err}")
+        logging.error(f"cli>Php-fpm executable path \"{data}\" set error: {err}")
         print(f"Php-fpm executable path \"{data}\" set error: {err}")
 
 def flush_sessions() -> None:
@@ -357,7 +369,7 @@ def flush_sessions() -> None:
         db.session.execute(text("TRUNCATE TABLE flask_sessions RESTART IDENTITY"))
         db.session.commit()
     except Exception as err:
-        logging.error(f"CLI flush sessions function error: {err}")
+        logging.error(f"cli>CLI flush sessions function error: {err}")
         print(f"CLI flush sessions function error: {err}")
 
 def show_config() -> None:
@@ -405,7 +417,7 @@ def add_template(name: str,repository: str) -> None:
     try:
         if Provision_templates.query.filter_by(name=name).first():
             print(f"Template name \"{name}\" creation error - already exists!")
-            logging.error(f"Template name \"{name}\" creation error - already exists!")
+            logging.error(f"cli>Template name \"{name}\" creation error - already exists!")
         else:
             new_template = Provision_templates(
                 name=name,
@@ -414,7 +426,7 @@ def add_template(name: str,repository: str) -> None:
             db.session.add(new_template)
             db.session.commit()
             print(f"New template \"{name}\" - \"{repository}\" created successfully!")
-            logging.info(f"New template \"{name}\" - \"{repository}\" created successfully!")
+            logging.info(f"cli>New template \"{name}\" - \"{repository}\" created successfully!")
         #check if there is only one just added record - set it as default
         if len(Provision_templates.query.filter_by().all()) == 1:
             tmp = Provision_templates.query.filter_by(name=name).first()
@@ -422,7 +434,7 @@ def add_template(name: str,repository: str) -> None:
                 tmp.isdefault = True
                 db.session.commit()
     except Exception as err:
-        logging.error(f"New repository \"{name}\" - \"{repository}\" creation error: {err}")
+        logging.error(f"cli>New repository \"{name}\" - \"{repository}\" creation error: {err}")
         print(f"New repository \"{name}\" - \"{repository}\" creation error: {err}")
 
 def del_template(name: str) -> None:
@@ -437,13 +449,13 @@ def del_template(name: str) -> None:
             db.session.commit()
             load_config(current_app)
             print(f"Template \"{template.name}\" deleted successfully!")
-            logging.info(f"Template \"{template.name}\" deleted successfully!")
+            logging.info(f"cli>Template \"{template.name}\" deleted successfully!")
         else:
             print(f"Template \"{name}\" deletion error - no such template!")
-            logging.error(f"Template \"{name}\" deletion error - no such template!")
+            logging.error(f"cli>Template \"{name}\" deletion error - no such template!")
             quit(1)
     except Exception as err:
-        logging.error(f"Template \"{name}\" deletion error: {err}")
+        logging.error(f"cli>Template \"{name}\" deletion error: {err}")
         print(f"Template \"{name}\" deletion error: {err}")
 
 def upd_template(name: str, new_repository: str) -> None:
@@ -455,13 +467,13 @@ def upd_template(name: str, new_repository: str) -> None:
             template.repository = new_repository
             db.session.commit()
             print(f"Repository for template \"{name}\" updated successfully to {new_repository}!")
-            logging.info(f"Repository for template \"{name}\" updated successfully to{new_repository}!")
+            logging.info(f"cli>Repository for template \"{name}\" updated successfully to{new_repository}!")
         else:
             print(f"Template \"{name}\" update error - no such template!")
-            logging.error(f"Template \"{name}\" update error - no such template!")
+            logging.error(f"cli>Template \"{name}\" update error - no such template!")
             quit(1)
     except Exception as err:
-        logging.error(f"Template \"{name}\" update error: {err}")
+        logging.error(f"cli>Template \"{name}\" update error: {err}")
         print(f"Template \"{name}\" update error: {err}")
 
 def show_templates() -> None:
@@ -471,11 +483,14 @@ def show_templates() -> None:
         templates = Provision_templates.query.order_by(Provision_templates.name).all()
         if len(templates) == 0:
             print("No templates found in DB!")
+            logging.error("cli>No templates found in DB!")
             quit()
         for i, s in enumerate(templates, 1):
-            print(f"ID: {s.id},\nName: {s.name},\nRepository address: {s.repository},\nIsDefault: {s.isdefault},\nCreated: {s.created}\n--------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------")
+            print(f"ID: {s.id}, Name: {s.name}, Repository address: {s.repository}, IsDefault: {s.isdefault}, Created: {s.created}")
+            print("-------------------------------------------------------------------------------------------------------")
     except Exception as err:
-        logging.error(f"CLI show templates function error: {err}")
+        logging.error(f"cli>CLI show templates function error: {err}")
         print(f"CLI show templates function error: {err}")
 
 def default_template(name: str) -> None:
@@ -486,14 +501,14 @@ def default_template(name: str) -> None:
         template = Provision_templates.query.filter_by(name=name).first()
         if not template:
             print(f"Template \"{name}\" doesn't exists! Can set it as the default one!")
-            logging.error(f"Template \"{name}\" doesn't exists! Can set it as the default one!")
+            logging.error(f"cli>Template \"{name}\" doesn't exists! Can set it as the default one!")
             quit(1)
         #Check if it is already is the default one
         default_template = Provision_templates.query.filter_by(isdefault=True).first()
         if default_template:
             if default_template.name == name:
                 print(f"Template \"{name}\" already is the default one!")
-                logging.error(f"Template \"{name}\" already is the default one!")
+                logging.error(f"cli>Template \"{name}\" already is the default one!")
                 quit(1)
         #Main function. First of all set all existing records as not default
         Provision_templates.query.update({Provision_templates.isdefault: False})
@@ -503,9 +518,9 @@ def default_template(name: str) -> None:
             template.isdefault = True
             db.session.commit()
             print(f"The template \"{name}\" is set as default one!")
-            logging.info(f"The template \"{name}\" is set as default one!")
+            logging.info(f"cli>The template \"{name}\" is set as default one!")
     except Exception as err:
-        logging.error(f"Set default template \"{name}\" error: {err}")
+        logging.error(f"cli>Set default template \"{name}\" error: {err}")
         print(f"Set default template \"{name}\" error: {err}")
 
 def add_cloudflare(account: str,token: str) -> None:
@@ -514,7 +529,7 @@ def add_cloudflare(account: str,token: str) -> None:
     try:
         if Cloudflare.query.filter_by(account=account).first():
             print(f"Account \"{account}\" creation error - already exists!")
-            logging.error(f"Account \"{account}\" creation error - already exists!")
+            logging.error(f"cli>Account \"{account}\" creation error - already exists!")
         else:
             new_account = Cloudflare(
                 account=account,
@@ -523,7 +538,7 @@ def add_cloudflare(account: str,token: str) -> None:
             db.session.add(new_account)
             db.session.commit()
             print(f"New account \"{account}\" created successfully!")
-            logging.info(f"New account \"{account}\" created successfully!")
+            logging.info(f"cli>New account \"{account}\" created successfully!")
         #check if there is only one just added record - set it as default
         if len(Cloudflare.query.filter_by().all()) == 1:
             acc = Cloudflare.query.filter_by(account=account).first()
@@ -531,7 +546,7 @@ def add_cloudflare(account: str,token: str) -> None:
                 acc.isdefault = True
                 db.session.commit()
     except Exception as err:
-        logging.error(f"New account \"{account}\" creation error: {err}")
+        logging.error(f"cli>New account \"{account}\" creation error: {err}")
         print(f"New account \"{account}\" creation error: {err}")
 
 def del_cloudflare(account: str) -> None:
@@ -546,13 +561,13 @@ def del_cloudflare(account: str) -> None:
             db.session.commit()
             load_config(current_app)
             print(f"Cloudflare account \"{acc.account}\" deleted successfully!")
-            logging.info(f"Cloudflare account \"{acc.account}\" deleted successfully!")
+            logging.info(f"cli>Cloudflare account \"{acc.account}\" deleted successfully!")
         else:
             print(f"Cloudflare account \"{account}\" deletion error - no such account!")
-            logging.error(f"Cloudflare account \"{account}\" deletion error - no such account!")
+            logging.error(f"cli>Cloudflare account \"{account}\" deletion error - no such account!")
             quit(1)
     except Exception as err:
-        logging.error(f"Cloudflare account \"{account}\" deletion error: {err}")
+        logging.error(f"cli>Cloudflare account \"{account}\" deletion error: {err}")
         print(f"Cloudflare account \"{account}\" deletion error: {err}")
 
 def upd_cloudflare(account: str, new_token: str) -> None:
@@ -564,13 +579,13 @@ def upd_cloudflare(account: str, new_token: str) -> None:
             acc.token = new_token
             db.session.commit()
             print(f"Account \"{account}\" updated successfully to {new_token}!")
-            logging.info(f"Account \"{account}\" updated successfully to{new_token}!")
+            logging.info(f"cli>Account \"{account}\" updated successfully to{new_token}!")
         else:
             print(f"Account \"{account}\" update error - no such account!")
-            logging.error(f"Account \"{account}\" update error - no such account!")
+            logging.error(f"cli>Account \"{account}\" update error - no such account!")
             quit(1)
     except Exception as err:
-        logging.error(f"Account \"{account}\" update error: {err}")
+        logging.error(f"cli>Account \"{account}\" update error: {err}")
         print(f"Account \"{account}\" update error: {err}")
 
 def show_cloudflare() -> None:
@@ -580,11 +595,14 @@ def show_cloudflare() -> None:
         accs = Cloudflare.query.order_by(Cloudflare.account).all()
         if len(accs) == 0:
             print("No accounts found in DB!")
+            logging.error("cli>No accounts found in DB!")
             quit()
         for i, s in enumerate(accs, 1):
-            print(f"ID: {s.id},\nAccount: {s.account},\nToken: {s.token},\nIsDefault: {s.isdefault},\nCreated: {s.created}\n--------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------")
+            print(f"ID: {s.id}, Account: {s.account}, Token: {s.token}, IsDefault: {s.isdefault}, Created: {s.created}")
+            print("-------------------------------------------------------------------------------------------------------")
     except Exception as err:
-        logging.error(f"CLI show accounts function error: {err}")
+        logging.error(f"cli>CLI show accounts function error: {err}")
         print(f"CLI show accounts function error: {err}")
 
 def default_cloudflare(account: str) -> None:
@@ -595,14 +613,14 @@ def default_cloudflare(account: str) -> None:
         acc = Cloudflare.query.filter_by(account=account).first()
         if not acc:
             print(f"Account \"{account}\" doesn't exists! Can set it as the default one!")
-            logging.error(f"Account \"{account}\" doesn't exists! Can set it as the default one!")
+            logging.error(f"cli>Account \"{account}\" doesn't exists! Can set it as the default one!")
             quit(1)
         #Check if it is already is the default one
         default_acc = Cloudflare.query.filter_by(isdefault=True).first()
         if default_acc:
             if default_acc.account == account:
                 print(f"Account \"{account}\" already is the default one!")
-                logging.error(f"Account \"{account}\" already is the default one!")
+                logging.error(f"cli>Account \"{account}\" already is the default one!")
                 quit(1)
         #Main function. First of all set all existing records as not default
         Cloudflare.query.update({Cloudflare.isdefault: False})
@@ -612,9 +630,9 @@ def default_cloudflare(account: str) -> None:
             acc.isdefault = True
             db.session.commit()
             print(f"Account \"{account}\" is set as default one!")
-            logging.info(f"Account \"{account}\" is set as default one!")
+            logging.info(f"cli>Account \"{account}\" is set as default one!")
     except Exception as err:
-        logging.error(f"Set default account \"{account}\" error: {err}")
+        logging.error(f"cli>Set default account \"{account}\" error: {err}")
         print(f"Set default account \"{account}\" error: {err}")
 
 def add_servers(name: str,ip: str) -> None:
@@ -623,7 +641,7 @@ def add_servers(name: str,ip: str) -> None:
     try:
         if Servers.query.filter_by(name=name).first():
             print(f"Server \"{name}\" creation error - already exists!")
-            logging.error(f"Server \"{name}\" creation error - already exists!")
+            logging.error(f"cli>Server \"{name}\" creation error - already exists!")
         else:
             new_server = Servers(
                 name=name,
@@ -632,7 +650,7 @@ def add_servers(name: str,ip: str) -> None:
             db.session.add(new_server)
             db.session.commit()
             print(f"New Server \"{name}\" created successfully!")
-            logging.info(f"New Server \"{name}\" created successfully!")
+            logging.info(f"cli>New Server \"{name}\" created successfully!")
         #check if there is only one just added record - set it as default
         if len(Servers.query.filter_by().all()) == 1:
             srv = Servers.query.filter_by(name=name).first()
@@ -640,7 +658,7 @@ def add_servers(name: str,ip: str) -> None:
                 srv.isdefault = True
                 db.session.commit()
     except Exception as err:
-        logging.error(f"New Server \"{name}\" creation error: {err}")
+        logging.error(f"cli>New Server \"{name}\" creation error: {err}")
         print(f"New Server \"{name}\" creation error: {err}")
 
 def del_servers(name: str) -> None:
@@ -655,13 +673,13 @@ def del_servers(name: str) -> None:
             db.session.commit()
             load_config(current_app)
             print(f"Server \"{srv.name}\" deleted successfully!")
-            logging.info(f"Server \"{srv.name}\" deleted successfully!")
+            logging.info(f"cli>Server \"{srv.name}\" deleted successfully!")
         else:
             print(f"Server \"{name}\" deletion error - no such Server!")
-            logging.error(f"Server \"{name}\" deletion error - no such Server!")
+            logging.error(f"cli>Server \"{name}\" deletion error - no such Server!")
             quit(1)
     except Exception as err:
-        logging.error(f"Server \"{name}\" deletion error: {err}")
+        logging.error(f"cli>Server \"{name}\" deletion error: {err}")
         print(f"Server \"{name}\" deletion error: {err}")
 
 def upd_servers(name: str, new_ip: str) -> None:
@@ -673,13 +691,13 @@ def upd_servers(name: str, new_ip: str) -> None:
             srv.ip = new_ip
             db.session.commit()
             print(f"Server \"{name}\" updated successfully to {new_ip}!")
-            logging.info(f"Server \"{name}\" updated successfully to{new_ip}!")
+            logging.info(f"cli>Server \"{name}\" updated successfully to{new_ip}!")
         else:
             print(f"Server \"{name}\" update error - no such Server!")
-            logging.error(f"Server \"{name}\" update error - no such Server!")
+            logging.error(f"cli>Server \"{name}\" update error - no such Server!")
             quit(1)
     except Exception as err:
-        logging.error(f"Server \"{name}\" update error: {err}")
+        logging.error(f"cli>Server \"{name}\" update error: {err}")
         print(f"Server \"{name}\" update error: {err}")
 
 def show_servers() -> None:
@@ -689,11 +707,14 @@ def show_servers() -> None:
         accs = Servers.query.order_by(Servers.name).all()
         if len(accs) == 0:
             print("No Servers found in DB!")
+            logging.error("cli>No Servers found in DB!")
             quit()
         for i, s in enumerate(accs, 1):
-            print(f"ID: {s.id},\nServer: {s.name},\nIP: {s.ip},\nIsDefault: {s.isdefault},\nCreated: {s.created}\n--------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------")
+            print(f"ID: {s.id}, Server: {s.name}, IP: {s.ip}, IsDefault: {s.isdefault}, Created: {s.created}")
+            print("-------------------------------------------------------------------------------------------------------")
     except Exception as err:
-        logging.error(f"CLI show Server function error: {err}")
+        logging.error(f"cli>CLI show Server function error: {err}")
         print(f"CLI show Server function error: {err}")
 
 def default_servers(name: str) -> None:
@@ -704,14 +725,14 @@ def default_servers(name: str) -> None:
         srv = Cloudflare.query.filter_by(name=name).first()
         if not srv:
             print(f"Server \"{name}\" doesn't exists! Can set it as the default one!")
-            logging.error(f"Server \"{name}\" doesn't exists! Can set it as the default one!")
+            logging.error(f"cli>Server \"{name}\" doesn't exists! Can set it as the default one!")
             quit(1)
         #Check if it is already is the default one
         default_srv = Servers.query.filter_by(isdefault=True).first()
         if default_srv:
             if default_srv.name == name:
                 print(f"Server \"{name}\" already is the default one!")
-                logging.error(f"Server \"{name}\" already is the default one!")
+                logging.error(f"cli>Server \"{name}\" already is the default one!")
                 quit(1)
         #Main function. First of all set all existing records as not default
         Servers.query.update({Servers.isdefault: False})
@@ -721,9 +742,9 @@ def default_servers(name: str) -> None:
             srv.isdefault = True
             db.session.commit()
             print(f"Server \"{name}\" is set as default one!")
-            logging.info(f"Server \"{name}\" is set as default one!")
+            logging.info(f"cli>Server \"{name}\" is set as default one!")
     except Exception as err:
-        logging.error(f"Set default Server \"{name}\" error: {err}")
+        logging.error(f"cli>Set default Server \"{name}\" error: {err}")
         print(f"Set default Server \"{name}\" error: {err}")
 
 def add_owner(domain: str, id: int) -> None:
@@ -734,18 +755,19 @@ def add_owner(domain: str, id: int) -> None:
         usr = User.query.filter_by(id=id).first()
         if not usr:
             print(f"Error! User with the given ID {id} is not exists!")
+            logging.error(f"cli>Error! User with the given ID {id} is not exists!")
             quit()
         #Check if the given domain is already owned by the given user
         check = Ownership.query.filter_by(domain=domain).all()
         for i, c in enumerate(check,1):
             if c.owner == str(id):
                 print(f"Domain \"{domain}\" already owned by user with id {id}!")
-                logging.error(f"Domain \"{domain}\" already owned by user with id {id}!")
+                logging.error(f"cli>Domain \"{domain}\" already owned by user with id {id}!")
                 quit()
         #check if the domain physically exists on the server
         if not os.path.exists(os.path.join(current_app.config['WEB_FOLDER'],domain)):
             print(f"Domain \"{domain}\" phisycally not exists on the server!")
-            logging.error(f"Domain \"{domain}\" phisycally not exists on the server!")
+            logging.error(f"cli>Domain \"{domain}\" phisycally not exists on the server!")
             quit()
         #Else start addition procedure
         new_owner = Ownership(
@@ -755,9 +777,9 @@ def add_owner(domain: str, id: int) -> None:
         db.session.add(new_owner)
         db.session.commit()
         print(f"Domain \"{domain}\" now is owned by user with ID {id}!")
-        logging.info(f"Domain \"{domain}\" now is owned by user with ID {id}!")
+        logging.info(f"cli>Domain \"{domain}\" now is owned by user with ID {id}!")
     except Exception as err:
-        logging.error(f"Add_owner() general error: {err}")
+        logging.error(f"cli>Add_owner() general error: {err}")
         print(f"Add_owner() general error: {err}")
 
 def del_owner(domain: str) -> None:
@@ -769,13 +791,13 @@ def del_owner(domain: str) -> None:
             db.session.delete(check)
             db.session.commit()
             print(f"Ownership for domain \"{domain}\" deleted successfully!")
-            logging.info(f"Ownership for domain \"{domain}\" deleted successfully!")
+            logging.info(f"cli>Ownership for domain \"{domain}\" deleted successfully!")
         else:
             print(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
-            logging.error(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
+            logging.error(f"cli>Ownership for domain \"{domain}\" deletion error - no such domain!")
             quit(1)
     except Exception as err:
-        logging.error(f"Ownership for domain \"{domain}\" general error: {err}")
+        logging.error(f"cli>Ownership for domain \"{domain}\" general error: {err}")
         print(f"Ownership for domain \"{domain}\" general error: {err}")
 
 def upd_owner(domain: str, new_owner: int) -> None:
@@ -787,13 +809,13 @@ def upd_owner(domain: str, new_owner: int) -> None:
             check.owner = new_owner
             db.session.commit()
             print(f"Domain \"{domain}\" owner updated successfully to {new_owner}!")
-            logging.info(f"Domain \"{domain}\" updated successfully to{new_owner}!")
+            logging.info(f"cli>Domain \"{domain}\" updated successfully to{new_owner}!")
         else:
             print(f"Domain \"{domain}\" owner update error - no such domain!")
-            logging.error(f"Domain \"{domain}\" owner update error - no such domain!")
+            logging.error(f"cli>Domain \"{domain}\" owner update error - no such domain!")
             quit(1)
     except Exception as err:
-        logging.error(f"Domain \"{domain}\" owner update general error: {err}")
+        logging.error(f"cli>Domain \"{domain}\" owner update general error: {err}")
         print(f"Domain \"{domain}\" owner update general error: {err}")
 
 def show_owners() -> None:
@@ -803,12 +825,102 @@ def show_owners() -> None:
         accs = Ownership.query.order_by(Ownership.domain).all()
         if len(accs) == 0:
             print("No domains with owners found in DB!")
+            logging.error("cli>No domains with owners found in DB!")
             quit()
         print("-------------------------------------------------------------------------------------------------------")
         for i, s in enumerate(accs, 1):
-            realn = User.query.filter_by(id=s.id).first()
-            print(f"ID: {s.id},Domain: {s.domain},Owner: {realn.realname}(ID:{s.owner}),Created: {s.created}")
+            rln = User.query.filter_by(id=s.id).first()
+            print(f"ID: {s.id}, Domain: {s.domain}, Owner: {rln.realname}(ID:{s.owner}), Created: {s.created}")
         print("-------------------------------------------------------------------------------------------------------")
     except Exception as err:
-        logging.error(f"CLI show owner function error: {err}")
+        logging.error(f"cli>CLI show owner function error: {err}")
         print(f"CLI show owner function error: {err}")
+
+def add_account(domain: str, email: str) -> None:
+    """CLI only function: adds an account info for the given domain"""
+    logging.info("Starting CLI functions: add_account")
+    try:
+        #Check if the account with given email exists
+        acc = Cloudflare.query.filter_by(account=email).first()
+        if not acc:
+            print(f"Error! Cloudflare account with the given email {email} is not exists in our database!")
+            logging.error(f"cli>Error! Cloudflare account with the given email {email} is not exists in our database!")
+            quit()
+        #Check if the given account is already linked with the given domain
+        check = Domain_account.query.filter_by(domain=domain).all()
+        for i, c in enumerate(check,1):
+            if c.account == email:
+                print(f"Domain \"{domain}\" already linked with account {email}!")
+                logging.error(f"cli>Domain \"{domain}\" already linked with account {email}!")
+                quit()
+        #Else start addition procedure
+        new_account = Domain_account(
+            domain=domain,
+            account=email,
+        )
+        db.session.add(new_account)
+        db.session.commit()
+        print(f"Domain \"{domain}\" now is linked to account {email}!")
+        logging.info(f"cli>Domain \"{domain}\" now is linked to account {email}!")
+    except Exception as err:
+        logging.error(f"cli>Add_account() general error: {err}")
+        print(f"Add_account() general error: {err}")
+
+def del_account(domain: str) -> None:
+    """CLI only function: deletes a domain-to-account link from database"""
+    logging.info("Starting CLI functions: del_account")
+    try:
+        check = Domain_account.query.filter_by(domain=domain).first()
+        if check:
+            db.session.delete(check)
+            db.session.commit()
+            print(f"Link to account for domain \"{domain}\" deleted successfully!")
+            logging.info(f"cli>Link to account for domain \"{domain}\" deleted successfully!")
+        else:
+            print(f"Link to account for domain \"{domain}\" deletion error - no such domain!")
+            logging.error(f"cli>Link to account for domain \"{domain}\" deletion error - no such domain!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"cli>Link to account for domain \"{domain}\" general error: {err}")
+        print(f"Link to account for domain \"{domain}\" general error: {err}")
+
+def upd_account(domain: str, email: str) -> None:
+    """CLI only function: updates a domain with the new account link"""
+    logging.info("Starting CLI functions: upd_account")
+    try:
+        check = Domain_account.query.filter_by(domain=domain).first()
+        if check:
+            #Check if the account with given email exists
+            acc = Cloudflare.query.filter_by(account=email).first()
+            if not acc:
+                print(f"Error! Cloudflare account with the given email {email} is not exists in our database!")
+                logging.error(f"cli>Error! Cloudflare account with the given email {email} is not exists in our database!")
+                quit()
+            check.account = email
+            db.session.commit()
+            print(f"Domain \"{domain}\" account updated successfully to {email}!")
+            logging.info(f"cli>Domain \"{domain}\" account successfully to{email}!")
+        else:
+            print(f"Domain \"{domain}\" account update error - no such domain!")
+            logging.error(f"cli>Domain \"{domain}\" account update error - no such domain!")
+            quit(1)
+    except Exception as err:
+        logging.error(f"cli>Domain \"{domain}\" account update general error: {err}")
+        print(f"Domain \"{domain}\" account update general error: {err}")
+
+def show_accounts() -> None:
+    """CLI only function: shows all domains and their owners from the database"""
+    logging.info("Starting CLI functions: show_accounts")
+    try:
+        accs = Domain_account.query.order_by(Domain_account.domain).all()
+        if len(accs) == 0:
+            print("No domains with accounts found in DB!")
+            logging.error("cli>No domains with accounts found in DB!")
+            quit()
+        print("-------------------------------------------------------------------------------------------------------")
+        for i, s in enumerate(accs, 1):
+            print(f"ID: {s.id}, Domain: {s.domain}, Account: {s.account}, Created: {s.created}")
+        print("-------------------------------------------------------------------------------------------------------")
+    except Exception as err:
+        logging.error(f"cli>CLI show accounts function error: {err}")
+        print(f"CLI show accounts function error: {err}")

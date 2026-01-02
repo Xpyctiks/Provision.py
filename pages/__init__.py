@@ -1,6 +1,7 @@
 from flask import Blueprint
 from .action import action_bp
 from .clone import clone_bp
+from .dns_validation import dns_validation_bp
 from .login import login_bp
 from .logout import logout_bp
 from .logs import logs_bp
@@ -16,6 +17,7 @@ from .validate import validate_bp
 blueprint = Blueprint("main", __name__)
 blueprint.register_blueprint(action_bp)
 blueprint.register_blueprint(clone_bp)
+blueprint.register_blueprint(dns_validation_bp)
 blueprint.register_blueprint(login_bp)
 blueprint.register_blueprint(logout_bp)
 blueprint.register_blueprint(logs_bp)
