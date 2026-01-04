@@ -250,5 +250,5 @@ if __name__ == "__main__":
         help_owner()
     #else just show help info.
     elif len(sys.argv) <= 2:
-        show_help(sys.argv[0])
+        help_show()
     quit(0)

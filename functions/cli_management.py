@@ -392,25 +392,6 @@ Php-fpm executable:      {current_app.config["PHPFPM_PATH"]}
 key:                     {current_app.secret_key}
     """)
 
-def show_help(programm: str) -> None:
-    """CLI only function: shows program CLI commands usage information"""
-    print(f"""Usage: \n{programm} set 
-\tGet info about all SET options.
-{programm} show
-\tGet info about all SHOW options.
-{programm} user
-\tGet info about all USER options.
-{programm} templates
-\tGet info about all TEMPLATES options.
-{programm} cloudflare
-\tGet info about all CLOUDFLARE options.
-{programm} servers
-\tGet info about all SERVERS options.
-{programm} owner
-\tGet info about all sites OWNER options.
-Info: full script should be launched via UWSGI server. In CLI mode use can only use commands above.
-    """)
-
 def add_template(name: str,repository: str) -> None:
     """CLI only function: adds new template of site provision to the database"""
     logging.info("-----------------------Starting CLI functions: add_template")
@@ -527,6 +508,7 @@ def add_cloudflare(account: str,token: str) -> None:
     """CLI only function: adds a new Cloudflare account and its token to the database"""
     logging.info("-----------------------Starting CLI functions: add_cloudflare")
     try:
+        account = account.lower()
         if Cloudflare.query.filter_by(account=account).first():
             print(f"Account \"{account}\" creation error - already exists!")
             logging.error(f"cli>Account \"{account}\" creation error - already exists!")
@@ -553,6 +535,7 @@ def del_cloudflare(account: str) -> None:
     """CLI only function: deletes a Cloudflare account from the database"""
     logging.info("-----------------------Starting CLI functions: del_cloudflare")
     try:
+        account = account.lower()
         acc = Cloudflare.query.filter_by(account=account).first()
         if acc:
             if acc.isdefault == True:
@@ -574,6 +557,7 @@ def upd_cloudflare(account: str, new_token: str) -> None:
     """CLI only function: updates a Cloudflare account with the new token"""
     logging.info("-----------------------Starting CLI functions: upd_cloudflare")
     try:
+        account = account.lower()
         acc = Cloudflare.query.filter_by(account=account).first()
         if acc:
             acc.token = new_token
@@ -609,6 +593,7 @@ def default_cloudflare(account: str) -> None:
     """CLI only function: sets a Cloudflare account as the default one"""
     logging.info("-----------------------Starting CLI functions: default_cloudflare")
     try:
+        account = account.lower()
         #Check is the new record, which will be the default one, exists at all
         acc = Cloudflare.query.filter_by(account=account).first()
         if not acc:
@@ -751,6 +736,7 @@ def add_owner(domain: str, id: int) -> None:
     """CLI only function: adds an owner for the given domain"""
     logging.info("-----------------------Starting CLI functions: add_owner")
     try:
+        domain = domain.lower()
         #Check if the user with given ID exists
         usr = User.query.filter_by(id=id).first()
         if not usr:
@@ -789,6 +775,7 @@ def del_owner(domain: str,cli: bool = True):
     else:
         logging.info(f"Deleting the owner of domain {domain} from the database...")
     try:
+        domain = domain.lower()
         check = Ownership.query.filter_by(domain=domain).first()
         if check:
             db.session.delete(check)
@@ -822,6 +809,7 @@ def upd_owner(domain: str, new_owner: int) -> None:
     """CLI only function: updates a domain with the new owner"""
     logging.info("-----------------------Starting CLI functions: upd_owner")
     try:
+        domain = domain.lower()
         check = Ownership.query.filter_by(domain=domain).first()
         if check:
             check.owner = new_owner
@@ -858,6 +846,8 @@ def add_account(domain: str, email: str) -> None:
     """CLI only function: adds an account info for the given domain"""
     logging.info("-----------------------Starting CLI functions: add_account")
     try:
+        email = email.lower()
+        domain = domain.lower()
         #Check if the account with given email exists
         acc = Cloudflare.query.filter_by(account=email).first()
         if not acc:
@@ -894,6 +884,8 @@ def upload_accounts(filename: str) -> None:
                     parts = line.strip().split()
                     if len(parts) == 2:
                         domain, account = parts
+                        domain = domain.lower()
+                        account = account.lower()
                         #Check if the account with given email exists
                         acc = Cloudflare.query.filter_by(account=account).first()
                         if not acc:
@@ -934,6 +926,7 @@ def del_account(domain: str, cli: bool = True):
     else:
         logging.info(f"Deleting link of domain {domain} with its account in the database...")
     try:
+        domain = domain.lower()
         check = Domain_account.query.filter_by(domain=domain).first()
         if check:
             db.session.delete(check)
@@ -965,6 +958,7 @@ def upd_account(domain: str, email: str) -> None:
     """CLI only function: updates a domain with the new account link"""
     logging.info("Starting CLI functions: upd_account")
     try:
+        domain = domain.lower()
         check = Domain_account.query.filter_by(domain=domain).first()
         if check:
             #Check if the account with given email exists
