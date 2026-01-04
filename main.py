@@ -227,6 +227,13 @@ if __name__ == "__main__":
                 upd_account(sys.argv[3], sys.argv[4])
             else:
                 print("Error! Enter Domain and New cloudflare email address")
+        elif sys.argv[1] == "account" and sys.argv[2] == "upload":
+            if (len(sys.argv) == 4):
+                upload_accounts(sys.argv[3])
+            else:
+                print("Error! Enter Filename of the file, with data in format <domain> <account>, one domain+account per line")
+    elif len(sys.argv) == 2 and sys.argv[1] == "account":
+        help_account()
     elif len(sys.argv) == 2 and sys.argv[1] == "set":
         help_set()
     elif len(sys.argv) == 2 and sys.argv[1] == "user":
@@ -244,5 +251,4 @@ if __name__ == "__main__":
     #else just show help info.
     elif len(sys.argv) <= 2:
         show_help(sys.argv[0])
-    application.run("0.0.0.0",80,debug=True)
     quit(0)

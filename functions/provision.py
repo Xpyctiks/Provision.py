@@ -8,6 +8,7 @@ from flask_login import current_user
 import functions.variables
 from db.database import Ownership,User
 from db.db import db
+from functions.site_actions import link_domain_and_account
 
 def setSiteOwner(domain: str) -> bool:
     """Sets a site owner to the user, who did the provision job"""
@@ -66,7 +67,10 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
                 os.remove(filename)
                 logging.info(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
             if functions.variables.JOB_COUNTER == functions.variables.JOB_TOTAL:
+                #writing site owner info to the database
                 setSiteOwner(os.path.basename(file)[:-4])
+                #writing link of domain and its account to the database
+                link_domain_and_account(os.path.basename(file)[:-4],selected_account)
                 asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
                 logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
                 #quit only if we use zip files. if web provision - no to interrupt flow
@@ -76,10 +80,16 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
                 logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
                 asyncio.run(send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:"))
                 functions.variables.JOB_COUNTER += 1
+                #writing site owner info to the database
                 setSiteOwner(os.path.basename(file)[:-4])
+                #writing link of domain and its account to the database
+                link_domain_and_account(os.path.basename(file)[:-4],selected_account)
                 findZip_1(selected_account,selected_server,realname)
         elif file == "" and domain != "":
+            #writing site owner info to the database
             setSiteOwner(os.path.basename(domain))
+            #writing link of domain and its account to the database
+            link_domain_and_account(domain,selected_account)
             asyncio.run(send_to_telegram(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:"))
             logging.info(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
             return True

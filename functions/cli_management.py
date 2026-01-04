@@ -15,7 +15,7 @@ Possible completion:
     upd    <domain> <new Cloudflare account email>
     upload <file with account information>
            Format inside the file:
-           <domain> <email>
+           <domain> <account email>
     """)
 
 def help_owner() -> None:
@@ -100,7 +100,7 @@ Possible completion:
 
 def set_telegramChat(tgChat: str) -> None:
     """CLI only function: sets Telegram ChatID value in database"""
-    logging.info("Starting CLI functions: set_telegramChat")
+    logging.info("-----------------------Starting CLI functions: set_telegramChat")
     t = Settings(id=1,telegramChat=tgChat.strip())
     db.session.merge(t)
     db.session.commit()
@@ -113,7 +113,7 @@ def set_telegramChat(tgChat: str) -> None:
 
 def set_telegramToken(tgToken: str) -> None:
     """CLI only function: sets Telegram Token value in database"""
-    logging.info("Starting CLI functions: set_telegramToken")
+    logging.info("-----------------------Starting CLI functions: set_telegramToken")
     t = Settings(id=1,telegramToken=tgToken)
     db.session.merge(t)
     db.session.commit()
@@ -126,7 +126,7 @@ def set_telegramToken(tgToken: str) -> None:
 
 def set_logpath(logpath: str) -> None:
     """CLI only function: sets Logger file path value in database"""
-    logging.info("Starting CLI functions: set_logpath")
+    logging.info("-----------------------Starting CLI functions: set_logpath")
     t = Settings(id=1,logFile=logpath)
     db.session.merge(t)
     db.session.commit()
@@ -140,7 +140,7 @@ def set_logpath(logpath: str) -> None:
 
 def register_user(username: str,password: str,realname: str) -> None:
     """CLI only function: adds new user and saves to database"""
-    logging.info("Starting CLI functions: register_user")
+    logging.info("-----------------------Starting CLI functions: register_user")
     try:
         if User.query.filter_by(username=username).first():
             print(f"User \"{username}\" creation error - already exists!")
@@ -162,7 +162,7 @@ def register_user(username: str,password: str,realname: str) -> None:
 
 def update_user(username: str,password: str) -> None:
     """CLI only function: password change for existing user"""
-    logging.info("Starting CLI functions: update_user")
+    logging.info("-----------------------Starting CLI functions: update_user")
     try:
         user = User.query.filter_by(username=username).first()
         if user:
@@ -181,7 +181,7 @@ def update_user(username: str,password: str) -> None:
 
 def delete_user(username: str) -> None:
     """CLI only function: deletes an existing user from database"""
-    logging.info("Starting CLI functions: delete_user")
+    logging.info("-----------------------Starting CLI functions: delete_user")
     try:
         user = User.query.filter_by(username=username).first()
         if user:
@@ -200,7 +200,7 @@ def delete_user(username: str) -> None:
 
 def show_users() -> None:
     """Shows all users in database"""
-    logging.info("Starting CLI functions: show_users")
+    logging.info("-----------------------Starting CLI functions: show_users")
     try:
         users = User.query.order_by(User.username).all()
         if len(users) == 0:
@@ -214,7 +214,7 @@ def show_users() -> None:
 
 def set_webFolder(data: str) -> None:
     """CLI only function: sets webFolder parameter in database"""
-    logging.info("Starting CLI functions: set_webFolder")
+    logging.info("-----------------------Starting CLI functions: set_webFolder")
     try:
         t = Settings(id=1,webFolder=data)
         db.session.merge(t)
@@ -229,7 +229,7 @@ def set_webFolder(data: str) -> None:
 
 def set_nginxCrtPath(data: str) -> None:
     """CLI only function: sets Nginx SSL certs path parameter in database"""
-    logging.info("Starting CLI functions: set_nginxCrtPath")
+    logging.info("-----------------------Starting CLI functions: set_nginxCrtPath")
     try:
         t = Settings(id=1,nginxCrtPath=data)
         db.session.merge(t)
@@ -244,7 +244,7 @@ def set_nginxCrtPath(data: str) -> None:
 
 def set_wwwUser(data: str) -> None:
     """CLI only function: sets wwwUser parameter in database"""
-    logging.info("Starting CLI functions: set_wwwUser")
+    logging.info("-----------------------Starting CLI functions: set_wwwUser")
     try:
         t = Settings(id=1,wwwUser=data)
         db.session.merge(t)
@@ -259,7 +259,7 @@ def set_wwwUser(data: str) -> None:
 
 def set_wwwGroup(data: str) -> None:
     """CLI only function: sets webGroup parameter in database"""
-    logging.info("Starting CLI functions: set_wwwGroup")
+    logging.info("-----------------------Starting CLI functions: set_wwwGroup")
     try:
         t = Settings(id=1,wwwGroup=data)
         db.session.merge(t)
@@ -274,7 +274,7 @@ def set_wwwGroup(data: str) -> None:
 
 def set_nginxSitesPathAv(data: str) -> None:
     """CLI only function: sets Nginx Sites-Available folder path in database"""
-    logging.info("Starting CLI functions: set_nginxSitesPathAv")
+    logging.info("-----------------------Starting CLI functions: set_nginxSitesPathAv")
     try:
         t = Settings(id=1,nginxSitesPathAv=data)
         db.session.merge(t)
@@ -289,7 +289,7 @@ def set_nginxSitesPathAv(data: str) -> None:
 
 def set_nginxSitesPathEn(data: str) -> None:
     """CLI only function: sets Nginx Sites-Enabled folder path in database"""
-    logging.info("Starting CLI functions: set_nginxSitesPathEn")
+    logging.info("-----------------------Starting CLI functions: set_nginxSitesPathEn")
     try:
         t = Settings(id=1,nginxSitesPathEn=data)
         db.session.merge(t)
@@ -304,7 +304,7 @@ def set_nginxSitesPathEn(data: str) -> None:
 
 def set_nginxPath(data: str) -> None:
     """CLI only function: sets Nginx main configs directory"""
-    logging.info("Starting CLI functions: set_nginxPath")
+    logging.info("-----------------------Starting CLI functions: set_nginxPath")
     try:
         t = Settings(id=1,nginxPath=data)
         db.session.merge(t)
@@ -319,7 +319,7 @@ def set_nginxPath(data: str) -> None:
 
 def set_nginxAddConfDir(data: str) -> None:
     """CLI only function: sets the directory for additional config files"""
-    logging.info("Starting CLI functions: set_nginxAddConfDir")
+    logging.info("-----------------------Starting CLI functions: set_nginxAddConfDir")
     try:
         t = Settings(id=1,nginxAddConfDir=data)
         db.session.merge(t)
@@ -334,7 +334,7 @@ def set_nginxAddConfDir(data: str) -> None:
 
 def set_phpPool(data: str) -> None:
     """CLI only function: sets PHP pool.d/ folder path in database"""
-    logging.info("Starting CLI functions: set_phpPool")
+    logging.info("-----------------------Starting CLI functions: set_phpPool")
     try:
         t = Settings(id=1,nginxSitesPathEn=data)
         db.session.merge(t)
@@ -349,7 +349,7 @@ def set_phpPool(data: str) -> None:
 
 def set_phpFpmPath(data: str) -> None:
     """CLI only function: sets PHP binary path in database"""
-    logging.info("Starting CLI functions: set_phpFpmPath")
+    logging.info("-----------------------Starting CLI functions: set_phpFpmPath")
     try:
         t = Settings(id=1,nginxSitesPathEn=data)
         db.session.merge(t)
@@ -364,7 +364,7 @@ def set_phpFpmPath(data: str) -> None:
 
 def flush_sessions() -> None:
     """CLI only function: deletes all sessions records from the Flask table in the database"""
-    logging.info("Starting CLI functions: flush_sessions")
+    logging.info("-----------------------Starting CLI functions: flush_sessions")
     try:
         db.session.execute(text("TRUNCATE TABLE flask_sessions RESTART IDENTITY"))
         db.session.commit()
@@ -413,7 +413,7 @@ Info: full script should be launched via UWSGI server. In CLI mode use can only 
 
 def add_template(name: str,repository: str) -> None:
     """CLI only function: adds new template of site provision to the database"""
-    logging.info("Starting CLI functions: add_template")
+    logging.info("-----------------------Starting CLI functions: add_template")
     try:
         if Provision_templates.query.filter_by(name=name).first():
             print(f"Template name \"{name}\" creation error - already exists!")
@@ -439,7 +439,7 @@ def add_template(name: str,repository: str) -> None:
 
 def del_template(name: str) -> None:
     """CLI only function: deletes a template of site provision from the database"""
-    logging.info("Starting CLI functions: del_template")
+    logging.info("-----------------------Starting CLI functions: del_template")
     try:
         template = Provision_templates.query.filter_by(name=name).first()
         if template:
@@ -460,7 +460,7 @@ def del_template(name: str) -> None:
 
 def upd_template(name: str, new_repository: str) -> None:
     """CLI only function: updates a template with a new repository address"""
-    logging.info("Starting CLI functions: upd_template")
+    logging.info("-----------------------Starting CLI functions: upd_template")
     try:
         template = Provision_templates.query.filter_by(name=name).first()
         if template:
@@ -478,7 +478,7 @@ def upd_template(name: str, new_repository: str) -> None:
 
 def show_templates() -> None:
     """CLI only function: shows all available site provision repositories from the database"""
-    logging.info("Starting CLI functions: show_templates")
+    logging.info("-----------------------Starting CLI functions: show_templates")
     try:
         templates = Provision_templates.query.order_by(Provision_templates.name).all()
         if len(templates) == 0:
@@ -495,7 +495,7 @@ def show_templates() -> None:
 
 def default_template(name: str) -> None:
     """CLI only function: sets a template as the default one"""
-    logging.info("Starting CLI functions: default_template")
+    logging.info("-----------------------Starting CLI functions: default_template")
     try:
         #Check is the new record, which will be the default one, exists at all
         template = Provision_templates.query.filter_by(name=name).first()
@@ -525,7 +525,7 @@ def default_template(name: str) -> None:
 
 def add_cloudflare(account: str,token: str) -> None:
     """CLI only function: adds a new Cloudflare account and its token to the database"""
-    logging.info("Starting CLI functions: add_cloudflare")
+    logging.info("-----------------------Starting CLI functions: add_cloudflare")
     try:
         if Cloudflare.query.filter_by(account=account).first():
             print(f"Account \"{account}\" creation error - already exists!")
@@ -551,7 +551,7 @@ def add_cloudflare(account: str,token: str) -> None:
 
 def del_cloudflare(account: str) -> None:
     """CLI only function: deletes a Cloudflare account from the database"""
-    logging.info("Starting CLI functions: del_cloudflare")
+    logging.info("-----------------------Starting CLI functions: del_cloudflare")
     try:
         acc = Cloudflare.query.filter_by(account=account).first()
         if acc:
@@ -572,7 +572,7 @@ def del_cloudflare(account: str) -> None:
 
 def upd_cloudflare(account: str, new_token: str) -> None:
     """CLI only function: updates a Cloudflare account with the new token"""
-    logging.info("Starting CLI functions: upd_cloudflare")
+    logging.info("-----------------------Starting CLI functions: upd_cloudflare")
     try:
         acc = Cloudflare.query.filter_by(account=account).first()
         if acc:
@@ -590,7 +590,7 @@ def upd_cloudflare(account: str, new_token: str) -> None:
 
 def show_cloudflare() -> None:
     """CLI only function: shows all available Cloudflare accounts from the database"""
-    logging.info("Starting CLI functions: show_cloudflare")
+    logging.info("-----------------------Starting CLI functions: show_cloudflare")
     try:
         accs = Cloudflare.query.order_by(Cloudflare.account).all()
         if len(accs) == 0:
@@ -607,7 +607,7 @@ def show_cloudflare() -> None:
 
 def default_cloudflare(account: str) -> None:
     """CLI only function: sets a Cloudflare account as the default one"""
-    logging.info("Starting CLI functions: default_cloudflare")
+    logging.info("-----------------------Starting CLI functions: default_cloudflare")
     try:
         #Check is the new record, which will be the default one, exists at all
         acc = Cloudflare.query.filter_by(account=account).first()
@@ -637,7 +637,7 @@ def default_cloudflare(account: str) -> None:
 
 def add_servers(name: str,ip: str) -> None:
     """CLI only function: adds a new server and its ip to the database"""
-    logging.info("Starting CLI functions: add_servers")
+    logging.info("-----------------------Starting CLI functions: add_servers")
     try:
         if Servers.query.filter_by(name=name).first():
             print(f"Server \"{name}\" creation error - already exists!")
@@ -663,7 +663,7 @@ def add_servers(name: str,ip: str) -> None:
 
 def del_servers(name: str) -> None:
     """CLI only function: deletes a Server from the database"""
-    logging.info("Starting CLI functions: del_servers")
+    logging.info("-----------------------Starting CLI functions: del_servers")
     try:
         srv = Servers.query.filter_by(name=name).first()
         if srv:
@@ -684,7 +684,7 @@ def del_servers(name: str) -> None:
 
 def upd_servers(name: str, new_ip: str) -> None:
     """CLI only function: updates a Server with the new token"""
-    logging.info("Starting CLI functions: upd_servers")
+    logging.info("-----------------------Starting CLI functions: upd_servers")
     try:
         srv = Servers.query.filter_by(name=name).first()
         if srv:
@@ -702,7 +702,7 @@ def upd_servers(name: str, new_ip: str) -> None:
 
 def show_servers() -> None:
     """CLI only function: shows all available Servers from the database"""
-    logging.info("Starting CLI functions: show_servers")
+    logging.info("-----------------------Starting CLI functions: show_servers")
     try:
         accs = Servers.query.order_by(Servers.name).all()
         if len(accs) == 0:
@@ -719,7 +719,7 @@ def show_servers() -> None:
 
 def default_servers(name: str) -> None:
     """CLI only function: sets a Server as the default one"""
-    logging.info("Starting CLI functions: default_servers")
+    logging.info("-----------------------Starting CLI functions: default_servers")
     try:
         #Check is the new record, which will be the default one, exists at all
         srv = Cloudflare.query.filter_by(name=name).first()
@@ -749,7 +749,7 @@ def default_servers(name: str) -> None:
 
 def add_owner(domain: str, id: int) -> None:
     """CLI only function: adds an owner for the given domain"""
-    logging.info("Starting CLI functions: add_owner")
+    logging.info("-----------------------Starting CLI functions: add_owner")
     try:
         #Check if the user with given ID exists
         usr = User.query.filter_by(id=id).first()
@@ -782,27 +782,45 @@ def add_owner(domain: str, id: int) -> None:
         logging.error(f"cli>Add_owner() general error: {err}")
         print(f"Add_owner() general error: {err}")
 
-def del_owner(domain: str) -> None:
+def del_owner(domain: str,cli: bool = True):
     """CLI only function: deletes an owner for a selected domain from database"""
-    logging.info("Starting CLI functions: del_owner")
+    if cli:
+        logging.info("-----------------------Starting CLI functions: del_owner")
+    else:
+        logging.info(f"Deleting the owner of domain {domain} from the database...")
     try:
         check = Ownership.query.filter_by(domain=domain).first()
         if check:
             db.session.delete(check)
             db.session.commit()
-            print(f"Ownership for domain \"{domain}\" deleted successfully!")
-            logging.info(f"cli>Ownership for domain \"{domain}\" deleted successfully!")
+            if cli:
+                print(f"Ownership for domain \"{domain}\" deleted successfully!")
+                logging.info(f"cli>Ownership for domain \"{domain}\" deleted successfully!")
+                quit()
+            else:
+                logging.info(f"Ownership for domain \"{domain}\" deleted successfully!")
+                return False
         else:
-            print(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
-            logging.error(f"cli>Ownership for domain \"{domain}\" deletion error - no such domain!")
-            quit(1)
+            if cli:
+                print(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
+                logging.error(f"cli>Ownership for domain \"{domain}\" deletion error - no such domain!")
+                quit(1)
+            else:
+                print(f"Ownership for domain \"{domain}\" deletion error - no such domain!")
+                logging.error(f"cli>Ownership for domain \"{domain}\" deletion error - no such domain!")
+                return False
     except Exception as err:
-        logging.error(f"cli>Ownership for domain \"{domain}\" general error: {err}")
-        print(f"Ownership for domain \"{domain}\" general error: {err}")
+        if cli:
+            print(f"Ownership for domain \"{domain}\" general error: {err}")
+            logging.error(f"cli>Ownership for domain \"{domain}\" general error: {err}")
+            quit(1)
+        else:
+            logging.error(f"Ownership for domain \"{domain}\" general error: {err}")
+            return False
 
 def upd_owner(domain: str, new_owner: int) -> None:
     """CLI only function: updates a domain with the new owner"""
-    logging.info("Starting CLI functions: upd_owner")
+    logging.info("-----------------------Starting CLI functions: upd_owner")
     try:
         check = Ownership.query.filter_by(domain=domain).first()
         if check:
@@ -820,7 +838,7 @@ def upd_owner(domain: str, new_owner: int) -> None:
 
 def show_owners() -> None:
     """CLI only function: shows all domains and their owners from the database"""
-    logging.info("Starting CLI functions: show_owners")
+    logging.info("-----------------------Starting CLI functions: show_owners")
     try:
         accs = Ownership.query.order_by(Ownership.domain).all()
         if len(accs) == 0:
@@ -838,7 +856,7 @@ def show_owners() -> None:
 
 def add_account(domain: str, email: str) -> None:
     """CLI only function: adds an account info for the given domain"""
-    logging.info("Starting CLI functions: add_account")
+    logging.info("-----------------------Starting CLI functions: add_account")
     try:
         #Check if the account with given email exists
         acc = Cloudflare.query.filter_by(account=email).first()
@@ -866,23 +884,82 @@ def add_account(domain: str, email: str) -> None:
         logging.error(f"cli>Add_account() general error: {err}")
         print(f"Add_account() general error: {err}")
 
-def del_account(domain: str) -> None:
+def upload_accounts(filename: str) -> None:
+    """CLI only function: adds a lot of accounts via file uploading"""
+    logging.info("-----------------------Starting CLI functions: add_accounts_bulk")
+    try:
+        if os.path.exists(filename):
+            with open(filename) as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) == 2:
+                        domain, account = parts
+                        #Check if the account with given email exists
+                        acc = Cloudflare.query.filter_by(account=account).first()
+                        if not acc:
+                            print(f"Error! Cloudflare account for domain {domain} with the given email {account} is not exists in our database!")
+                            logging.error(f"cli>Error! Cloudflare account for domain {domain} with the given email {account} is not exists in our database!")
+                            continue
+                        #Check if the given account is already linked with the given domain
+                        check = Domain_account.query.filter_by(domain=domain).all()
+                        if check:
+                            print(f"Domain \"{domain}\" already linked with account {account}!")
+                            logging.error(f"cli>Domain \"{domain}\" already linked with account {account}!")
+                            continue
+                        #Else start addition procedure
+                        new_account = Domain_account(
+                            domain=domain,
+                            account=account,
+                        )
+                        db.session.add(new_account)
+                        db.session.commit()
+                        print(f"Domain \"{domain}\" now is linked to account {account}!")
+                        logging.info(f"cli>Domain \"{domain}\" now is linked to account {account}!")
+                    else:
+                        logging.error("cli>Some error during parsing some link from the file...")
+                        print("Some error during parsing some link from the file...")
+                        continue
+        else:
+            logging.error(f"cli>upload_accounts(): Error opening file {filename}!")
+            print(f"Error opening file {filename}!")
+            quit()
+    except Exception as err:
+        logging.error(f"cli>Upload_accounts() general error: {err}")
+        print(f"Upload_accounts() general error: {err}")
+
+def del_account(domain: str, cli: bool = True):
     """CLI only function: deletes a domain-to-account link from database"""
-    logging.info("Starting CLI functions: del_account")
+    if cli:
+        logging.info("-----------------------Starting CLI functions: del_account")
+    else:
+        logging.info(f"Deleting link of domain {domain} with its account in the database...")
     try:
         check = Domain_account.query.filter_by(domain=domain).first()
         if check:
             db.session.delete(check)
             db.session.commit()
-            print(f"Link to account for domain \"{domain}\" deleted successfully!")
-            logging.info(f"cli>Link to account for domain \"{domain}\" deleted successfully!")
+            if cli:
+                print(f"Link of domain {domain} with its account deleted successfully!")
+                logging.info(f"cli>Link of domain {domain} with its account deleted successfully!")
+                quit(0)
+            else:
+                logging.info(f"Link of domain {domain} with its account deleted successfully!")
+                return True
         else:
-            print(f"Link to account for domain \"{domain}\" deletion error - no such domain!")
-            logging.error(f"cli>Link to account for domain \"{domain}\" deletion error - no such domain!")
-            quit(1)
+            if cli:
+                print(f"Link to account for domain \"{domain}\" deletion error - no such domain!")
+                logging.error(f"cli>Link to account for domain \"{domain}\" deletion error - no such domain!")
+                quit(1)
+            else:
+                logging.error(f"Link to account for domain \"{domain}\" deletion error - no such domain!")
+                return False
     except Exception as err:
-        logging.error(f"cli>Link to account for domain \"{domain}\" general error: {err}")
-        print(f"Link to account for domain \"{domain}\" general error: {err}")
+        if cli:
+            logging.error(f"cli>Link to account for domain \"{domain}\" general error: {err}")
+            print(f"Link to account for domain \"{domain}\" general error: {err}")
+        else:
+            logging.error(f"Link to account for domain \"{domain}\" general error: {err}")
+            return False
 
 def upd_account(domain: str, email: str) -> None:
     """CLI only function: updates a domain with the new account link"""
@@ -910,7 +987,7 @@ def upd_account(domain: str, email: str) -> None:
 
 def show_accounts() -> None:
     """CLI only function: shows all domains and their owners from the database"""
-    logging.info("Starting CLI functions: show_accounts")
+    logging.info("-----------------------Starting CLI functions: show_accounts")
     try:
         accs = Domain_account.query.order_by(Domain_account.domain).all()
         if len(accs) == 0:

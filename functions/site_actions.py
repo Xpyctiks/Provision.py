@@ -6,6 +6,7 @@ from flask_login import current_user
 import functions.variables
 from db.db import db
 from db.database import *
+from functions.cli_management import del_account,del_owner
 
 def delete_site(sitename: str) -> bool:
     """Site action: full delete selected site. Requires "sitename" as a parameter"""
@@ -93,16 +94,10 @@ def delete_site(sitename: str) -> bool:
         else:
             os.rmdir(path)
             logging.info(f"Root folder {path} deleted successfully!")
-        owner = Ownership.query.filter_by(domain=sitename).first()
-        if owner:
-            db.session.delete(owner)
-            db.session.commit()
-            print(f"Ownership for domain \"{sitename}\" deleted successfully!")
-            logging.info(f"Ownership for domain \"{sitename}\" deleted successfully!")
-        else:
-            print(f"Ownership for domain \"{sitename}\" deletion error - no such domain!")
-            logging.error(f"Ownership for domain \"{sitename}\" deletion error - no such domain!")
-            error_message += f"Помилка видалення власника сайту з бази!\n"
+        #deleting site from the owner table in the database
+        del_owner(sitename,False)
+        #deleting link between domain and its Cloudflare account from the database
+        del_account(sitename,False)
         #final check of the results
         if len(error_message) > 0:
             error_message += f"Сайт {sitename} видалено, але з помилками!\n"
@@ -441,6 +436,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
         return False
 
 def normalize_domain(domain: str):
+    """Function to check and filter a domain, which is got as GET parameter"""
     DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
     domain = domain.strip().lower()
     try:
@@ -456,3 +452,33 @@ def normalize_domain(domain: str):
         flash(f"Помилка перевірки змінної домена для ДНС валідації, дивіться логи!", 'alert alert-danger')
         return redirect("/",301)
     return domain
+
+def link_domain_and_account(domain: str, account: str):
+    """Adds an account info for the given domain to DB for future simple actions with"""
+    logging.info(f"Linking domain {domain} with account {account} in DB...")
+    try:
+        #Check if the account with given email exists
+        acc = Cloudflare.query.filter_by(account=account).first()
+        if not acc:
+            logging.error(f"link_domain_and_account() Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible!")
+            asyncio.run(send_to_telegram(f"link_domain_and_account() Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible!",f"🚒Provision error by {current_user.realname}:"))
+            return False
+        #Check if the given account is already linked with the given domain
+        check = Domain_account.query.filter_by(domain=domain).all()
+        for i, c in enumerate(check,1):
+            if c.account == account:
+                logging.info(f"Domain \"{domain}\" is already linked with account {account}!")
+                return True
+        #Else start addition procedure
+        new_account = Domain_account(
+            domain=domain,
+            account=account,
+        )
+        db.session.add(new_account)
+        db.session.commit()
+        logging.info(f"Domain \"{domain}\" now is linked to account {account}!")
+        return True
+    except Exception as err:
+        logging.error(f"link_domain_and_account() general error: {err}")
+        asyncio.run(send_to_telegram(f"link_domain_and_account() general error: {err}",f"🚒Provision error by {current_user.realname}:"))
+        return False
