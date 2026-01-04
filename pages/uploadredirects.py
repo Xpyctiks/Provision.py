@@ -2,6 +2,7 @@ from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
 import logging,os
 from werkzeug.utils import secure_filename
+from functions.site_actions import normalize_domain
 
 uploadredir_bp = Blueprint("upload_redirects", __name__)
 @uploadredir_bp.route("/upload_redirects", methods=['GET','POST'])
@@ -9,8 +10,10 @@ uploadredir_bp = Blueprint("upload_redirects", __name__)
 def uploadredir_file():
     if request.method == 'POST':
         logging.info(f"-----------------------Adding new redirects for {request.form.get('sitename').strip()} by {current_user.realname}-----------------")
+        sitename = request.form.get("sitename", "")
+        sitename = str(normalize_domain(sitename))
         #name of the redirect config file
-        file301 = os.path.join("/etc/nginx/additional-configs","301-" + request.form.get('sitename').strip() + ".conf")
+        file301 = os.path.join("/etc/nginx/additional-configs","301-" + sitename + ".conf")
         logging.info(f"Redirect config file: {file301}")
         #if this is submitted form and fileUpload[] exists in the request
         if request.form.get('addnewSubmit') and 'fileUpload' in request.files and not request.form.get('RedirectFromField') and not request.form.get('RedirectToField'):
@@ -30,7 +33,7 @@ def uploadredir_file():
                 for line in redirectsFile:
                     redirFrom, redirTo = line.strip().split(",")
                     template = f"""location {type} {redirFrom} {{
-rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent;
+rewrite ^(.*)$ https://{sitename}{redirTo} permanent;
 }}
 """
                     totalData += template
@@ -47,20 +50,20 @@ rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent
                     file3.write("")
                 logging.info("Marker file for Apply button created")
             flash(f"{redirectsCount} редіректів успішно додано!", 'alert alert-success')
-            logging.info(f"-----------------------New redirects added successfully for {request.form.get('sitename').strip()}-----------------")
-            return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
+            logging.info(f"-----------------------New redirects added successfully for {sitename}-----------------")
+            return redirect(f"/redirects_manager?site={sitename}",301)
         #if this is submitted form and single redirect lines exist there
         elif request.form.get('addnewSubmit') and request.form.get('RedirectFromField') and request.form.get('RedirectToField') and request.form.get('templateField'):
-            logging.info(f"-----------------------Adding new single redirect for {request.form.get('sitename').strip()} by {current_user.realname}-----------------")
+            logging.info(f"-----------------------Adding new single redirect for {sitename} by {current_user.realname}-----------------")
             logging.info(f"Redirect config file: {file301}")
             if request.form.get('templateField') == "strict":
                 type = "="
             else:
                 type = "~"
             logging.info(f"Type of redirect: {type}")
-            logging.info(f"Redirect: From: {request.form.get('RedirectFromField').strip()} to {request.form.get('RedirectToField')}")
-            template = f"""location {type} {request.form.get('RedirectFromField').strip()} {{
-    rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{request.form.get('RedirectToField')} permanent;
+            logging.info(f"Redirect: From: {sitename} to {request.form.get('RedirectToField')}")
+            template = f"""location {type} {sitename} {{
+    rewrite ^(.*)$ https://{sitename}{request.form.get('RedirectToField')} permanent;
 }}
 """
             with open(file301, "a", encoding="utf-8") as f:
@@ -70,12 +73,12 @@ rewrite ^(.*)$ https://{request.form.get('sitename').strip()}{redirTo} permanent
                 with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
                     file3.write("")
                 logging.info("Marker file for Apply button created")
-            logging.info(f"-----------------------New redirect added successfully for {request.form.get('sitename').strip()}-----------------")
-            return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
+            logging.info(f"-----------------------New redirect added successfully for {sitename}-----------------")
+            return redirect(f"/redirects_manager?site={sitename}",301)
         else:
             logging.error("Some unknown error - not a file was uploaded and not single redirect was added. Looks like some fields are not set or messed.")
             flash("Якась помилка - ні файл, ні текстові поля не були завантажені.Схоже на технічну помилку в коді.",'alert alert-danger')
-            return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",301)
+            return redirect(f"/redirects_manager?site={sitename}",301)
     #if this is GET request - show page
     if request.method == 'GET':
         args = request.args

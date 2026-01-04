@@ -12,6 +12,8 @@ def showClonePage():
     try:
         if not request.args.get('source_site'):
             flash(f"Не передано обов'язкового параметру для сторінки клонування. Мабуть ви опинилсь там в результаті помилки.", 'alert alert-danger')
+            logging.error(f"showClonePage(): GET parameter source_site was not received!")
+            asyncio.run(send_to_telegram(f"GET parameter source_site was not received!",f"🚒Provision error by {current_user.realname}:"))
             return redirect("/",301)
         #parsing git repositories available
         templates_list, first_template = loadTemplatesList()
@@ -22,7 +24,7 @@ def showClonePage():
         return render_template("template-clone.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list)
     except Exception as err:
         logging.error(f"Clone page general render error: {err}")
-        asyncio.run(send_to_telegram(f"Clone page general render error: {err}",f"🚒Provision clone page:"))
+        asyncio.run(send_to_telegram(f"Clone page general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash(f"Неочікувана помилка на сторінці колнування, дивіться логи!", 'alert alert-danger')
         return redirect("/",301)
 
@@ -33,7 +35,8 @@ def doClone():
         #check if we have all necessary data received
         if not request.form['domain'] or not request.form['selected_account'] or not request.form['selected_server'] or not request.form['buttonStartClone']:
             flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
-            asyncio.run(send_to_telegram(f"doClone(): some of the important parameters has not been received!",f"🚒Provision clone function:"))
+            logging.error(f"doClone(): some of the important parameters has not been received!")
+            asyncio.run(send_to_telegram(f"doClone(): some of the important parameters has not been received!",f"🚒Provision error by {current_user.realname}:"))
             return redirect(f"/clone?source_site={request.form['buttonStartClone']}",301)
         #starts main provision actions
         else:

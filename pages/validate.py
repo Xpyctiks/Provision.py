@@ -2,17 +2,20 @@ from flask import Blueprint,request
 from flask_login import login_required,current_user
 import json,requests,logging,tldextract
 from db.database import Cloudflare, Servers
+from functions.site_actions import normalize_domain
 
 validate_bp = Blueprint("validate", __name__)
 @validate_bp.route("/validate", methods=['POST'])
 @login_required
 def do_validation():
     message = ""
-    domain = request.form.get("domain").strip().lower()
-    server = request.form.get("selected_server").strip()
-    account = request.form.get("selected_account").strip()
+    domain = request.form.get("domain", "")
     if len(domain) == 0:
         return f'{{"message": "🤦 {current_user.realname}, ти хоча би домен введи що б було що перевіряти."}}'
+    #taking domain parameter, making it safe
+    domain = str(normalize_domain(domain))
+    server = request.form.get("selected_server").strip()
+    account = request.form.get("selected_account").strip()
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:

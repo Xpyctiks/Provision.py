@@ -1,4 +1,4 @@
-import logging,os,subprocess,asyncio,re,shutil
+import logging,os,subprocess,asyncio,re,shutil,idna
 from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config, create_php_config
@@ -439,3 +439,20 @@ def makePull(domain: str, pullArray: list = []) -> bool:
         asyncio.run(send_to_telegram(f"makePull() global error: {msg}",f"🚒Provision pull by {current_user.realname}:"))
         logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
         return False
+
+def normalize_domain(domain: str):
+    DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
+    domain = domain.strip().lower()
+    try:
+        domain = idna.encode(domain).decode()
+    except idna.IDNAError:
+        logging.error(f"Invalid IDNA domain {domain}!")
+        asyncio.run(send_to_telegram(f"Invalid IDNA domain {domain}!",f"🚒Provision error by {current_user.realname}:"))
+        flash(f"Помилка перевірки змінної домена для ДНС валідації, дивіться логи!", 'alert alert-danger')
+        return redirect("/",301)
+    if not DOMAIN_RE.fullmatch(domain):
+        logging.error(f"Invalid domain format {domain}!")
+        asyncio.run(send_to_telegram(f"Invalid domain format {domain}!",f"🚒Provision error by {current_user.realname}:"))
+        flash(f"Помилка перевірки змінної домена для ДНС валідації, дивіться логи!", 'alert alert-danger')
+        return redirect("/",301)
+    return domain

@@ -26,7 +26,7 @@
         <li>
           <a class="nav-link active" id="totalRecords" style="color: 0dcaf0;"></a>
         </li>
-        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px;"></span>
+        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
       </ul>
       <a href="/" class="btn btn-info">⬅На головну</a>&nbsp;
       <form class="d-flex" action="/logout" method="POST">
@@ -36,40 +36,42 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 20vw;">
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; min-height: 20vw;">
   <div class="card-header" style="background-color: palegreen;">
-    <h4>CNAME записи для домену {{ source_site|safe }} :</h4>
+    <h4 style="text-align: center;">Валідація для пошукових систем домену {{ domain|safe }} :</h4>
+    <h6 style="text-align: center;">Аккаунт: {{ account|safe }}</h6>
   </div>
   <div class="card-body">
-    <form action="/clone" method="POST" id="postform" class="needs-validation" novalidate>
+    <form action="/dns_validation" method="POST" id="postform" class="needs-validation" novalidate>
       <div id="currentRecords">
         <h5 class="card-title">Вже існуючі записи типу CNAME:</h5>
+        <table class="table table-bordered">
+          <thead>
+            <tr class="table-warning">
+              <th scope="col" style="width: 150px;">CNAME:</th>
+              <th scope="col" style="width: 150px;">Значення:</th>
+            </tr>
+          </thead>
+          <tbody>      
+            {% for site in html_data %}
+            <tr class="table-success">
+              <td class="table-success cname-cell" >{{site.record_name|safe}}</td>
+              <td class="table-success"><button data-bs-toggle="tooltip" data-bs-placement="top" type="submit" class="btn btn-outline-warning" name="buttonDelCname" value="{{site.record_id|safe}}" onclick="fillCnameAndSubmit(this)" title="Видалити цей запис">❌</button>&nbsp;{{site.record_conent|safe}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <div class="mb-3 dropdown">
-        <h5 class="card-title">Оберіть аккаунт CloudFlare на якому новий домен розташован:</h5>
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 580px;">{{first_cf|safe}}</button>
-        <button class="btn btn-warning" type="button" id="Validate" value="Validate" style="width: 168px;">Перевірити</button>
-        <ul class="dropdown-menu" aria-labelledby="Account">
-          {{cf_list|safe}}
-        </ul>
-        <input type="hidden" name="selected_account" id="selected_account" value="{{first_cf|safe}}" required>
-        <div class="invalid-feedback">
-          Оберіть аккаунт CloudFlare.
-        </div>
-      </div>
-      <div class="mb-3 dropdown">
-        <h5 class="card-title">Оберіть на який сервер будуть вести DNS записи:</h5>
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="Server" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_server|safe}}</button>
-        <ul class="dropdown-menu" aria-labelledby="Account">
-          {{server_list|safe}}
-        </ul>
-        <input type="hidden" name="selected_server" id="selected_server" value="{{first_server|safe}}" required>
-        <div class="invalid-feedback">
-          Оберіть на який сервер будуть DNS записи
-        </div>
+      <div id="add_dns_record" class="input-group mb-3">
+          <span class="input-group-text">CNAME</span>
+          <input type="text" class="form-control" placeholder="Напр.: 234dsfg34tasdf" aria-label="cname" name="cname">
+          <span class="input-group-text">Текст</span>
+          <input type="text" class="form-control" value="verify.bing.com" aria-label="cname_value" name="cname_value">
       </div>
       <div style="margin-top: 40px;">
-        <button type="submit" class="btn btn-warning" style="margin-top: -30px; margin-left: 200px; width: 400px;" name="buttonStartClone" value="{{ source_site|safe }}" onclick="showLoading()">Почати клонування</button>
+        <button type="submit" class="btn" style="background-color: palegreen; margin-top: -30px; margin-left: 200px; width: 400px;" name="buttonAddCname" value="{{ domain|safe }}" onclick="showLoading()">Додати новий запис CNAME</button>
+        <input type="hidden" name="account" value="{{ account|safe }}">
+        <input type="hidden" name="domain" value="{{ domain|safe }}">
       </div>
     </form>
   </div>
@@ -114,7 +116,7 @@
     </div>
   </div>
 </div>
-<script src="{{ url_for('static', filename='js/provision.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dns_validation.js') }}"></script>
 </main>
 </body>
 </html>

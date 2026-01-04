@@ -26,7 +26,7 @@
         <li>
           <a class="nav-link active" id="totalRecords" style="color: 0dcaf0;"></a>
         </li>
-        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px;"></span>
+        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
       </ul>
       <a href="/" class="btn btn-info">⬅На головну</a>&nbsp;
       <form class="d-flex" action="/logout" method="POST">
@@ -38,7 +38,7 @@
 </div>
 <div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 23vw;">
   <div class="card-header">
-    <strong>Автоматично розгорнути новий сайт з шаблону:</strong>
+    <h4 style="text-align: center;">Автоматично розгорнути новий сайт з шаблону:</h4>
   </div>
   <div class="card-body">
     <form action="/provision" method="POST" id="postform" class="needs-validation" novalidate>

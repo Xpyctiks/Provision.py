@@ -37,17 +37,28 @@ document.getElementById("postform").addEventListener("submit", function(event) {
 });
 
 function showLoading() {
-    document.getElementById("spinnerLoading").style.visibility = "visible";
+const spinner = document.getElementById("spinnerLoading");
+  if (spinner) {
+    spinner.style.visibility = "visible";
+  }
+}
+
+function hideLoading() {
+const spinner = document.getElementById("spinnerLoading");
+  if (spinner) {
+    spinner.style.visibility = "hidden";
+  }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("spinnerLoading").style.visibility = "hidden";
+  hideLoading();
 });
 
-function deleteLoading() {
-    document.getElementById("spinnerLoading").className = "spinner-border text-danger";
-    document.getElementById("spinnerLoading").style.visibility = "visible";
-}
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    hideLoading();
+  }
+});
 
 document.getElementById('postform').addEventListener('submit', function (e) {
     let account = document.getElementById('selected_account');

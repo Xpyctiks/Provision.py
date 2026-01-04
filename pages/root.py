@@ -3,6 +3,8 @@ import logging,os,re
 from flask_login import login_required
 from functions.site_actions import count_redirects
 from functions.pages_forms import getSiteOwner, getSiteCreated
+from db.db import db
+from db.database import Domain_account
 
 #allows to sort with natural keys - when after 10 goes 11, not 20
 def natural_key(s):
@@ -30,79 +32,90 @@ def index():
                 robots_button = "btn-primary"
             else:
                 robots_button = "btn-light"
+            #check if the account has domain linked to its cloudflare account in DB
+            acc = Domain_account.query.filter_by(domain=s).first()
+            if not acc:
+                dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary disabled" type="submit" name="validation" value="{s}" style="margin-top: 5px;">📮DNS валідація</a><br>'
+            else:
+                dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="validation" value="{s}" onclick="showLoading()" style="margin-top: 5px;" title="Керування CNAME записами для валідації домену для пошукових систем.">📮DNS валідація</a><br>'
             #If everything is ok, main view:
             if os.path.islink(ngx_site) and os.path.isfile(php_site):
                 html_data.append({
-                    "table_type": f"<tr>\n<th scope=\"row\" class=\"table-success\">{i}</th>",
-                    "button_2": f"<button class=\"btn btn-warning\" type=\"submit\" value=\"{s}\" name=\"disable\" data-bs-toggle=\"tooltip\" data-bs-placement=\"top\" form=\"main_form\" onclick=\"showLoading()\" title=\"Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.\">🚧Вимкнути</button>",
+                    "table_type": f'<tr>\n<th scope="row" class="table-success">{i}</th>',
+                    "button_2": f'<button class="btn btn-warning" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
                     "site_name": s,
-                    "table_type2": "<td class=\"table-success\">",
+                    "table_type2": '<td class="table-success">',
                     "count_redirects": count_redirects(s),
                     "getSiteCreated": getSiteCreated(s),
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "✅OK",
-                    "robots_button": robots_button
+                    "site_status": '✅OK',
+                    "robots_button": robots_button,
+                    "dns_validation": dnsValidation_button
                 })
             #if nginx is ok but php is not
             elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 html_data.append({
-                    "table_type": f"<tr>\n<th scope=\"row\" class=\"table-danger\">{i}</th>",
-                    "button_2": f"<button class=\"btn btn-success\" type=\"submit\" value=\"{s}\" name=\"enable\" data-bs-toggle=\"tooltip\" data-bs-placement=\"top\" form=\"main_form\" onclick=\"showLoading()\" title=\"Активувати сайт - він буде оброблятися при запитах ззовні.\">🏃Активувати</button>",
+                    "table_type": f'<tr>\n<th scope="row" class="table-danger">{i}</th>',
+                    "button_2": f'<button class="btn btn-success" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
                     "site_name": s,
-                    "table_type2": "<td class=\"table-danger\">",
+                    "table_type2": '<td class="table-danger">',
                     "count_redirects": count_redirects(s),
                     "getSiteCreated": getSiteCreated(s),
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "🚨Помилка конфігураціх РНР",
-                    "robots_button": robots_button
+                    "site_status": '🚨Помилка конфігураціх РНР',
+                    "robots_button": robots_button,
+                    "dns_validation": dnsValidation_button
                 })
             #if php is ok but nginx is not
             elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
                 html_data.append({
-                    "table_type": f"<tr>\n<th scope=\"row\" class=\"table-danger\">{i}</th>",
-                    "button_2": f"<button class=\"btn btn-success\" type=\"submit\" value=\"{s}\" name=\"enable\" data-bs-toggle=\"tooltip\" data-bs-placement=\"top\" form=\"main_form\" onclick=\"showLoading()\" title=\"Активувати сайт - він буде оброблятися при запитах ззовні.\">🏃Активувати</button>",
+                    "table_type": f'<tr>\n<th scope="row" class="table-danger">{i}</th>',
+                    "button_2": f'<button class="btn btn-success" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
                     "site_name": s,
-                    "table_type2": "<td class=\"table-danger\">",
+                    "table_type2": '<td class="table-danger">',
                     "count_redirects": count_redirects(s),
                     "getSiteCreated": getSiteCreated(s),
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "🚨Помилка конфігураціх Nginx",
-                    "robots_button": robots_button
+                    "site_status": '🚨Помилка конфігураціх Nginx',
+                    "robots_button": robots_button,
+                    "dns_validation": dnsValidation_button
                 })
             #if really disabled
             elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
                 html_data.append({
-                    "table_type": f"<tr>\n<th scope=\"row\" class=\"table-warning\">{i}</th>",
-                    "button_2": f"<button class=\"btn btn-success\" type=\"submit\" value=\"{s}\" name=\"enable\" data-bs-toggle=\"tooltip\" data-bs-placement=\"top\" form=\"main_form\" onclick=\"showLoading()\" title=\"Активувати сайт - він буде оброблятися при запитах ззовні.\">🏃Активувати</button>",
+                    "table_type": f'<tr>\n<th scope="row" class="table-warning">{i}</th>',
+                    "button_2": f'<button class="btn btn-success" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
                     "site_name": s,
-                    "table_type2": "<td class=\"table-warning\">",
+                    "table_type2": '<td class="table-warning">',
                     "count_redirects": count_redirects(s),
                     "getSiteCreated": getSiteCreated(s),
                     "id": i,
                     "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
                     "getSiteOwner": getSiteOwner(s),
-                    "site_status": "🚧Сайт вимкнено",
-                    "robots_button": robots_button
+                    "site_status": '🚧Сайт вимкнено',
+                    "robots_button": robots_button,
+                    "dns_validation": dnsValidation_button
                 })
             else:
                 html_data.append({
-                    "table_type": f"<tr>\n<th scope=\"row\" class=\"table-danger\">{i}</th>",
-                    "button_2": "",
-                    "site_name": "ЗАГАЛЬНА",
-                    "table_type2": "<td class=\"table-danger\">",
-                    "count_redirects": "",
-                    "getSiteCreated": "",
+                    "table_type": f'<tr>\n<th scope="row" class="table-danger">{i}</th>',
+                    "button_2": '',
+                    "site_name": 'ЗАГАЛЬНА',
+                    "table_type2": '<td class="table-danger">',
+                    "count_redirects": '',
+                    "getSiteCreated": '',
                     "id": i,
-                    "accordeon_path": "ПОМИЛКА",
-                    "getSiteOwner": "СИСТЕМИ",
-                    "site_status": "Важливі файли або папки не існують",
-                    "robots_button": ""
+                    "accordeon_path": 'ПОМИЛКА',
+                    "getSiteOwner": 'СИСТЕМИ',
+                    "site_status": 'Важливі файли або папки не існують',
+                    "robots_button": '',
+                    "dns_validation": ''
                 })
         return render_template("template-main.html",html_data=html_data)
     except Exception as msg:
