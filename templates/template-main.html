@@ -36,23 +36,18 @@
     <a class="navbar-brand" href="/">Система автоматичного розгортання сайтів:</a>
     <div class="spinner-border text-warning" role="status" style="margin-top: 15px; visibility: hidden;" id="spinnerLoading">
     </div>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarCollapse">
-      <ul class="navbar-nav me-auto mb-2 mb-md-0">
-        <li class="nav-item">
-          <a class="nav-link active" id="totalLines" style="color: 0dcaf0;"></a>
-        </li>
-        <li>
-          <a class="nav-link active" id="totalRecords" style="color: 0dcaf0;"></a>
-        </li>
-      </ul>
-      <a href="/logs" class="btn btn-secondary">📩Лог роботи</a>&nbsp;
-      <a href="/provision" class="btn btn-success">💽Розгорнути автоматично</a>&nbsp;
-      <a href="/upload" class="btn btn-success">💾Додати новий вручну</a>&nbsp;
-      <form class="d-flex" action="/logout" method="POST">
-        <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+    <div class="collapse navbar-collapse position-relative" id="navbarCollapse">
+      <div class="dropdown mx-auto">
+        <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+        </ul>
+      </div>
+      <form action="/logout" method="POST">
+        &nbsp;<button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
       </form>
     </div>
   </div>

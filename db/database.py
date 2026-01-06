@@ -62,3 +62,9 @@ class Domain_account(db.Model):
     domain = db.Column(db.String(256), nullable=False,unique=True)
     account = db.Column(db.String(150), nullable=False)
     created = db.Column(db.DateTime,default=datetime.now)
+
+class Cloudflare_account_ownership(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    account = db.Column(db.String(256), nullable=False)
+    owner = db.Column(db.String(150), nullable=False)
+    created = db.Column(db.DateTime,default=datetime.now)
