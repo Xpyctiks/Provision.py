@@ -1,5 +1,6 @@
 from flask import Blueprint
 from .action import action_bp
+from .admin_panel import admin_panel_bp
 from .clone import clone_bp
 from .cloudflare_domains import cloudflare_domains_bp
 from .dns_validation import dns_validation_bp
@@ -16,6 +17,7 @@ from .validate import validate_bp
 
 blueprint = Blueprint("main", __name__)
 blueprint.register_blueprint(action_bp)
+blueprint.register_blueprint(admin_panel_bp)
 blueprint.register_blueprint(clone_bp)
 blueprint.register_blueprint(cloudflare_domains_bp)
 blueprint.register_blueprint(dns_validation_bp)
