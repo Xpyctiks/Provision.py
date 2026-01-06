@@ -12,6 +12,7 @@ def add_cloudflare(account: str,token: str) -> None:
         if Cloudflare.query.filter_by(account=account).first():
             print(f"Account \"{account}\" creation error - already exists!")
             logging.error(f"cli>Account \"{account}\" creation error - already exists!")
+            quit(1)
         else:
             new_account = Cloudflare(
                 account=account,
@@ -27,9 +28,11 @@ def add_cloudflare(account: str,token: str) -> None:
             if acc:
                 acc.isdefault = True
                 db.session.commit()
+        quit(0)
     except Exception as err:
         logging.error(f"cli>New account \"{account}\" creation error: {err}")
         print(f"New account \"{account}\" creation error: {err}")
+        quit(1)
 
 def del_cloudflare(account: str) -> None:
     """CLI only function: deletes a Cloudflare account from the database"""
@@ -45,6 +48,7 @@ def del_cloudflare(account: str) -> None:
             load_config(current_app)
             print(f"Cloudflare account \"{acc.account}\" deleted successfully!")
             logging.info(f"cli>Cloudflare account \"{acc.account}\" deleted successfully!")
+            quit(0)
         else:
             print(f"Cloudflare account \"{account}\" deletion error - no such account!")
             logging.error(f"cli>Cloudflare account \"{account}\" deletion error - no such account!")
@@ -52,6 +56,7 @@ def del_cloudflare(account: str) -> None:
     except Exception as err:
         logging.error(f"cli>Cloudflare account \"{account}\" deletion error: {err}")
         print(f"Cloudflare account \"{account}\" deletion error: {err}")
+        quit(1)
 
 def upd_cloudflare(account: str, new_token: str) -> None:
     """CLI only function: updates a Cloudflare account with the new token"""
@@ -64,6 +69,7 @@ def upd_cloudflare(account: str, new_token: str) -> None:
             db.session.commit()
             print(f"Account \"{account}\" updated successfully to {new_token}!")
             logging.info(f"cli>Account \"{account}\" updated successfully to{new_token}!")
+            quit(0)
         else:
             print(f"Account \"{account}\" update error - no such account!")
             logging.error(f"cli>Account \"{account}\" update error - no such account!")
@@ -71,6 +77,7 @@ def upd_cloudflare(account: str, new_token: str) -> None:
     except Exception as err:
         logging.error(f"cli>Account \"{account}\" update error: {err}")
         print(f"Account \"{account}\" update error: {err}")
+        quit(1)
 
 def show_cloudflare() -> None:
     """CLI only function: shows all available Cloudflare accounts from the database"""
@@ -80,14 +87,16 @@ def show_cloudflare() -> None:
         if len(accs) == 0:
             print("No accounts found in DB!")
             logging.error("cli>No accounts found in DB!")
-            quit()
+            quit(0)
         for i, s in enumerate(accs, 1):
             print("-------------------------------------------------------------------------------------------------------")
             print(f"ID: {s.id}, Account: {s.account}, Token: {s.token}, IsDefault: {s.isdefault}, Created: {s.created}")
             print("-------------------------------------------------------------------------------------------------------")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>CLI show accounts function error: {err}")
         print(f"CLI show accounts function error: {err}")
+        quit(1)
 
 def default_cloudflare(account: str) -> None:
     """CLI only function: sets a Cloudflare account as the default one"""
@@ -116,9 +125,11 @@ def default_cloudflare(account: str) -> None:
             db.session.commit()
             print(f"Account \"{account}\" is set as default one!")
             logging.info(f"cli>Account \"{account}\" is set as default one!")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Set default account \"{account}\" error: {err}")
         print(f"Set default account \"{account}\" error: {err}")
+        quit(1)
 
 def help_cloudflare() -> None:
     """CLI only function: shows hints for CLOUDFLARE command"""
@@ -129,3 +140,4 @@ Possible completion:
     del     <email>
     upd     <email> <new_api_token>
     """)
+    quit(0)

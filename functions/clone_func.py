@@ -1,7 +1,7 @@
 import os,asyncio,logging,shutil,subprocess,sqlite3
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
-from functions.provision import setupNginx,finishJob
+from functions.provision_func import setupNginx,finishJob
 from flask import current_app,flash
 import functions.variables
 

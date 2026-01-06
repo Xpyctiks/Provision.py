@@ -1,7 +1,7 @@
 from flask import redirect,Blueprint,request,render_template,flash,current_app
 from flask_login import login_required,current_user
 from functions.pages_forms import *
-from functions.clone import *
+from functions.clone_func import *
 import os,asyncio
 from functions.send_to_telegram import send_to_telegram
 

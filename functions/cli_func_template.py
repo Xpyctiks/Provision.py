@@ -11,6 +11,7 @@ def add_template(name: str,repository: str) -> None:
         if Provision_templates.query.filter_by(name=name).first():
             print(f"Template name \"{name}\" creation error - already exists!")
             logging.error(f"cli>Template name \"{name}\" creation error - already exists!")
+            quit(1)
         else:
             new_template = Provision_templates(
                 name=name,
@@ -26,9 +27,11 @@ def add_template(name: str,repository: str) -> None:
             if tmp:
                 tmp.isdefault = True
                 db.session.commit()
+        quit(0)
     except Exception as err:
         logging.error(f"cli>New repository \"{name}\" - \"{repository}\" creation error: {err}")
         print(f"New repository \"{name}\" - \"{repository}\" creation error: {err}")
+        quit(1)
 
 def del_template(name: str) -> None:
     """CLI only function: deletes a template of site provision from the database"""
@@ -43,6 +46,7 @@ def del_template(name: str) -> None:
             load_config(current_app)
             print(f"Template \"{template.name}\" deleted successfully!")
             logging.info(f"cli>Template \"{template.name}\" deleted successfully!")
+            quit(0)
         else:
             print(f"Template \"{name}\" deletion error - no such template!")
             logging.error(f"cli>Template \"{name}\" deletion error - no such template!")
@@ -50,6 +54,7 @@ def del_template(name: str) -> None:
     except Exception as err:
         logging.error(f"cli>Template \"{name}\" deletion error: {err}")
         print(f"Template \"{name}\" deletion error: {err}")
+        quit(1)
 
 def upd_template(name: str, new_repository: str) -> None:
     """CLI only function: updates a template with a new repository address"""
@@ -61,6 +66,7 @@ def upd_template(name: str, new_repository: str) -> None:
             db.session.commit()
             print(f"Repository for template \"{name}\" updated successfully to {new_repository}!")
             logging.info(f"cli>Repository for template \"{name}\" updated successfully to{new_repository}!")
+            quit(0)
         else:
             print(f"Template \"{name}\" update error - no such template!")
             logging.error(f"cli>Template \"{name}\" update error - no such template!")
@@ -68,6 +74,7 @@ def upd_template(name: str, new_repository: str) -> None:
     except Exception as err:
         logging.error(f"cli>Template \"{name}\" update error: {err}")
         print(f"Template \"{name}\" update error: {err}")
+        quit(1)
 
 def show_templates() -> None:
     """CLI only function: shows all available site provision repositories from the database"""
@@ -77,14 +84,16 @@ def show_templates() -> None:
         if len(templates) == 0:
             print("No templates found in DB!")
             logging.error("cli>No templates found in DB!")
-            quit()
+            quit(0)
         for i, s in enumerate(templates, 1):
             print("-------------------------------------------------------------------------------------------------------")
             print(f"ID: {s.id}, Name: {s.name}, Repository address: {s.repository}, IsDefault: {s.isdefault}, Created: {s.created}")
             print("-------------------------------------------------------------------------------------------------------")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>CLI show templates function error: {err}")
         print(f"CLI show templates function error: {err}")
+        quit(1)
 
 def default_template(name: str) -> None:
     """CLI only function: sets a template as the default one"""
@@ -112,9 +121,11 @@ def default_template(name: str) -> None:
             db.session.commit()
             print(f"The template \"{name}\" is set as default one!")
             logging.info(f"cli>The template \"{name}\" is set as default one!")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Set default template \"{name}\" error: {err}")
         print(f"Set default template \"{name}\" error: {err}")
+        quit(1)
 
 def help_templates() -> None:
     """CLI only function: shows hints for TEMPLATES command"""
@@ -125,3 +136,4 @@ Possible completion:
     del     <name>
     upd     <name> <new_git_repo_address>
     """)
+    quit(0)

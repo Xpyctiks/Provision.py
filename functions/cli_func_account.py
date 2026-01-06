@@ -13,14 +13,14 @@ def add_account(domain: str, email: str) -> None:
         if not acc:
             print(f"Error! Cloudflare account with the given email {email} is not exists in our database!")
             logging.error(f"cli>Error! Cloudflare account with the given email {email} is not exists in our database!")
-            quit()
+            quit(1)
         #Check if the given account is already linked with the given domain
         check = Domain_account.query.filter_by(domain=domain).all()
         for i, c in enumerate(check,1):
             if c.account == email:
                 print(f"Domain \"{domain}\" already linked with account {email}!")
                 logging.error(f"cli>Domain \"{domain}\" already linked with account {email}!")
-                quit()
+                quit(1)
         #Else start addition procedure
         new_account = Domain_account(
             domain=domain,
@@ -30,9 +30,11 @@ def add_account(domain: str, email: str) -> None:
         db.session.commit()
         print(f"Domain \"{domain}\" now is linked to account {email}!")
         logging.info(f"cli>Domain \"{domain}\" now is linked to account {email}!")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Add_account() general error: {err}")
         print(f"Add_account() general error: {err}")
+        quit(1)
 
 def upload_accounts(filename: str) -> None:
     """CLI only function: adds a lot of accounts via file uploading"""
@@ -71,13 +73,15 @@ def upload_accounts(filename: str) -> None:
                         logging.error("cli>Some error during parsing some link from the file...")
                         print("Some error during parsing some link from the file...")
                         continue
+            quit(0)
         else:
             logging.error(f"cli>upload_accounts(): Error opening file {filename}!")
             print(f"Error opening file {filename}!")
-            quit()
+            quit(1)
     except Exception as err:
         logging.error(f"cli>Upload_accounts() general error: {err}")
         print(f"Upload_accounts() general error: {err}")
+        quit(1)
 
 def del_account(domain: str, cli: bool = True):
     """CLI only function: deletes a domain-to-account link from database"""
@@ -110,6 +114,7 @@ def del_account(domain: str, cli: bool = True):
         if cli:
             logging.error(f"cli>Link to account for domain \"{domain}\" general error: {err}")
             print(f"Link to account for domain \"{domain}\" general error: {err}")
+            quit(1)
         else:
             logging.error(f"Link to account for domain \"{domain}\" general error: {err}")
             return False
@@ -126,11 +131,12 @@ def upd_account(domain: str, email: str) -> None:
             if not acc:
                 print(f"Error! Cloudflare account with the given email {email} is not exists in our database!")
                 logging.error(f"cli>Error! Cloudflare account with the given email {email} is not exists in our database!")
-                quit()
+                quit(1)
             check.account = email
             db.session.commit()
             print(f"Domain \"{domain}\" account updated successfully to {email}!")
             logging.info(f"cli>Domain \"{domain}\" account successfully to{email}!")
+            quit(0)
         else:
             print(f"Domain \"{domain}\" account update error - no such domain!")
             logging.error(f"cli>Domain \"{domain}\" account update error - no such domain!")
@@ -138,6 +144,7 @@ def upd_account(domain: str, email: str) -> None:
     except Exception as err:
         logging.error(f"cli>Domain \"{domain}\" account update general error: {err}")
         print(f"Domain \"{domain}\" account update general error: {err}")
+        quit(1)
 
 def show_accounts() -> None:
     """CLI only function: shows all domains and their owners from the database"""
@@ -147,14 +154,16 @@ def show_accounts() -> None:
         if len(accs) == 0:
             print("No domains with accounts found in DB!")
             logging.error("cli>No domains with accounts found in DB!")
-            quit()
+            quit(0)
         print("-------------------------------------------------------------------------------------------------------")
         for i, s in enumerate(accs, 1):
             print(f"ID: {s.id}, Domain: {s.domain}, Account: {s.account}, Created: {s.created}")
         print("-------------------------------------------------------------------------------------------------------")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>CLI show accounts function error: {err}")
         print(f"CLI show accounts function error: {err}")
+        quit(1)
 
 def help_account() -> None:
     """CLI only function: shows hints for ACCOUNT command"""
@@ -167,3 +176,4 @@ Possible completion:
            Format inside the file:
            <domain> <account email>
     """)
+    quit(0)

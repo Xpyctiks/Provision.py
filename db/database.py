@@ -8,7 +8,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     realname = db.Column(db.String(80), nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    rights = db.Column(db.Integer, nullable=False, default=1)
+    created = db.Column(db.DateTime, default=datetime.now)
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     
@@ -34,37 +35,37 @@ class Provision_templates(db.Model):
     name = db.Column(db.String(256), nullable=False)
     repository = db.Column(db.String(512), nullable=False)
     isdefault  = db.Column(db.Boolean(), default=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    created = db.Column(db.DateTime, default=datetime.now)
 
 class Cloudflare(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     account = db.Column(db.String(256), nullable=False)
     token = db.Column(db.String(512), nullable=False)
     isdefault  = db.Column(db.Boolean(), default=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    created = db.Column(db.DateTime, default=datetime.now)
 
 class Servers(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
     ip = db.Column(db.String(50), nullable=False)
     isdefault  = db.Column(db.Boolean(), default=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    created = db.Column(db.DateTime, default=datetime.now)
 
 class Ownership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     domain = db.Column(db.String(256), nullable=False,unique=True)
     owner = db.Column(db.String(50), nullable=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    created = db.Column(db.DateTime, default=datetime.now)
     cloned = db.Column(db.String(150), nullable=True,default="")
 
 class Domain_account(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     domain = db.Column(db.String(256), nullable=False,unique=True)
     account = db.Column(db.String(150), nullable=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    created = db.Column(db.DateTime, default=datetime.now)
 
 class Cloudflare_account_ownership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     account = db.Column(db.String(256), nullable=False)
     owner = db.Column(db.String(150), nullable=False)
-    created = db.Column(db.DateTime,default=datetime.now)
+    created = db.Column(db.DateTime, default=datetime.now)

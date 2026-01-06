@@ -37,16 +37,18 @@ document.getElementById("postform").addEventListener("submit", function(event) {
 });
 
 function showLoading() {
-const spinner = document.getElementById("spinnerLoading");
+  const spinner = document.getElementById("spinnerLoading");
   if (spinner) {
     spinner.style.visibility = "visible";
   }
 }
 
 function hideLoading() {
-const spinner = document.getElementById("spinnerLoading");
+  const spinner = document.getElementById("spinnerLoading");
   if (spinner) {
     spinner.style.visibility = "hidden";
+  } else {
+    console.warn("Spinner element not found!");
   }
 }
 

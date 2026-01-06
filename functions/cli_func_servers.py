@@ -11,6 +11,7 @@ def add_servers(name: str,ip: str) -> None:
         if Servers.query.filter_by(name=name).first():
             print(f"Server \"{name}\" creation error - already exists!")
             logging.error(f"cli>Server \"{name}\" creation error - already exists!")
+            quit(1)
         else:
             new_server = Servers(
                 name=name,
@@ -26,9 +27,11 @@ def add_servers(name: str,ip: str) -> None:
             if srv:
                 srv.isdefault = True
                 db.session.commit()
+        quit(0)
     except Exception as err:
         logging.error(f"cli>New Server \"{name}\" creation error: {err}")
         print(f"New Server \"{name}\" creation error: {err}")
+        quit(1)
 
 def del_servers(name: str) -> None:
     """CLI only function: deletes a Server from the database"""
@@ -43,6 +46,7 @@ def del_servers(name: str) -> None:
             load_config(current_app)
             print(f"Server \"{srv.name}\" deleted successfully!")
             logging.info(f"cli>Server \"{srv.name}\" deleted successfully!")
+            quit(0)
         else:
             print(f"Server \"{name}\" deletion error - no such Server!")
             logging.error(f"cli>Server \"{name}\" deletion error - no such Server!")
@@ -50,6 +54,7 @@ def del_servers(name: str) -> None:
     except Exception as err:
         logging.error(f"cli>Server \"{name}\" deletion error: {err}")
         print(f"Server \"{name}\" deletion error: {err}")
+        quit(1)
 
 def upd_servers(name: str, new_ip: str) -> None:
     """CLI only function: updates a Server with the new token"""
@@ -61,6 +66,7 @@ def upd_servers(name: str, new_ip: str) -> None:
             db.session.commit()
             print(f"Server \"{name}\" updated successfully to {new_ip}!")
             logging.info(f"cli>Server \"{name}\" updated successfully to{new_ip}!")
+            quit(0)
         else:
             print(f"Server \"{name}\" update error - no such Server!")
             logging.error(f"cli>Server \"{name}\" update error - no such Server!")
@@ -68,6 +74,7 @@ def upd_servers(name: str, new_ip: str) -> None:
     except Exception as err:
         logging.error(f"cli>Server \"{name}\" update error: {err}")
         print(f"Server \"{name}\" update error: {err}")
+        quit(1)
 
 def show_servers() -> None:
     """CLI only function: shows all available Servers from the database"""
@@ -77,14 +84,16 @@ def show_servers() -> None:
         if len(accs) == 0:
             print("No Servers found in DB!")
             logging.error("cli>No Servers found in DB!")
-            quit()
+            quit(0)
         for i, s in enumerate(accs, 1):
             print("-------------------------------------------------------------------------------------------------------")
             print(f"ID: {s.id}, Server: {s.name}, IP: {s.ip}, IsDefault: {s.isdefault}, Created: {s.created}")
             print("-------------------------------------------------------------------------------------------------------")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>CLI show Server function error: {err}")
         print(f"CLI show Server function error: {err}")
+        quit(1)
 
 def default_servers(name: str) -> None:
     """CLI only function: sets a Server as the default one"""
@@ -112,9 +121,11 @@ def default_servers(name: str) -> None:
             db.session.commit()
             print(f"Server \"{name}\" is set as default one!")
             logging.info(f"cli>Server \"{name}\" is set as default one!")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Set default Server \"{name}\" error: {err}")
         print(f"Set default Server \"{name}\" error: {err}")
+        quit(1)
 
 def help_servers() -> None:
     """CLI only function: shows hints for SERVERS command"""
@@ -125,3 +136,4 @@ Possible completion:
     del     <server_name>
     upd     <server_name> <new_IP_address>
     """)
+    quit(0)

@@ -251,5 +251,4 @@ if __name__ == "__main__":
     #else just show help info.
     elif len(sys.argv) <= 2:
         help_show()
-    application.run("0.0.0.0",80,debug=True)
     quit(0)

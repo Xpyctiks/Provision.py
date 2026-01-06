@@ -13,19 +13,19 @@ def add_owner(domain: str, id: int) -> None:
         if not usr:
             print(f"Error! User with the given ID {id} is not exists!")
             logging.error(f"cli>Error! User with the given ID {id} is not exists!")
-            quit()
+            quit(1)
         #Check if the given domain is already owned by the given user
         check = Ownership.query.filter_by(domain=domain).all()
         for i, c in enumerate(check,1):
             if c.owner == str(id):
                 print(f"Domain \"{domain}\" already owned by user with id {id}!")
                 logging.error(f"cli>Domain \"{domain}\" already owned by user with id {id}!")
-                quit()
+                quit(1)
         #check if the domain physically exists on the server
         if not os.path.exists(os.path.join(current_app.config['WEB_FOLDER'],domain)):
             print(f"Domain \"{domain}\" phisycally not exists on the server!")
             logging.error(f"cli>Domain \"{domain}\" phisycally not exists on the server!")
-            quit()
+            quit(1)
         #Else start addition procedure
         new_owner = Ownership(
             domain=domain,
@@ -35,9 +35,11 @@ def add_owner(domain: str, id: int) -> None:
         db.session.commit()
         print(f"Domain \"{domain}\" now is owned by user with ID {id}!")
         logging.info(f"cli>Domain \"{domain}\" now is owned by user with ID {id}!")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Add_owner() general error: {err}")
         print(f"Add_owner() general error: {err}")
+        quit(1)
 
 def del_owner(domain: str,cli: bool = True):
     """CLI only function: deletes an owner for a selected domain from database"""
@@ -54,7 +56,7 @@ def del_owner(domain: str,cli: bool = True):
             if cli:
                 print(f"Ownership for domain \"{domain}\" deleted successfully!")
                 logging.info(f"cli>Ownership for domain \"{domain}\" deleted successfully!")
-                quit()
+                quit(0)
             else:
                 logging.info(f"Ownership for domain \"{domain}\" deleted successfully!")
                 return False
@@ -87,6 +89,7 @@ def upd_owner(domain: str, new_owner: int) -> None:
             db.session.commit()
             print(f"Domain \"{domain}\" owner updated successfully to {new_owner}!")
             logging.info(f"cli>Domain \"{domain}\" updated successfully to{new_owner}!")
+            quit(0)
         else:
             print(f"Domain \"{domain}\" owner update error - no such domain!")
             logging.error(f"cli>Domain \"{domain}\" owner update error - no such domain!")
@@ -94,6 +97,7 @@ def upd_owner(domain: str, new_owner: int) -> None:
     except Exception as err:
         logging.error(f"cli>Domain \"{domain}\" owner update general error: {err}")
         print(f"Domain \"{domain}\" owner update general error: {err}")
+        quit(1)
 
 def show_owners() -> None:
     """CLI only function: shows all domains and their owners from the database"""
@@ -103,15 +107,17 @@ def show_owners() -> None:
         if len(accs) == 0:
             print("No domains with owners found in DB!")
             logging.error("cli>No domains with owners found in DB!")
-            quit()
+            quit(0)
         print("-------------------------------------------------------------------------------------------------------")
         for i, s in enumerate(accs, 1):
             rln = User.query.filter_by(id=s.id).first()
             print(f"ID: {s.id}, Domain: {s.domain}, Owner: {rln.realname}(ID:{s.owner}), Created: {s.created}")
         print("-------------------------------------------------------------------------------------------------------")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>CLI show owner function error: {err}")
         print(f"CLI show owner function error: {err}")
+        quit(1)
 
 def help_owner() -> None:
     """CLI only function: shows hints for OWNER command"""
@@ -122,3 +128,4 @@ Possible completion:
     upd    <domain> <new_database_ID>
         Important: <ID> means unique user ID from its database record in Users table. Integer value only.
     """)
+    quit(0)

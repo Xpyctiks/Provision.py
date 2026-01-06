@@ -1,3 +1,66 @@
+document.addEventListener("DOMContentLoaded", function () {
+  const modalElement = document.getElementById("myModal");
+  if (modalElement) {
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+  }
+
+  document.querySelectorAll(".SaveSettings-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      if (!confirm(
+        `Зберіти нові налаштування?`
+      )) {
+        e.preventDefault();
+        hideLoading();
+        }
+      });
+  });
+
+  document.querySelectorAll(".DeleteUser-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    if (!confirm(
+      `Видалити користувача?`
+    )) {
+      e.preventDefault();
+      hideLoading();
+      }
+    });
+  });
+
+  document.querySelectorAll(".DeleteTemplate-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    if (!confirm(
+      `Видалити обраний шаблон?`
+    )) {
+      e.preventDefault();
+      hideLoading();
+      }
+    });
+  });
+
+  document.querySelectorAll(".DefaultTemplate-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    if (!confirm(
+      `Зробити обраний шаблон за замовчуванням?`
+    )) {
+      e.preventDefault();
+      hideLoading();
+      }
+    });
+  });
+
+  document.querySelectorAll(".AdminUser-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    if (!confirm(
+      `Змінити статус користувача?`
+    )) {
+      e.preventDefault();
+      hideLoading();
+      }
+    });
+  });
+})
+
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
@@ -14,6 +77,8 @@ function hideLoading() {
   const spinner = document.getElementById("spinnerLoading");
   if (spinner) {
     spinner.style.visibility = "hidden";
+  } else {
+    console.warn("Spinner element not found!");
   }
 }
 

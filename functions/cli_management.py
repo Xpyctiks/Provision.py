@@ -45,42 +45,51 @@ Possible completion:
 def set_telegramChat(tgChat: str) -> None:
     """CLI only function: sets Telegram ChatID value in database"""
     logging.info("-----------------------Starting CLI functions: set_telegramChat")
-    t = Settings(id=1,telegramChat=tgChat.strip())
-    db.session.merge(t)
-    db.session.commit()
-    load_config(current_app)
-    print("Telegram ChatID added successfully")
     try:
+        t = Settings(id=1,telegramChat=tgChat.strip())
+        db.session.merge(t)
+        db.session.commit()
+        load_config(current_app)
+        print("Telegram ChatID added successfully")
         logging.info(f"cli>Telegram ChatID updated successfully!")
+        quit(0)
     except Exception as err:
-        pass
+        logging.error(f"cli>Telegram ChatID {tgChat} set error: {err}")
+        print(f"Telegram ChatID {tgChat} set error: {err}")
+        quit(1)
 
 def set_telegramToken(tgToken: str) -> None:
     """CLI only function: sets Telegram Token value in database"""
     logging.info("-----------------------Starting CLI functions: set_telegramToken")
-    t = Settings(id=1,telegramToken=tgToken)
-    db.session.merge(t)
-    db.session.commit()
-    load_config(current_app)
-    print("Telegram Token added successfully")
     try:
+        t = Settings(id=1,telegramToken=tgToken)
+        db.session.merge(t)
+        db.session.commit()
+        load_config(current_app)
+        print("Telegram Token added successfully")
         logging.info(f"cli>Telegram Token updated successfully!")
+        quit(0)
     except Exception as err:
-        pass
+        logging.error(f"cli>Telegram Token \"{tgToken}\" set error: {err}")
+        print(f"Telegram Token \"{tgToken}\" set error: {err}")
+        quit(1)
 
 def set_logpath(logpath: str) -> None:
     """CLI only function: sets Logger file path value in database"""
     logging.info("-----------------------Starting CLI functions: set_logpath")
-    t = Settings(id=1,logFile=logpath)
-    db.session.merge(t)
-    db.session.commit()
-    load_config(current_app)
-    updated = db.session.get(Settings, 1)
-    print(f"logPath updated successfully. New log path: \"{updated.logFile}\"")
     try:
+        t = Settings(id=1,logFile=logpath)
+        db.session.merge(t)
+        db.session.commit()
+        load_config(current_app)
+        updated = db.session.get(Settings, 1)
+        print(f"logPath updated successfully. New log path: \"{updated.logFile}\"")
         logging.info(f"cli>logPath updated to \"{updated.logFile}\"")
+        quit(0)
     except Exception as err:
-        pass
+        logging.error(f"cli>logPath update to \"{logpath}\" error: {err}")
+        print(f"logPath update to \"{logpath}\" error: {err}")
+        quit(1)
 
 def set_webFolder(data: str) -> None:
     """CLI only function: sets webFolder parameter in database"""
@@ -93,9 +102,11 @@ def set_webFolder(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Root web folder updated successfully. New path: \"{updated.webFolder}\"")
         logging.info(f"cli>Root web folder updated to \"{updated.webFolder}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Root web folder \"{data}\" set error: {err}")
         print(f"Root web folder \"{data}\" set error: {err}")
+        quit(1)
 
 def set_nginxCrtPath(data: str) -> None:
     """CLI only function: sets Nginx SSL certs path parameter in database"""
@@ -108,9 +119,11 @@ def set_nginxCrtPath(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Nginx SSL folder updated successfully. New path: \"{updated.nginxCrtPath}\"")
         logging.info(f"cli>Nginx SSL folder updated to \"{updated.nginxCrtPath}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Nginx SSL folder \"{data}\" set error: {err}")
         print(f"Nginx SSL folder \"{data}\" set error: {err}")
+        quit(1)
 
 def set_wwwUser(data: str) -> None:
     """CLI only function: sets wwwUser parameter in database"""
@@ -123,9 +136,11 @@ def set_wwwUser(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"User for web folders updated successfully to: \"{updated.wwwUser}\"")
         logging.info(f"cli>User for web folders updated to \"{updated.wwwUser}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>User for web folders \"{data}\" set error: {err}")
         print(f"User for web folders \"{data}\" set error: {err}")
+        quit(1)
 
 def set_wwwGroup(data: str) -> None:
     """CLI only function: sets webGroup parameter in database"""
@@ -138,9 +153,11 @@ def set_wwwGroup(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Group for web folders updated successfully to: \"{updated.wwwGroup}\"")
         logging.info(f"cli>Group for web folders updated to \"{updated.wwwGroup}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Group for web folders \"{data}\" set error: {err}")
         print(f"Group for web folders \"{data}\" set error: {err}")
+        quit(1)
 
 def set_nginxSitesPathAv(data: str) -> None:
     """CLI only function: sets Nginx Sites-Available folder path in database"""
@@ -153,9 +170,11 @@ def set_nginxSitesPathAv(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Nginx Sites-available folder updated successfully to: \"{updated.nginxSitesPathAv}\"")
         logging.info(f"cli>Nginx Sites-available folder updated to \"{updated.nginxSitesPathAv}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Nginx Sites-available folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-available folder \"{data}\" set error: {err}")
+        quit(1)
 
 def set_nginxSitesPathEn(data: str) -> None:
     """CLI only function: sets Nginx Sites-Enabled folder path in database"""
@@ -168,9 +187,11 @@ def set_nginxSitesPathEn(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Nginx Sites-enabled folder updated successfully to: \"{updated.nginxSitesPathEn}\"")
         logging.info(f"cli>Nginx Sites-enabled folder updated to \"{updated.nginxSitesPathEn}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Nginx Sites-enabled folder \"{data}\" set error: {err}")
         print(f"Nginx Sites-enabled folder \"{data}\" set error: {err}")
+        quit(1)
 
 def set_nginxPath(data: str) -> None:
     """CLI only function: sets Nginx main configs directory"""
@@ -183,9 +204,11 @@ def set_nginxPath(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Nginx Path updated successfully to: \"{updated.nginxPath}\"")
         logging.info(f"cli>Nginx Path updated to \"{updated.nginxPath}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Nginx Path \"{data}\" set error: {err}")
         print(f"Nginx Path \"{data}\" set error: {err}")
+        quit(1)
 
 def set_nginxAddConfDir(data: str) -> None:
     """CLI only function: sets the directory for additional config files"""
@@ -198,9 +221,11 @@ def set_nginxAddConfDir(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Nginx Additional configs dir. updated successfully to: \"{updated.nginxAddConfDir}\"")
         logging.info(f"cli>Nginx Additional configs dir. updated to \"{updated.nginxAddConfDir}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Nginx Additional configs dir. \"{data}\" set error: {err}")
         print(f"Nginx Additional configs dir. \"{data}\" set error: {err}")
+        quit(1)
 
 def set_phpPool(data: str) -> None:
     """CLI only function: sets PHP pool.d/ folder path in database"""
@@ -213,9 +238,11 @@ def set_phpPool(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"PHP Pool.d/ folder updated successfully to: \"{updated.phpPool}\"")
         logging.info(f"cli>PHP Pool.d/ folder updated to \"{updated.phpPool}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>PHP Pool.d/ folder \"{data}\" set error: {err}")
         print(f"PHP Pool.d/ folder \"{data}\" set error: {err}")
+        quit(1)
 
 def set_phpFpmPath(data: str) -> None:
     """CLI only function: sets PHP binary path in database"""
@@ -228,9 +255,11 @@ def set_phpFpmPath(data: str) -> None:
         updated = db.session.get(Settings, 1)
         print(f"Php-fpm executable path updated successfully to: \"{updated.phpFpmPath}\"")
         logging.info(f"cli>Php-fpm executable path updated to \"{updated.phpFpmPath}\"")
+        quit(0)
     except Exception as err:
         logging.error(f"cli>Php-fpm executable path \"{data}\" set error: {err}")
         print(f"Php-fpm executable path \"{data}\" set error: {err}")
+        quit(1)
 
 def flush_sessions() -> None:
     """CLI only function: deletes all sessions records from the Flask table in the database"""
@@ -238,9 +267,11 @@ def flush_sessions() -> None:
     try:
         db.session.execute(text("TRUNCATE TABLE flask_sessions RESTART IDENTITY"))
         db.session.commit()
+        quit(0)
     except Exception as err:
         logging.error(f"cli>CLI flush sessions function error: {err}")
         print(f"CLI flush sessions function error: {err}")
+        quit(1)
 
 def show_config() -> None:
     """CLI only function: shows all current config from the database"""
@@ -261,3 +292,4 @@ Php Pool.d folder:       {current_app.config["PHP_POOL"]}
 Php-fpm executable:      {current_app.config["PHPFPM_PATH"]}
 key:                     {current_app.secret_key}
     """)
+    quit(0)

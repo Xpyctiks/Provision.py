@@ -70,9 +70,11 @@ const spinner = document.getElementById("spinnerLoading");
 }
 
 function hideLoading() {
-const spinner = document.getElementById("spinnerLoading");
+  const spinner = document.getElementById("spinnerLoading");
   if (spinner) {
     spinner.style.visibility = "hidden";
+  } else {
+    console.warn("Spinner element not found!");
   }
 }
 

@@ -4,7 +4,7 @@ import logging,asyncio,os,pathlib
 from functions.send_to_telegram import send_to_telegram
 from werkzeug.utils import secure_filename
 from functions.pages_forms import *
-from functions.provision import *
+from functions.provision_func import *
 
 upload_bp = Blueprint("upload", __name__)
 @upload_bp.route("/upload", methods=['GET','POST'])

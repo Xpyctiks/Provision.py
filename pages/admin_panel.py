@@ -3,11 +3,44 @@ from flask_login import login_required, current_user
 import logging,asyncio
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
+from functions.admin_panel_func import *
 
 admin_panel_bp = Blueprint("admin_panel", __name__)
 
+@admin_panel_bp.route("/admin_panel/", methods=['POST'])
+@login_required
+def catch_admin_panel():
+    if "buttonSaveSettings" in request.form:
+        handler_settings(request.form)
+        return redirect("/admin_panel/settings/",301)
+    elif "buttonAddUser" in request.form or "buttonDeleteUser" in request.form or "buttonMakeAdminUser" in request.form or "buttonRemoveAdminUser" in request.form:
+        handler_users(request.form)
+        return redirect("/admin_panel/users/",301)
+    elif "buttonDeleteTemplate" in request.form or "buttonDefaultTemplate" in request.form or "buttonAddTemplate" in request.form:
+        handler_templates(request.form)
+        return redirect("/admin_panel/templates/",301)
+    elif "buttonDeleteCloudflare" in request.form or "buttonDefaultCloudflare" in request.form or "buttonAddCloudflare" in request.form:
+        handler_cloudflare(request.form)
+        return redirect("/admin_panel/cloudflare/",301)
+    elif "buttonDeleteOwnership" in request.form or "buttonAddOwnership" in request.form:
+        handler_ownership(request.form)
+        return redirect("/admin_panel/owners/",301)
+    elif "buttonDeleteServer" in request.form or "buttonDefaultServer" in request.form or "buttonAddServer" in request.form:
+        handler_servers(request.form)
+        return redirect("/admin_panel/servers/",301)
+    elif "buttonDeleteLink" in request.form or "buttonAddLink" in request.form:
+        handler_links(request.form)
+        return redirect("/admin_panel/links/",301)
+    elif "buttonDeleteAccount" in request.form or "buttonAddAccount" in request.form:
+        handler_accounts(request.form)
+        return redirect("/admin_panel/accounts/",301)
+    else:
+        flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
+        logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
+        asyncio.run(send_to_telegram("Something strange was received by /admin_panel via POST request and we can't process that.",f"🚒Provision error by {current_user.realname}"))
+        redirect("/",301)
+
 @admin_panel_bp.route("/admin_panel/", methods=['GET'])
-@admin_panel_bp.route("/admin_panel", methods=['GET'])
 @login_required
 def admin_panel():
     return redirect("/admin_panel/settings/",301)
@@ -18,7 +51,7 @@ def admin_panel_settings():
     try:
         html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <form action="/admin_panel" method="POST" id="postform" novalidate>"""
+  <form action="/admin_panel/" method="POST" id="postform" novalidate>"""
         settings = Settings.query.all()
         i = 0
         for setting in settings:
@@ -29,16 +62,15 @@ def admin_panel_settings():
 <div class="input-group mb-2">
     <span class="input-group-text settings-label">{column.name}:</span>
     <input type="text" class="form-control" id="settings-{i}" value="{getattr(setting, column.name)}">
-    <input type="hidden" id="value-{i}" name="value-{i}" value="">
+    <input type="hidden" id="value-{i}" name="{column.name}" value="">
 </div>"""
                 i = i + 1
         html_data += """
   <div class="input-group mb-2">
-    <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonSaveSettings" onclick="syncSettings()">Зберегти налаштування</button>
+    <button type="submit" class="btn form-control SaveSettings-btn" style="background-color: palegreen;" name="buttonSaveSettings" onclick="syncSettings()">Зберегти налаштування</button>
   </div>
  </form>
-</div>
-"""
+</div>"""
         return render_template("template-admin_panel.html",active1="active",data=html_data)
     except Exception as err:
         logging.error(f"admin_panel_settings(): global error {err}")
@@ -58,6 +90,7 @@ def admin_panel_users():
       <th scope="col" style="width: 45px;">ID:</th>
       <th scope="col" style="width: 150px;">Логін:</th>
       <th scope="col" style="width: 150px;">Ім'я:</th>
+      <th scope="col" style="width: 150px;">Адмін права(якщо 255):</th>
       <th scope="col" style="width: 150px;">Створен:</th>
     </tr>
   </thead>
@@ -67,20 +100,28 @@ def admin_panel_users():
             print("No users found in DB!")
             quit()
         for i, s in enumerate(users, 1):
+            if s.rights == 1:
+                button = f'<button type="submit" class="btn btn-outline-warning AdminUser-btn" name="buttonMakeAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даного користувача адміністратором.">👑</button>'
+            else:
+                button = f'<button type="submit" class="btn btn-outline-warning AdminUser-btn" name="buttonRemoveAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Забрати у даного користувача адмін права.">🚶</button>'
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даного користувача із бази.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning DeleteUser-btn" name="buttonDeleteUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даного користувача із бази.">❌</button>
       </td></form>
       <td class="table-success cname-cell" >{s.username}</td>
       <td class="table-success cname-cell" >{s.realname}</td>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
+      <td class="table-success cname-cell" >{s.rights}
+        {button}
+      </td></form>
       <td class="table-success cname-cell" >{s.created}</td>
     </tr>"""
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform2" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform2" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Логін:</span>
     <input type="text" class="form-control" id="new-username" name="new-username" value="">
@@ -88,7 +129,8 @@ def admin_panel_users():
     <input type="text" class="form-control" id="new-password" name="new-password" value="">
     <span class="input-group-text">І'мя</span>
     <input type="text" class="form-control" id="new-realname" name="new-realname" value="">
-    <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonCreateUser" onclick="showLoading()">Створити користувача</button>
+    <span class="input-group-text">Адмін права&nbsp;<input class="form-check-input" type="checkbox" value="" name="new-is-admin"></span>
+    <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddUser" onclick="showLoading()">Створити користувача</button>
    </div>
   </form>
  </div>
@@ -121,22 +163,22 @@ def admin_panel_templates():
         for i, s in enumerate(templates, 1):
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteTemplate" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний шаблон із бази.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning DeleteTemplate-btn" name="buttonDeleteTemplate" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний шаблон із бази.">❌</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.name}</td>
       <td class="table-success cname-cell" >{s.repository}</td>
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.isdefault}
-        <button type="submit" class="btn btn-light" name="buttonDefaultTemplate" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний шаблон за замовчанням">✅</button>        
+        <button type="submit" class="btn btn-outline-warning DefaultTemplate-btn" name="buttonDefaultTemplate" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний шаблон за замовчанням">✅</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.created}</td>
     </tr>"""
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform3" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Назва:</span>
     <input type="text" class="form-control" id="field1" name="new-template-name" value="">
@@ -175,28 +217,28 @@ def admin_panel_cloudflare():
         for i, s in enumerate(cloudflares, 1):
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт із бази.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDeleteCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт із бази.">❌</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.account}</td>
       <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.token}</details></td>
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.isdefault}
-        <button type="submit" class="btn btn-light" name="buttonDefaultCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний аккаунт за замовчанням">✅</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDefaultCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний аккаунт за замовчанням">✅</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.created}</td>
     </tr>"""
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform3" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Пошта:</span>
     <input type="text" class="form-control" id="field1" name="new-cloudflare-name" value="">
     <span class="input-group-text">API токен:</span>
     <input type="text" class="form-control" id="field2" name="new-cloudflare-token" value="">
-    <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddTemplate" onclick="showLoading()">Додати новий аккаунт</button>
+    <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddCloudflare" onclick="showLoading()">Додати новий аккаунт</button>
    </div>
   </form>
  </div>
@@ -232,9 +274,9 @@ def admin_panel_owners():
                 username = user.realname
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteOwnership" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт та власника.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnership" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт та власника.">❌</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.domain}</td>
       <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
@@ -244,7 +286,7 @@ def admin_panel_owners():
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform3" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Домен:</span>
     <input type="text" class="form-control" id="field1" name="new-ownership-domain" value="">
@@ -283,21 +325,22 @@ def admin_panel_servers():
         for i, s in enumerate(servers, 1):
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний сервер.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDeleteServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний сервер.">❌</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.name}</td>
       <td class="table-success cname-cell" >{s.ip}</td>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.isdefault}
-        <button type="submit" class="btn btn-light" name="buttonDefaultServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний сервер за замовчанням">✅</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDefaultServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний сервер за замовчанням">✅</button>
       </td></form>
       <td class="table-success cname-cell" >{s.created}</td>
     </tr>"""
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform3" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Назва:</span>
     <input type="text" class="form-control" id="field1" name="new-server-name" value="">
@@ -335,9 +378,9 @@ def admin_panel_links():
         for i, s in enumerate(links, 1):
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteLink" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDeleteLink" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.domain}</td>
       <td class="table-success cname-cell" >{s.account}</td>
@@ -346,7 +389,7 @@ def admin_panel_links():
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform3" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Домен:</span>
     <input type="text" class="form-control" id="field1" name="new-link-domain" value="">
@@ -387,9 +430,9 @@ def admin_panel_accounts():
                 username = user.realname
             html_data += f"""
     <tr class="table-success">
-      <form action="/admin_panel" method="POST" id="postform" novalidate>
+      <form action="/admin_panel/" method="POST" id="postform" novalidate>
       <td class="table-success cname-cell" >{s.id}
-        <button type="submit" class="btn btn-light" name="buttonDeleteLink" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>        
+        <button type="submit" class="btn btn-outline-warning" name="buttonDeleteAccount" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>        
       </td></form>
       <td class="table-success cname-cell" >{s.account}</td>
       <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
@@ -398,7 +441,7 @@ def admin_panel_accounts():
         html_data += """
   </tbody>
   </table>
-  <form action="/admin_panel" method="POST" id="postform3" class="needs-validation" novalidate>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
   <div class="input-group mb-2">
     <span class="input-group-text">Аккаунт Cloudflare:</span>
     <input type="text" class="form-control" id="field1" name="new-accounts-account" value="">
