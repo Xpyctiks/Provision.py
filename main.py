@@ -38,6 +38,8 @@ def load_user(user_id):
 from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
+
+
 if __name__ == "__main__":
     application.app_context().push()
     if len(sys.argv) > 2:

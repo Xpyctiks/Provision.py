@@ -4,11 +4,13 @@ import logging,asyncio
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *
+from functions.rights_required import rights_required
 
 admin_panel_bp = Blueprint("admin_panel", __name__)
 
 @admin_panel_bp.route("/admin_panel/", methods=['POST'])
 @login_required
+@rights_required(255)
 def catch_admin_panel():
     if "buttonSaveSettings" in request.form:
         handler_settings(request.form)
@@ -42,11 +44,13 @@ def catch_admin_panel():
 
 @admin_panel_bp.route("/admin_panel/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel():
     return redirect("/admin_panel/settings/",301)
 
 @admin_panel_bp.route("/admin_panel/settings/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_settings():
     try:
         html_data = f"""
@@ -80,6 +84,7 @@ def admin_panel_settings():
 
 @admin_panel_bp.route("/admin_panel/users/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_users():
     try:
         html_data = f"""
@@ -144,6 +149,7 @@ def admin_panel_users():
 
 @admin_panel_bp.route("/admin_panel/templates/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_templates():
     try:
         html_data = f"""
@@ -198,6 +204,7 @@ def admin_panel_templates():
 
 @admin_panel_bp.route("/admin_panel/cloudflare/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_cloudflare():
     try:
         html_data = f"""
@@ -252,6 +259,7 @@ def admin_panel_cloudflare():
 
 @admin_panel_bp.route("/admin_panel/owners/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_owners():
     try:
         html_data = f"""
@@ -306,6 +314,7 @@ def admin_panel_owners():
 
 @admin_panel_bp.route("/admin_panel/servers/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_servers():
     try:
         html_data = f"""
@@ -360,6 +369,7 @@ def admin_panel_servers():
 
 @admin_panel_bp.route("/admin_panel/links/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_links():
     try:
         html_data = f"""
@@ -409,6 +419,7 @@ def admin_panel_links():
 
 @admin_panel_bp.route("/admin_panel/accounts/", methods=['GET'])
 @login_required
+@rights_required(255)
 def admin_panel_accounts():
     try:
         html_data = f"""

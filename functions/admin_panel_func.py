@@ -4,7 +4,9 @@ import logging,asyncio
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from werkzeug.security import generate_password_hash
+from functions.rights_required import rights_required
 
+@rights_required(255)
 def handler_settings(form):
     """Handler for saving global settings to DB, received from admin panel"""
     logging.info(f"---------------------------Processing global settings from admin panel by {current_user.realname}---------------------------")
@@ -24,6 +26,7 @@ def handler_settings(form):
         asyncio.run(send_to_telegram(f"Admin: global error during saving settings: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка збереження параметрів программи!','alert alert-danger')
 
+@rights_required(255)
 def handler_users(form):
     """Handler for saving/deleting users to DB, received from admin panel"""
     logging.info(f"---------------------------Processing user management from admin panel by {current_user.realname}---------------------------")
@@ -97,6 +100,7 @@ def handler_users(form):
         asyncio.run(send_to_telegram(f"Admin: global error during processing users: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка обробки функцій користувачів!','alert alert-danger')
 
+@rights_required(255)
 def handler_templates(form):
     """Handler for saving/deleting templates to DB, received from admin panel"""
     logging.info(f"---------------------------Processing templates management from admin panel by {current_user.realname}---------------------------")
@@ -168,6 +172,7 @@ def handler_templates(form):
         asyncio.run(send_to_telegram(f"Admin: global error during processing templates: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка обробки функцій шаблонів!','alert alert-danger')
 
+@rights_required(255)
 def handler_cloudflare(form):
     """Handler for saving/deleting CF accounts to DB, received from admin panel"""
     logging.info(f"---------------------------Processing cloudflare management from admin panel by {current_user.realname}---------------------------")
@@ -239,6 +244,7 @@ def handler_cloudflare(form):
         asyncio.run(send_to_telegram(f"Admin: global error during processing accounts: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка обробки функцій аккаунтів Cloudflare!','alert alert-danger')
 
+@rights_required(255)
 def handler_ownership(form):
     """Handler for saving/deleting ownership info to DB, received from admin panel"""
     logging.info(f"---------------------------Processing ownership management from admin panel by {current_user.realname}---------------------------")
@@ -276,6 +282,7 @@ def handler_ownership(form):
         asyncio.run(send_to_telegram(f"Admin: global error during processing ownership: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка обробки функцій власників доменів!','alert alert-danger')
 
+@rights_required(255)
 def handler_servers(form):
     """Handler for saving/deleting servers to DB, received from admin panel"""
     logging.info(f"---------------------------Processing servers management from admin panel by {current_user.realname}---------------------------")
@@ -347,6 +354,7 @@ def handler_servers(form):
         asyncio.run(send_to_telegram(f"Admin: global error during processing servers: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка обробки функцій серверів!','alert alert-danger')
 
+@rights_required(255)
 def handler_links(form):
     """Handler for saving/deleting links between Cloudflare account and domain info to DB, received from admin panel"""
     logging.info(f"---------------------------Processing links management from admin panel by {current_user.realname}---------------------------")
@@ -384,6 +392,7 @@ def handler_links(form):
         asyncio.run(send_to_telegram(f"Admin: global error during processing links: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash('Помилка обробки функцій лінку доменів до аккаунтів CF!','alert alert-danger')
 
+@rights_required(255)
 def handler_accounts(form):
     """Handler for saving/deleting links between Cloudflare account and allowed user info to DB, received from admin panel"""
     logging.info(f"---------------------------Processing accounts management from admin panel by {current_user.realname}---------------------------")
