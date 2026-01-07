@@ -80,7 +80,7 @@ def show_users() -> None:
             print("No users found in DB!")
             quit(1)
         for i, s in enumerate(users, 1):
-            print(f"ID: {s.id}, Login: {s.username}, RealName: {s.realname}, Created: {s.created}")
+            print(f"ID: {s.id}, Login: {s.username}, RealName: {s.realname}, Rights: {s.rights}, Created: {s.created}")
         quit(0)
     except Exception as err:
         logging.error(f"cli>CLI show users function error: {err}")
