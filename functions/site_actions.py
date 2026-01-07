@@ -397,6 +397,17 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                     logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
                     return False
                 else:
+                    #after pull is completed do migration db tasks
+                    if os.path.exists("bin/"):
+                        result3 = subprocess.run(["php", "bin/migrate.php"], capture_output=True, text=True)
+                        if  result3.returncode == 0:
+                            logging.info(f"DB migration done successfully!")
+                        else:
+                            logging.error(f"DB migration error for {domain}: {result3.stderr}")
+                            asyncio.run(send_to_telegram(f"DB migration for {domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:"))
+                    else:
+                        logging.error(f"DB migration error for {domain}: bin/ folder not found. we are in {os.curdir}")
+                        asyncio.run(send_to_telegram(f"DB migration error: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:"))
                     flash(f"Код для сайту {domain} успішно оновлено із репозиторію!.",'alert alert-success')
                     logging.info(f"Git pull for {domain} done successfully!")
                     logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
@@ -421,11 +432,22 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                     result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
                     if result.returncode != 0:
                         logging.error(f"Git pull for {domain} returned error: {result.stderr}")
-                        asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:"))
+                        asyncio.run(send_to_telegram(f"Git pull error for site {curr_domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:"))
                         message += f"[❌] Помилка оновлення коду для {curr_domain}\n"
                     else:
                         message += f"[✅] Код {curr_domain} успішно оновлено!\n"
-                        logging.info(f"Git pull for {domain} done successfully!")
+                        logging.info(f"Git pull for {curr_domain} done successfully!")
+                        #after pull is completed do migration db tasks
+                        if os.path.exists("bin/"):
+                            result3 = subprocess.run(["php", "bin/migrate.php"], capture_output=True, text=True)
+                            if  result3.returncode == 0:
+                                logging.info(f"DB migration for {curr_domain} done successfully!")
+                            else:
+                                logging.error(f"DB migration error: {result3.stderr}")
+                                asyncio.run(send_to_telegram(f"DB migration for {curr_domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:"))
+                        else:
+                            logging.error(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}")
+                            asyncio.run(send_to_telegram(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:"))
             flash(message,'alert alert-info')
             logging.info(f"-----------------------Bunch git pull by {current_user.realname} is done!-----------------")
             return True
