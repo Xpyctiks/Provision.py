@@ -36,8 +36,7 @@ def update_user(username: str,password: str) -> None:
     try:
         user = User.query.filter_by(username=username).first()
         if user:
-            d = User(id=user.id,password_hash=generate_password_hash(password))
-            db.session.merge(d)
+            user.password_hash=generate_password_hash(password)
             db.session.commit()
             print(f"Password for user \"{user.username}\" updated successfully!")
             logging.info(f"cli>Password for user \"{user.username}\" updated successfully!")
@@ -93,8 +92,7 @@ def make_admin_user(username: str) -> None:
     try:
         user = User.query.filter_by(username=username).first()
         if user:
-            new_rights = User(username=username,rights=255)
-            db.session.merge(new_rights)
+            user.rights=255
             db.session.commit()
             logging.info(f"cli>User {username} successfully set as admin!")
             print(f"User {username} successfully set as admin!")
@@ -112,8 +110,7 @@ def remove_admin_user(username: str) -> None:
     try:
         user = User.query.filter_by(username=username).first()
         if user:
-            new_rights = User(username=username,rights=1)
-            db.session.merge(new_rights)
+            user.rights=1
             db.session.commit()
             logging.info(f"cli>User {username} successfully set as the regular user!")
             print(f"User {username} successfully set as the regular user!")
