@@ -72,7 +72,17 @@ if __name__ == "__main__":
             if (len(sys.argv) == 4):
                 delete_user(sys.argv[3].strip())
             else:
-                print("Error! Enter both username and new password")
+                print("Error! Enter username to delete")
+        elif sys.argv[1] == "user" and sys.argv[2] == "setadmin":
+            if (len(sys.argv) == 4):
+                make_admin_user(sys.argv[3].strip())
+            else:
+                print("Error! Enter username to make him admin")
+        elif sys.argv[1] == "user" and sys.argv[2] == "unsetadmin":
+            if (len(sys.argv) == 4):
+                remove_admin_user(sys.argv[3].strip())
+            else:
+                print("Error! Enter username to unset him as admin")
         elif sys.argv[1] == "set" and sys.argv[2] == "webFolder":
             if (len(sys.argv) == 4):
                 set_webFolder(sys.argv[3].strip())

@@ -131,9 +131,10 @@ def help_user() -> None:
     """CLI only function: shows hints for USER command"""
     print (f"""
 Possible completion:
-    add    <login> <password> <realName>
-    del    <login>
-    setpwd <login> <new_password>
+    add        <login> <password> <realName>
+    del        <login>
+    setpwd     <login> <new_password>
+    setadmin   <login>
+    unsetadmin <login>
     """)
     quit(0)
-
