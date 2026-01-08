@@ -16,7 +16,7 @@ def upload_file():
         flash('Завантаження: Файлу <fileUpload> немає в заголовках запиту', 'alert alert-danger')
         return redirect("/",301)
     #check if we have all necessary data received
-    elif not request.form['domain'] or not request.form['selected_template'] or not request.form['selected_server'] or not request.form['selected_account'] or not request.form['buttonSubmit']:
+    elif not request.form['selected_server'] or not request.form['selected_account'] or not request.form['buttonSubmit']:
         flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
         logging.error(f"upload_file() error: some of important parameters has not been sent!")
         asyncio.run(send_to_telegram(f"upload_file(): some of the important parameters has not been received!",f"🚒Provision upload page:"))
