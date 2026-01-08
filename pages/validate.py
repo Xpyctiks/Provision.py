@@ -1,9 +1,10 @@
 from flask import Blueprint,request,flash,redirect
 from flask_login import login_required,current_user
-import json,requests,logging,tldextract,asyncio
+import json,requests,logging,asyncio
 from db.database import Cloudflare, Servers
 from functions.site_actions import normalize_domain
 from functions.send_to_telegram import send_to_telegram
+from functions.tld import tld
 
 validate_bp = Blueprint("validate", __name__)
 @validate_bp.route("/validate", methods=['POST'])
@@ -37,10 +38,10 @@ def do_validation():
             "Content-Type": "application/json"
         }
         #check if there is subdomain
-        d = tldextract.extract(domain)
+        d = tld(domain)
         if bool(d.subdomain):
             domain2 = domain.strip().lower().rstrip(".")
-            d2 = tldextract.extract(domain2)
+            d2 = tld(domain2)
             print("1")
             print(d2)
             params = {

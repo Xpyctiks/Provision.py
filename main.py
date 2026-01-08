@@ -25,7 +25,7 @@ generate_default_config(application,CONFIG_DIR,DB_FILE)
 load_config(application)
 application.secret_key = application.config["SECRET_KEY"]
 login_manager = LoginManager()
-login_manager.login_view = "main.login.login"
+login_manager.login_view = "main.login.do_login"
 login_manager.session_protection = "strong"
 login_manager.init_app(application)
 with application.app_context():

@@ -1,4 +1,4 @@
-import json,requests,logging,asyncio,os,tldextract
+import json,requests,logging,asyncio,os
 from cryptography import x509
 from functions.send_to_telegram import send_to_telegram
 from cryptography.x509.oid import NameOID
@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from flask_login import current_user
 from flask import current_app
 from db.database import Cloudflare, Servers
+from functions.tld import tld
 
 def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):
     """Main function to automatically get and save certificates"""
@@ -33,10 +34,10 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
             "Content-Type": "application/json"
         }
         #check if there is subdomain
-        d = tldextract.extract(domain)
+        d = tld(domain)
         if bool(d.subdomain):
             domain2 = domain.strip().lower().rstrip(".")
-            d2 = tldextract.extract(domain2)
+            d2 = tld(domain2)
             domain = f"{d2.domain}.{d2.suffix}"
             logging.info(f"Cert. issue procedure: using domain {d2.domain}.{d2.suffix} as the root domain for issue of {domain}")
         else:
@@ -131,7 +132,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
             asyncio.run(send_to_telegram(f"Error while API request to update DNS record {domain} to {ip} By {current_user.realname}",f"🚒Provision job error:"))
             return False
         #staring update of www.@ record if the original domain is root domain, means not consists of any subdomain
-        d = tldextract.extract(domain)
+        d = tld(domain)
         if not bool(d.subdomain):
             logging.info(f"Updation A record for www.{domain} to IP {ip}")
             url_get_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name=www.{domain}"
@@ -162,7 +163,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
     """Creates new DNS records via Cloudflare API"""
     try:
         logging.info(f"Setting up new DNS record for domain {domain}, account {selected_account}, zone {zone_id}, ip {ip}")
-        addr = tldextract.extract(domain.strip().lower().rstrip("."))
+        addr = tld(domain.strip().lower().rstrip("."))
         #here we keep the root domain. Will check it futher and see if there is a subdomain or not
         root_domain = f"{addr.domain}.{addr.suffix}"
         url_add_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
