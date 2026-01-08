@@ -91,7 +91,13 @@
                 : `<div>${line}</div>`;
         }).join('');
         pre.innerHTML = colored;
-    });
+
+        const modalElement = document.getElementById("myModal");
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+});
 </script>
 </body>
 </html>

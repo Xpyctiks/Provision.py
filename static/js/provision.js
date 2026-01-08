@@ -1,3 +1,11 @@
+document.addEventListener("DOMContentLoaded", function () {
+    const modalElement = document.getElementById("myModal");
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+});
+
 document.querySelectorAll('.dropdown-item.template').forEach(item => {
     item.addEventListener('click', function () {
         let value = this.getAttribute('data-value');

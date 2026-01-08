@@ -6,25 +6,27 @@ from functions.provision_func import start_autoprovision
 from functions.pages_forms import *
 
 provision_bp = Blueprint("provision", __name__)
-@provision_bp.route("/provision", methods=['GET','POST'])
+@provision_bp.route("/provision", methods=['GET'])
 @login_required
-def provision():
-    #Draw the main provision page interface
-    if request.method == 'GET':
-        try:
-            #parsing git repositories available
-            templates_list, first_template = loadTemplatesList()
-            #parsing Cloudflare accounts available
-            cf_list, first_cf = loadClodflareAccounts()
-            #parsing Servers accounts available
-            server_list, first_server = loadServersList()
-            return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list)
-        except Exception as err:
-            logging.error(f"Provision page provision() render error: {err}")
-            asyncio.run(send_to_telegram(f"provision() error: {err}",f"🚒Provision page render:"))
-            return ""
-    #Do some updates with a new data
-    if request.method == 'POST':
+def show_provision_page():
+    try:
+        #parsing git repositories available
+        templates_list, first_template = loadTemplatesList()
+        #parsing Cloudflare accounts available
+        cf_list, first_cf = loadClodflareAccounts()
+        #parsing Servers accounts available
+        server_list, first_server = loadServersList()
+        return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list)
+    except Exception as err:
+        logging.error(f"show_provision_page(): general error by {current_user.realname}: {err}")
+        asyncio.run(send_to_telegram(f"show_provision_page(): general error: {err}",f"🚒Provision page render by {current_user.realname}:"))
+        flash('Загальна помилка на сторінці /provision! Дивіться логи!','alert alert-danger')
+        return redirect("/",301)
+
+@provision_bp.route("/provision", methods=['POST'])
+@login_required
+def do_provision():
+    try:
         #check if we have all necessary data received
         if not request.form['domain'] or not request.form['selected_template'] or not request.form['selected_server'] or not request.form['selected_account'] or not request.form['buttonSubmit']:
             flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
@@ -39,9 +41,9 @@ def provision():
             if os.path.exists(finalPath):
                 logging.info(f"---------------------------Starting automatic deploy for site {domain} by {current_user.realname}----------------------------")
                 logging.error(f"Site {domain} already exists! Remove it before new deploy!")
-                flash(f"Сайт вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
+                flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
                 logging.info(f"--------------------Automatic deploy for site {domain} from template {request.form['selected_template'].strip()} by {current_user.realname} finshed with error-----------------------")
-                return redirect("/",301)
+                return redirect("/provision",301)
             #Getting repository's git path after we know its name as given in the request
             repo = Provision_templates.query.filter_by(name=request.form['selected_template'].strip()).first()
             if repo:
@@ -58,3 +60,8 @@ def provision():
                 flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
                 logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")
             return redirect("/",301)
+    except Exception as err:
+        logging.error(f"do_provision(): general error by {current_user.realname}: {err}")
+        asyncio.run(send_to_telegram(f"do_provision(): general error: {err}",f"🚒Provision page by {current_user.realname}:"))
+        flash('Загальна помилка при обробці POST запиту на сторінці /provision! Дивіться логи!','alert alert-danger')
+        return redirect("/",301)

@@ -57,10 +57,10 @@ def genJobID() -> None:
     characters = string.ascii_letters + string.digits
     functions.variables.JOB_ID = ''.join(random.choice(characters) for _ in range(length)).lower()
 
-def finishJob(file: str = "", domain: str = "", selected_account: str = "", selected_server: str = "", realname: str = "") -> bool:
+def finishJob(file: str = "", domain: str = "", selected_account: str = "", selected_server: str = "", realname: str = "",emerg_shutdown: bool = False) -> bool:
     """The final function. Accepts either filename or domain name as the variable to properly finish all jobs."""
     try:
-        if file != "" and domain == "":
+        if file != "" and domain == "" and emerg_shutdown == False:
             filename = os.path.join(os.path.abspath(os.path.dirname(__name__)),os.path.basename(file))
             #if this is zip file, not autoprovision, and the file exists - delete it
             if os.path.exists(filename):
@@ -73,7 +73,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
                 link_domain_and_account(os.path.basename(file)[:-4],selected_account)
                 asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
                 logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
-                #quit only if we use zip files. if web provision - no to interrupt flow
+                #quit only if we use zip files. if web provision - not to interrupt flow
                 if functions.variables.JOB_ID != f"Autoprovision":
                     quit()
             else:
@@ -85,7 +85,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
                 #writing link of domain and its account to the database
                 link_domain_and_account(os.path.basename(file)[:-4],selected_account)
                 findZip_1(selected_account,selected_server,realname)
-        elif file == "" and domain != "":
+        elif file == "" and domain != "" and emerg_shutdown == False:
             #writing site owner info to the database
             setSiteOwner(os.path.basename(domain))
             #writing link of domain and its account to the database
@@ -93,6 +93,22 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
             asyncio.run(send_to_telegram(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:"))
             logging.info(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
             return True
+        #the function was called after emergency exit from some other place
+        elif file != "" and domain == "" and emerg_shutdown == True:
+            logging.error("Starting emergency shutdown after finish_job signal received with emergency=true flag...")
+            filename = os.path.join(os.path.abspath(os.path.dirname(__name__)),os.path.basename(file))
+            #if this is zip file, not autoprovision, and the file exists - delete it
+            if os.path.exists(filename):
+                os.remove(filename)
+            logging.error(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
+            asyncio.run(send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🚒🏁Provision job finish ({functions.variables.JOB_ID}):"))
+            logging.error(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
+            return False
+        elif file == "" and domain != "" and emerg_shutdown == True:
+            logging.error("Starting emergency shutdown after finish_job signal received with emergency=true flag...")
+            asyncio.run(send_to_telegram(f"Autoprovision job by {current_user.realname} is interrupted due to errors! ",f"🚒🏁AutoProvision job finish for {domain}:"))
+            logging.error(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
+            return False
     except Exception as msg:
         logging.error(msg)
         return False
@@ -125,7 +141,7 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
             #we add .zip to domain for backward compatibility with another functions of the system
             if not setupNginx(domain+".zip"):
                 logging.error("start_autoprovision(): setupNginx() function returned an error!")
-                finishJob("",domain,selected_account,selected_server)
+                finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
                 return False
             finishJob("",domain,selected_account,selected_server)
             return True

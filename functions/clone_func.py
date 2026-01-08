@@ -38,7 +38,7 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
             functions.variables.CLONED_FROM = source_site
             if not setupNginx(domain+".zip"):
                 logging.error("start_clone(): setupNginx() function returned an error!")
-                finishJob("",domain,selected_account,selected_server)
+                finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
                 return False
             #the last moment - turn off indexing in Db of the clonned site
             DB_PATH=os.path.join(dstPath,"database","database.db")
@@ -55,10 +55,11 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
             finishJob("",domain,selected_account,selected_server)
             return True
         except Exception as msg:
-            finishJob("",domain,selected_account,selected_server)
+            finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
             logging.error(f"start_clone() general error: {msg}")
             asyncio.run(send_to_telegram(f"start_clone() general error: {msg}",f"🚒Provision clone error:"))
             return False
     else:
-        finishJob("",domain,selected_account,selected_server)
+        logging.error(f"start_clone(): function cloudflare_certificate() returned an error!")
+        finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         return False

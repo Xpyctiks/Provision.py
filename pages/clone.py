@@ -51,7 +51,7 @@ def doClone():
                 logging.error(f"Site {domain} already exists! Remove it before cloning!")
                 flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде клонувати!", 'alert alert-danger')
                 logging.info(f"--------------------Clone of the site {source_site} as the {domain} by {current_user.realname} finshed with error-----------------------")
-                return redirect("/",301)
+                return redirect("/clone?source_site={request.form['buttonStartClone']}",301)
             #starting clone procedure
             if start_clone(domain,source_site,selected_account,selected_server,current_user.realname):
                 flash(f"Сайт {source_site} успішно клоновано в сайт {domain}!",'alert alert-success')
@@ -61,8 +61,8 @@ def doClone():
                 logging.error(f"Error cloning of {source_site} as site {domain} - repository of template {request.form['selected_template']} is not found!")
                 asyncio.run(send_to_telegram(f"Error cloning of {request.form['buttonStartClone'].strip()} as site {domain} - repository of template {request.form['selected_template']} is not found!",f"🚒Provision clone page:"))
                 flash(f"Помилка клонування {request.form['buttonStartClone'].strip()} до сайту {domain} - репозиторій шаблону {request.form['selected_template']} не знайден!",'alert alert-danger')
-                return redirect("/",301)
+                return redirect("/clone?source_site={request.form['buttonStartClone']}",301)
     except Exception as err:
-        logging.error(f"Provision page render error: {err}")
-        print(f"Provision page render error: {err}")
-        return render_template("template-clone.html",)
+        logging.error(f"Provision page POST process error: {err}")
+        flash(f"Загальна помилка обробки POST запиту на сторінці /clone! Дивіться логи!",'alert alert-danger')
+        return redirect("/clone?source_site={request.form['buttonStartClone']}",301)
