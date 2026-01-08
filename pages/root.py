@@ -1,10 +1,10 @@
+import logging,os,re,asyncio
 from flask import render_template,Blueprint,current_app
-import logging,os,re
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects
-from functions.pages_forms import getSiteOwner, getSiteCreated
-from db.db import db
-from db.database import Domain_account, User
+from functions.pages_forms import getSiteOwner,getSiteCreated
+from db.database import Domain_account,User
+from functions.send_to_telegram import send_to_telegram
 
 #allows to sort with natural keys - when after 10 goes 11, not 20
 def natural_key(s):
@@ -14,6 +14,7 @@ root_bp = Blueprint("root", __name__)
 @root_bp.route("/", methods=['GET'])
 @login_required
 def index():
+    """Main function: generates root page /."""
     try:
         sites_list = []
         sites_list = [
@@ -130,4 +131,5 @@ def index():
         return render_template("template-main.html",html_data=html_data,admin_panel=rights_menu)
     except Exception as msg:
         logging.error(f"Error in index(/): {msg}")
-    return "root.py ERROR!"
+        asyncio.run(send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:"))
+        return "root.py ERROR!"

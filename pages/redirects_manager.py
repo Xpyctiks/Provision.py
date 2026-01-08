@@ -1,13 +1,13 @@
 from flask import render_template,request,redirect,flash,Blueprint
-from flask_login import login_required
-import os,logging,re
+from flask_login import login_required,current_user
+import os,logging,re,asyncio
+from functions.send_to_telegram import send_to_telegram
 
 redirects_bp = Blueprint("redirects_manager", __name__)
-@redirects_bp.route("/redirects_manager", methods=['GET','POST'])
+@redirects_bp.route("/redirects_manager", methods=['GET'])
 @login_required
-def redirects():
-    #if this is GET request - show page
-    if request.method == 'GET':
+def show_redirects():
+    try:
         args = request.args
         site = args.get('site')
         if site:
@@ -45,5 +45,9 @@ def redirects():
                 applyButton = "btn-outline-warning"
             return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton)
         else:
-            return redirect("/",301)
-    return "redirects_manager.py ERROR"
+            return redirect("/",302)
+    except Exception as err:
+        logging.error(f"show_redirects(): general error by {current_user.realname}: {err}")
+        asyncio.run(send_to_telegram(f"show_redirects(): general error: {err}",f"🚒Provision redirects manager error by {current_user.realname}:"))
+        flash(f"Неочікувана помилка при POST запиту на сторінці /uredirects_manager! Дивіться логи!", 'alert alert-danger')
+        return redirect("/",302)

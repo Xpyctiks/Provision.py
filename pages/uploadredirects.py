@@ -1,14 +1,16 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
-import logging,os
+import logging,os,asyncio
 from werkzeug.utils import secure_filename
 from functions.site_actions import normalize_domain
+from functions.send_to_telegram import send_to_telegram
 
 uploadredir_bp = Blueprint("upload_redirects", __name__)
-@uploadredir_bp.route("/upload_redirects", methods=['GET','POST'])
+@uploadredir_bp.route("/upload_redirects", methods=['POST'])
 @login_required
 def uploadredir_file():
-    if request.method == 'POST':
+    """POST request processor: getting uploaded CSV file and takes redirects from it."""
+    try:
         logging.info(f"-----------------------Adding new redirects for {request.form.get('sitename').strip()} by {current_user.realname}-----------------")
         sitename = request.form.get("sitename", "")
         sitename = str(normalize_domain(sitename))
@@ -79,8 +81,22 @@ rewrite ^(.*)$ https://{sitename}{redirTo} permanent;
             logging.error("Some unknown error - not a file was uploaded and not single redirect was added. Looks like some fields are not set or messed.")
             flash("Якась помилка - ні файл, ні текстові поля не були завантажені.Схоже на технічну помилку в коді.",'alert alert-danger')
             return redirect(f"/redirects_manager?site={sitename}",301)
-    #if this is GET request - show page
-    if request.method == 'GET':
+    except Exception as err:
+        logging.error(f"uploadredir_file(): general error by {current_user.realname}: {err}")
+        asyncio.run(send_to_telegram(f"uploadredir_file(): general error: {err}",f"🚒Provision upload redirects error by {current_user.realname}:"))
+        flash(f"Неочікувана помилка при POST запиту на сторінці /upload_redirects! Дивіться логи!", 'alert alert-danger')
+        return redirect("/",302)
+
+@uploadredir_bp.route("/upload_redirects", methods=['GET'])
+@login_required
+def show_uploadredir_file():
+    """GET request: show /upload_redirects page."""
+    try:
         args = request.args
         site = args.get('site')
         return render_template("template-upload_redir.html",sitename=site)
+    except Exception as err:
+        logging.error(f"show_uploadredir_file(): general error by {current_user.realname}: {err}")
+        asyncio.run(send_to_telegram(f"show_uploadredir_file(): general error: {err}",f"🚒Provision upload redirects error by {current_user.realname}:"))
+        flash(f"Неочікувана помилка при GET запиту на сторінці /upload_redirects! Дивіться логи!", 'alert alert-danger')
+        return redirect("/",302)

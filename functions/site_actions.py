@@ -114,6 +114,7 @@ def delete_site(sitename: str) -> bool:
         return False
 
 def del_selected_sites(sitename: str,delArray: list) -> bool:
+    """Function to bunch process of sites deletion. Requires "delArray" as a parameter"""
     logging.info(f"-----------------------Bunch sites deletion by {current_user.realname}-----------------")
     logging.info(delArray)
     message = ""

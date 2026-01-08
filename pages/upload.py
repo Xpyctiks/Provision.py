@@ -10,25 +10,26 @@ upload_bp = Blueprint("upload", __name__)
 @upload_bp.route("/upload", methods=['POST'])
 @login_required
 def upload_file():
+    """POST request processor: getting uploaded zip archive and deploys the site from it."""
     try:
         if 'fileUpload[]' not in request.files:
             logging.error(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields")
             asyncio.run(send_to_telegram(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields",f"🚒Provision upload page:"))
             flash('Завантаження: Файлу <fileUpload> немає в заголовках запиту', 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         #check if we have all necessary data received
         elif not request.form['selected_server'] or not request.form['selected_account'] or not request.form['buttonSubmit']:
             flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
             logging.error(f"upload_file() error: some of important parameters has not been sent!")
             asyncio.run(send_to_telegram(f"upload_file(): some of the important parameters has not been received!",f"🚒Provision upload page:"))
-            return redirect("/",301)
+            return redirect("/",302)
         #starts main provision actions
         else:
             if not request.form.get("selected_account") or not request.form.get("selected_server"):
                 logging.error(f"upload_file(): selected_account or selected_server has not been received in request!")
                 asyncio.run(send_to_telegram(f"upload_file(): selected_account or selected_server has not been received in request!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
                 flash('Загальна помилки: деякі важливі параметри не були отримані сервером! Дивіться логи.', 'alert alert-danger')
-                return redirect("/",301)
+                return redirect("/",302)
             selected_account = request.form.get("selected_account")
             selected_server = request.form.get("selected_server")
             logging.info(f"----------------------------------Files Upload by {current_user.realname} IP:{request.remote_addr}---------------------------------------------")
@@ -50,20 +51,21 @@ def upload_file():
                 finishJob(filename,"")
                 logging.error(f"upload_file(): start_provision() master function finished with error!")
                 flash(f"Розгортання завершилось з помилками! Дивіться логи!", 'alert alert-danger')
-                return redirect("/",301)
+                return redirect("/",302)
             finishJob(filename,"",selected_account,selected_server,current_user.realname)
             logging.info(f"upload_file(): master function finished successfully!")
             flash(f"Розгортання успішно завершено!", 'alert alert-success')
-            return redirect("/",301)
+            return redirect("/",302)
     except Exception as err:
         logging.error(f"Upload page general error: {err}")
         asyncio.run(send_to_telegram(f"Upload page general error: {err}",f"🚒Provision upload page:"))
         flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
-        return redirect("/",301)
+        return redirect("/",302)
 
 @upload_bp.route("/upload", methods=['GET'])
 @login_required
 def show_upload_page():
+    """GET request: show /upload page."""
     try:
         #parsing git repositories available
         templates_list, first_template = loadTemplatesList()
@@ -76,4 +78,4 @@ def show_upload_page():
         logging.error(f"Upload page general render error: {err}")
         asyncio.run(send_to_telegram(f"Upload page general render error: {err}",f"🚒Provision upload page:"))
         flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
-        return redirect("/",301)
+        return redirect("/",302)

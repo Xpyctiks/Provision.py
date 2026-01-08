@@ -9,11 +9,12 @@ dns_validation_bp = Blueprint("dns_validation", __name__)
 @dns_validation_bp.route("/dns_validation", methods=['GET'])
 @login_required
 def dns_validation():
+    """GET request: shows /dns_validation page where you can see,remove and add CNAME records"""
     try:
         if not request.args.get('domain'):
             logging.error(f"dns_validation(): Important GET parameter domain was not received! By {current_user.realname}")
             flash(f"Не передано обов'язкового параметру для сторінки ДНС валідації. Мабуть ви опинилсь там в результаті помилки.", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         #variable for full data for template render
         html_data = []
         #variable for account of the domain
@@ -30,7 +31,7 @@ def dns_validation():
             logging.error(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...")
             asyncio.run(send_to_telegram(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...",f"🚒Provision error by {current_user.realname}:"))
             flash(f"Аккаунт для домена {domain} не знайден в базі! Як ви взагалі опинилсь на цій сторінці...", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         tkn = Cloudflare.query.filter_by(account=account).first()
         if tkn:
             token = tkn.token
@@ -38,7 +39,7 @@ def dns_validation():
             logging.error(f"Token for account {account} is not found in DB! Strange error...")
             asyncio.run(send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:"))
             flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         #Getting zoneID for the given domain
         url_check_domain = "https://api.cloudflare.com/client/v4/zones?per_page=50"
         headers = {
@@ -77,7 +78,7 @@ def dns_validation():
         logging.error(f"Dns_validation page general render error: {err}")
         asyncio.run(send_to_telegram(f"Dns_validationpage general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash(f"Неочікувана помилка на сторінці ДНС валідації, дивіться логи!", 'alert alert-danger')
-        return redirect("/",301)
+        return redirect("/",302)
 
 @dns_validation_bp.route("/dns_validation", methods=['POST'])
 @login_required
@@ -93,7 +94,7 @@ def dns_del_cname():
         if not 'domain' or not 'account' or not 'cname' in request.form or (request.form.get('buttonDelCname') == ""):
             logging.error(f"-----------------------dns_del_cname(): Important POST parameter domain or account or buttonDelCname or cname was not received! By {current_user.realname}-----------------------")
             flash(f"Не передано обов'язкового параметру для сторінки видалення ДНС запису. Мабуть ви опинилсь там в результаті помилки.", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         #variable for account of the domain
         account = ""
         token = ""
@@ -132,15 +133,15 @@ def dns_del_cname():
             logging.error(f"-----------------------dns_del_cname(): API returned an error: {result_del_cname.text}-----------------------")
             asyncio.run(send_to_telegram(f"dns_del_cname(): API returned an error: {result_del_cname.text}",f"🚒Provision error by {current_user.realname}:"))
             flash(f"API повернуло помилку при спробі видалення запису {request.form.get('cname')}. Дивіться логи!", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         else:
             logging.info(f"-----------------------CNAME запис з ID {request.form.get('buttonDelCname')} видалено успішно!-----------------------")
-            return redirect(f"/dns_validation?domain={request.form.get('domain')}",301)
+            return redirect(f"/dns_validation?domain={request.form.get('domain')}",302)
     except Exception as err:
         logging.error(f"dns_del_cname(): general error: {err}")
         asyncio.run(send_to_telegram(f"dns_del_cname(): general error: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash(f"Неочікувана помилка при спробі видалення ДНС запису, дивіться логи!", 'alert alert-danger')
-        return redirect("/",301)
+        return redirect("/",302)
 
 def dns_add_cname():
     try:
@@ -149,7 +150,7 @@ def dns_add_cname():
         if not request.form.get('buttonAddCname'):
             logging.error(f"-----------------------dns_add_cname(): POST parameter buttonAddCname is not received! This can't be add_cname function. By {current_user.realname}-----------------------")
             flash(f"Не передано обов'язкового параметру Додати чи Видалити запис для сторінки додавання ДНС запису. Мабуть ви опинилсь там в результаті помилки.", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         #If this is AddCname request - basic checks
         logging.info(f"-----------------------Starting addition of CNAME {request.form.get('cname')}, value {request.form.get('cname_value')}, account {request.form.get('account')} by {current_user.realname}-----------------")
         required = ('domain', 'account', 'cname', 'cname_value')
@@ -158,7 +159,7 @@ def dns_add_cname():
             if not value or not value.strip():
                 logging.error(f"-----------------------dns_add_cname(): Important POST parameter domain or account or cname_value or cname was not received! By {current_user.realname}-----------------------")
                 flash(f"Не передано обов'язкового параметру для сторінки додавання ДНС запису. Мабуть ви опинилсь там в результаті помилки.", 'alert alert-danger')
-                return redirect("/",301)
+                return redirect("/",302)
         #variable for account of the domain
         account = ""
         token = ""
@@ -175,7 +176,7 @@ def dns_add_cname():
             logging.error(f"-----------------------dns_add_cname(): Token for account {account} is not found in DB! Strange error...-----------------------")
             asyncio.run(send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:"))
             flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         #Getting zoneID for the given domain
         url_check_domain = "https://api.cloudflare.com/client/v4/zones?per_page=50"
         headers = {
@@ -205,13 +206,13 @@ def dns_add_cname():
             logging.error(f"-----------------------dns_add_cname(): API returned an error: {result_add_cname.text}-----------------------")
             asyncio.run(send_to_telegram(f"dns_add_cname(): API returned an error: {result_add_cname.text}",f"🚒Provision error by {current_user.realname}:"))
             flash(f"API повернуло помилку при спробі додавання запису {request.form['cname']}. Дивіться логи!", 'alert alert-danger')
-            return redirect("/",301)
+            return redirect("/",302)
         else:
             logging.info(f"-----------------------CNAME record {request.form.get('cname')} with value {request.form.get('cname_value')} added sucessfully!-----------------------")
             flash(f"CNAME запис {request.form.get('cname')} із значенням {request.form.get('cname_value')} додано успішно!", 'alert alert-success')
-            return redirect(f"/",301)
+            return redirect(f"/",302)
     except Exception as err:
         logging.error(f"dns_add_cname(): general error: {err}")
         asyncio.run(send_to_telegram(f"dns_add_cname(): general error: {err}",f"🚒Provision error by {current_user.realname}:"))
         flash(f"Неочікувана помилка при спробі додавання ДНС запису, дивіться логи!", 'alert alert-danger')
-        return redirect("/",301)
+        return redirect("/",302)

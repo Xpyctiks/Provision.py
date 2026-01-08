@@ -8,6 +8,7 @@ from datetime import timedelta
 login_bp = Blueprint("login", __name__)
 @login_bp.route("/login", methods=['POST'])
 def do_login():
+    """POST request processor: logging in the user."""
     try:
         ip = request.remote_addr
         real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
@@ -37,6 +38,7 @@ def do_login():
 
 @login_bp.route("/login", methods=['GET'])
 def show_login_page():
+    """GET request: shows /login page"""
     try:
         ip = request.remote_addr
         real_ip = request.headers.get('X-Real-IP', '-.-.-.-')

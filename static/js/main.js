@@ -47,7 +47,7 @@ document.addEventListener('show.bs.collapse', async function (event) {
     let path = button.dataset.path;
     let body = event.target.querySelector(".accordion-body");
     body.innerHTML = "Завантажую...";
-    let response = await fetch(`/action?showstructure=${encodeURIComponent(path)}`);
+    let response = await fetch(`/action/showstructure/?showstructure=${encodeURIComponent(path)}`);
     let html = await response.text();
     body.innerHTML = html;
 });

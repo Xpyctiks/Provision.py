@@ -8,6 +8,7 @@ logout_bp = Blueprint("logout", __name__)
 @logout_bp.route("/logout", methods=['POST'])
 @login_required
 def do_logout():
+    """POST request processor: logs the user out"""
     try:
         ip = request.remote_addr
         real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
@@ -25,6 +26,7 @@ def do_logout():
 @logout_bp.route("/logout", methods=['GET'])
 @login_required
 def show_logout():
+    """GET request: nothing shoud be here. Returns redirect"""
     try:
         ip = request.remote_addr
         real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
