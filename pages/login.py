@@ -23,7 +23,7 @@ def do_login():
             session.permanent = True
             session.permanent_session_lifetime = timedelta(hours=8)
             login_user(user, remember=True, duration=timedelta(hours=8))
-            logging.info(f"User {user.realname} logged in successfully. IP:{ip}, Real-IP:{real_ip}")
+            logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {user.realname} logged in successfully. IP:{ip}, Real-IP:{real_ip}")
             return redirect("/",302)
         else:
             logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Login: Wrong password \"{password}\" for user \"{username}\", IP:{ip}, Real-IP:{real_ip}")

@@ -6,7 +6,7 @@ try:
     root = Path(__file__).resolve().parents[1]
     cache_dir = os.path.join(root,".tldcache")
     if not os.path.exists(cache_dir):
-        logging.info(f"TLDExtract cache dir is not exists. Createing {cache_dir}...")
+        logging.info(f"TLDExtract cache dir is not exists. Creating {cache_dir}...")
         os.makedirs(cache_dir, exist_ok=True)
 except Exception as err:
     logging.error(f"tld.py general error: {err}")
