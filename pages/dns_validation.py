@@ -198,7 +198,7 @@ def dns_add_cname():
             "name": f"{request.form.get('cname')}",
             "content": f"{request.form.get('cname_value')}",
             "ttl": 3600,
-            "proxied": True,
+            "proxied": False,
             "comment": "Provision auto deploy."
         }
         result_add_cname = requests.post(url_add_cname,headers=headers,json=data)
