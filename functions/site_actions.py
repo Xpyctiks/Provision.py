@@ -461,7 +461,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
 def normalize_domain(domain: str):
     """Function to check and filter a domain, which is got as GET parameter"""
     DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
-    domain = domain.strip().lower()
+    domain = domain.strip().lower().removeprefix("https://").removeprefix("http://").rstrip("/")
     try:
         domain = idna.encode(domain).decode()
     except idna.IDNAError:

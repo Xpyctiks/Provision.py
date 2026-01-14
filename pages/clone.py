@@ -2,6 +2,7 @@ from flask import redirect,Blueprint,request,render_template,flash,current_app
 from flask_login import login_required,current_user
 from functions.pages_forms import *
 from functions.clone_func import *
+from functions.site_actions import normalize_domain
 import os,asyncio
 from functions.send_to_telegram import send_to_telegram
 
@@ -43,7 +44,7 @@ def doClone():
         #starts main provision actions
         else:
             #cleans up the domain string
-            domain = request.form['domain'].strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+            domain = normalize_domain(request.form['domain'])
             source_site = request.form['buttonStartClone'].strip()
             selected_account = request.form['selected_account'].strip()
             selected_server = request.form['selected_server'].strip()
