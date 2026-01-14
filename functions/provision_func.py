@@ -9,6 +9,7 @@ import functions.variables
 from db.database import Ownership,User
 from db.db import db
 from functions.site_actions import link_domain_and_account
+from pathlib import Path
 
 def setSiteOwner(domain: str) -> bool:
     """Sets a site owner to the user, who did the provision job"""
@@ -263,10 +264,6 @@ def checkZip_2(file: str, selected_account: str, selected_server: str, realname:
     logging.info(f">>>Start processing of archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} total - {file}")
     asyncio.run(send_to_telegram(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL}: {file}",f"🎢Provisoin job start({functions.variables.JOB_ID}):"))
     try:
-        #Getting site name from archive name
-        fileName = os.path.basename(file)[:-4]
-        #Preparing full path - path to general web folder + site name
-        finalPath = os.path.join(current_app.config["WEB_FOLDER"],fileName)
         #Preparing full path + "public" folder
         found = 0
         with zipfile.ZipFile(file, 'r') as zip_ref:
@@ -297,9 +294,8 @@ def findZip_1(selected_account: str, selected_server: str, realname: str) -> boo
         if not selected_account or not selected_account or not realname:
             logging.error(f"findZip_1(): some of the important variables has not been received!")
             return False
-        path = os.path.abspath(os.path.dirname(__name__))
-        extension = "*.zip"
-        files = glob.glob(os.path.join(path, extension))
+        path = Path(__file__).resolve().parents[1]
+        files = glob.glob(os.path.join(path, "*.zip"))
         for file in files:
             if not checkZip_2(file,selected_account,selected_server,realname):
                 logging.error("findZip_1(): checkZip_2() function returned an error!")
@@ -316,9 +312,8 @@ def preStart_0(selected_account: str, selected_server: str, realname: str) -> bo
             logging.error(f"start_provision(): some of the important variables has not been received!")
             return False
         genJobID()
-        path = os.path.abspath(os.path.dirname(__file__))
-        extension = "*.zip"
-        files = glob.glob(os.path.join(path, extension))
+        path = Path(__file__).resolve().parents[1]
+        files = glob.glob(os.path.join(path,"*.zip"))
         functions.variables.JOB_TOTAL = len(files)
         logging.info(f"preStart_0(): Starting pre-check(JOB ID:{functions.variables.JOB_ID}). Total {functions.variables.JOB_TOTAL} archive(s) found")
         #check the return result of the called function
