@@ -76,7 +76,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
                 logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
                 #quit only if we use zip files. if web provision - not to interrupt flow
                 if functions.variables.JOB_ID != f"Autoprovision":
-                    quit()
+                    return True
             else:
                 logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
                 asyncio.run(send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:"))
@@ -212,15 +212,15 @@ def setupNginx(file: str) -> bool:
         result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
         if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
             logging.info(f"Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
-            result = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
+            result = subprocess.run(["sudo","systemctl","restart","nginx"], text=True, capture_output=True)
             if  re.search(r".*started.*",result.stderr):
-                logging.info(f"Nginx reloaded successfully. Result: {result.stderr.strip()}")
+                logging.info(f"Nginx restarted successfully. Result: {result.stderr.strip()}")
             if not setupPHP(file):
                 logging.error("setupNginx(): setupPHP() function returned an error!")
                 return False
         else:
-            logging.error(f"Error while reloading Nginx: {result.stderr.strip()}")
-            asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+            logging.error(f"Error while restarting Nginx: {result.stderr.strip()}")
+            asyncio.run(send_to_telegram(f"Error while restarting Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
             return False
         return True
     except Exception as msg:
