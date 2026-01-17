@@ -77,14 +77,14 @@
   {% endif %}
   {% endwith %}
 <script>
-    function checkAll(bx) {
-      var cbs = document.getElementsByTagName('input');
-      for(var i=0; i < cbs.length; i++) {
-        if(cbs[i].type == 'checkbox') {
-          cbs[i].checked = bx.checked;
-        }
+  function checkAll(bx) {
+    var cbs = document.getElementsByTagName('input');
+    for(var i=0; i < cbs.length; i++) {
+      if(cbs[i].type == 'checkbox') {
+        cbs[i].checked = bx.checked;
       }
     }
+  }
   document.addEventListener("DOMContentLoaded", function () {
     const modalElement = document.getElementById("myModal");
     if (modalElement) {

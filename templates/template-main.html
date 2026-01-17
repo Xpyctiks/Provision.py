@@ -63,8 +63,7 @@
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID</th>
     <th scope="col" style="width: 415px;">Можливі дії:</th>
-    <th scope="col" style="width: 280px;">Назва сайту: (Обрати всі:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox">)
-    </th>
+    <th scope="col" style="width: 280px;">Назва сайту: (Обрати всі:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox">)</th>
     <th scope="col">Шлях на сервері:&nbsp;<button id="closeAll" class="btn-sm btn-warning">Згорнути всі</button></th>
     <th scope="col" style="width: 150px;">Власник:</th>
     <th scope="col" style="width: 150px;">Стан сайту:</th>
@@ -76,33 +75,33 @@
   <form method="post" action="/action" id="main_form"></form>
   <form method="post" action="/redirects_manager" id="redirect_form{{site.site_name|safe}}"></form>
   {{site.table_type2|safe}}
-      <button class="btn btn-danger delete-btn" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" data-site="{{site.site_name|safe}}" name="delete" form="main_form" onclick="showLoading()" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
-      {{site.button_2|safe}}
-      <a name="clone" data-bs-toggle="tooltip" data-bs-placement="top" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={{site.site_name|safe}}" style="width: 139px;" title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</a>
-      <button data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" id="gitPullButton" name="gitPull" form="main_form" onclick="showLoading()" class="btn btn-primary gitpull-btn" style="margin-top: 5px;" title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button>
-      <a href="/redirects_manager?site={{site.site_name|safe}}" class="btn btn-info" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="manager" value="{{site.site_name|safe}}" style="margin-top: 5px; width: 236px;" title="Керування 301-ми редіректами для цього сайту.">🚥Редіректи (~{{site.count_redirects|safe}} шт. вже є)</a><br>
-      {{site.dns_validation|safe}}
-      <input type="hidden" name="sitename" value="{{site.site_name|safe}}">
-      <u>Сайт розгорнут: {{site.getSiteCreated|safe}}</u>
+    <button class="btn btn-danger delete-btn" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" data-site="{{site.site_name|safe}}" name="delete" form="main_form" onclick="showLoading()" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button>
+    {{site.button_2|safe}}
+    <a name="clone" data-bs-toggle="tooltip" data-bs-placement="top" onclick="showLoading()" class="btn btn-success" href="/clone?source_site={{site.site_name|safe}}" style="width: 139px;" title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</a>
+    <button data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" id="gitPullButton" name="gitPull" form="main_form" onclick="showLoading()" class="btn btn-primary gitpull-btn" style="margin-top: 5px;" title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button>
+    <a href="/redirects_manager?site={{site.site_name|safe}}" class="btn btn-info" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="manager" value="{{site.site_name|safe}}" style="margin-top: 5px; width: 236px;" title="Керування 301-ми редіректами для цього сайту.">🚥Редіректи (~{{site.count_redirects|safe}} шт. вже є)</a><br>
+    {{site.dns_validation|safe}}
+    <input type="hidden" name="sitename" value="{{site.site_name|safe}}">
+    <u>Сайт розгорнут: {{site.getSiteCreated|safe}}</u>
   {{site.table_type2|safe}}
-      <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
-      <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
-      <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt</button>
+    <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
+    <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
+    <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt</button>
   </td>
   {{site.table_type2|safe}}
   <div class="accordion" id="folderAccordion{{site.id|safe}}">
-      <div class="accordion-item">
-          <h2 class="accordion-header" id="headingOne{{site.id|safe}}">
-              <button class="accordion-button collapsed" type="button" style="background-color: #B5FFF1;" data-bs-toggle="collapse" data-bs-target="#collapseOne{{site.id|safe}}" aria-expanded="false" aria-controls="collapseOne{{site.id|safe}}" data-path="{{site.accordeon_path|safe}}">
-                  + 📁 {{site.accordeon_path|safe}}
-              </button>
-          </h2>
-          <div id="collapseOne{{site.id|safe}}" class="accordion-collapse collapse" aria-labelledby="headingOne{{site.id|safe}}" data-bs-parent="#folderAccordion{{site.id|safe}}">
-              <div class="accordion-body">
-                  Заватажую...
-              </div>
-          </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOne{{site.id|safe}}">
+        <button class="accordion-button collapsed" type="button" style="background-color: #B5FFF1;" data-bs-toggle="collapse" data-bs-target="#collapseOne{{site.id|safe}}" aria-expanded="false" aria-controls="collapseOne{{site.id|safe}}" data-path="{{site.accordeon_path|safe}}">
+          + 📁 {{site.accordeon_path|safe}}
+        </button>
+      </h2>
+      <div id="collapseOne{{site.id|safe}}" class="accordion-collapse collapse" aria-labelledby="headingOne{{site.id|safe}}" data-bs-parent="#folderAccordion{{site.id|safe}}">
+        <div class="accordion-body">
+          Заватажую...
+        </div>
       </div>
+    </div>
   </div></td>
   {{site.table_type2|safe}}{{site.getSiteOwner}}</td>
   {{site.table_type2|safe}}{{site.site_status|safe}}</td>

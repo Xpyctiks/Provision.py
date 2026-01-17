@@ -9,4 +9,4 @@ cloudflare_domains_bp = Blueprint("cloudflare_domains", __name__)
 @cloudflare_domains_bp.route("/cloudflare_domains", methods=['GET'])
 @login_required
 def cloudflare_domains():
-    pass
+  pass
