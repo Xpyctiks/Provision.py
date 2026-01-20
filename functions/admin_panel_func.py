@@ -19,10 +19,10 @@ def handler_settings(form):
       t = Settings(**data)
       db.session.merge(t)
     db.session.commit()
-    logging.info(f"Admin>Saving global settings done---------------------------")
+    logging.info(f"Admin {current_user.realname}>Saving global settings done---------------------------")
     flash('Нові параметри збережено та застосовано!','alert alert-success')
   except Exception as err:
-    logging.error(f"Admin>handler_settings() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_settings() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during saving settings: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка збереження параметрів программи!','alert alert-danger')
 
@@ -37,11 +37,11 @@ def handler_users(form):
       if user:
         db.session.delete(user)
         db.session.commit()
-        logging.info(f"Admin>User {user.username} with ID {form.get('buttonDeleteUser').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonDeleteUser').strip()} deleted successfully!")
         flash(f'Користувач {user.username} з ID {form.get("buttonDeleteUser").strip()} успішно видален!','alert alert-success')
         return
       else:
-        logging.error(f"Admin>User with ID {form.get('buttonDeleteUser').strip()} deletion error - no such user!")
+        logging.error(f"Admin {current_user.realname}>User with ID {form.get('buttonDeleteUser').strip()} deletion error - no such user!")
         flash(f'Помилка видалення користувача з ID {form.get("buttonDeleteUser").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add user request
@@ -50,7 +50,7 @@ def handler_users(form):
       realname = form.get("new-realname", "").strip()
       password = form.get("new-password", "").strip()
       if not username or not realname or not password:
-        logging.error(f"Admin>Some of important parameters for user add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for user add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення користувача не були отримані сервером!','alert alert-warning')
         return
       if "new-is-admin" in form:
@@ -62,10 +62,10 @@ def handler_users(form):
       db.session.add(new_user)
       db.session.commit()
       if rights == 1:
-        logging.info(f"Admin>User {username} created successfully!")
+        logging.info(f"Admin {current_user.realname}>User {username} created successfully!")
         flash(f'Користувач {username} успішно створен!','alert alert-success')
       else:
-        logging.info(f"Admin>User {username} with admin rights created successfully!")
+        logging.info(f"Admin {current_user.realname}>User {username} with admin rights created successfully!")
         flash(f'Користувач {username} з адмін правами успішно створен!','alert alert-success')
       return
         #process delete user request
@@ -75,11 +75,11 @@ def handler_users(form):
         new_rights = User(id=user.id,rights=255)
         db.session.merge(new_rights)
         db.session.commit()
-        logging.info(f"Admin>User {user.username} with ID {form.get('buttonMakeAdminUser').strip()} successfully set as admin!")
+        logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonMakeAdminUser').strip()} successfully set as admin!")
         flash(f'Користувач {user.username} з ID {form.get("buttonMakeAdminUser").strip()} успішно став адміністратором!','alert alert-success')
         return
       else:
-        logging.error(f"Admin>User with ID {form.get('buttonMakeAdminUser').strip()} set admin rights error - no such user!")
+        logging.error(f"Admin {current_user.realname}>User with ID {form.get('buttonMakeAdminUser').strip()} set admin rights error - no such user!")
         flash(f'Помилка додавання адмін прав користувачу з ID {form.get("buttonMakeAdminUser").strip()} - такого не існує!','alert alert-warning')
         return
     if "buttonRemoveAdminUser" in form:
@@ -88,15 +88,15 @@ def handler_users(form):
         new_rights = User(id=user.id,rights=1)
         db.session.merge(new_rights)
         db.session.commit()
-        logging.info(f"Admin>User {user.username} with ID {form.get('buttonRemoveAdminUser').strip()} successfully set as the regular user!")
+        logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonRemoveAdminUser').strip()} successfully set as the regular user!")
         flash(f'Користувач {user.username} з ID {form.get("buttonRemoveAdminUser").strip()} успішно став звичайним користувачем!','alert alert-success')
         return
       else:
-        logging.error(f"Admin>User with ID {form.get('buttonRemoveAdminUser').strip()} unset admin rights error - no such user!")
+        logging.error(f"Admin {current_user.realname}>User with ID {form.get('buttonRemoveAdminUser').strip()} unset admin rights error - no such user!")
         flash(f'Помилка видалення адмін прав користувачу з ID {form.get("buttonRemoveAdminUser").strip()} - такого не існує!','alert alert-warning')
         return
   except Exception as err:
-    logging.error(f"Admin>handler_users() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_users() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing users: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій користувачів!','alert alert-danger')
 
@@ -116,10 +116,10 @@ def handler_templates(form):
           flash(f'Шаблон {template.name} з ID {form.get("buttonDeleteTemplate").strip()} успішно видален! УВАГА! це був шаблон за замовчанням. Не забудьте встановити новий шаблон за замовчанням!','alert alert-success')  
         else:
           flash(f'Шаблон {template.name} з ID {form.get("buttonDeleteTemplate").strip()} успішно видален!','alert alert-success')
-        logging.info(f"Admin>Template {template.name} with ID {form.get('buttonDeleteTemplate').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>Template {template.name} with ID {form.get('buttonDeleteTemplate').strip()} deleted successfully!")
         return
       else:
-        logging.error(f"Admin>Template with ID {form.get('buttonDeleteTemplate').strip()} deletion error - no such template!")
+        logging.error(f"Admin {current_user.realname}>Template with ID {form.get('buttonDeleteTemplate').strip()} deletion error - no such template!")
         flash(f'Помилка видалення шаблону з ID {form.get("buttonDeleteTemplate").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add template request
@@ -127,27 +127,27 @@ def handler_templates(form):
       name = form.get("new-template-name", "").strip()
       path = form.get("new-template-path", "").strip()
       if not name or not path:
-        logging.error(f"Admin>Some of important parameters for template add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for template add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення шаблону не були отримані сервером!','alert alert-warning')
         return
       data = {"name": name, "repository": path}
       new_template = Provision_templates(**data)
       db.session.add(new_template)
       db.session.commit()
-      logging.info(f"Admin>Template {name} created successfully!")
+      logging.info(f"Admin {current_user.realname}>Template {name} created successfully!")
       flash(f'Шаблон {name} успішно створен!','alert alert-success')
       return
     #processing set default template request
     elif "buttonDefaultTemplate" in form:
       id = form.get("buttonDefaultTemplate", "").strip()
       if not id:
-        logging.error(f"Admin>Some of important parameters for template set default procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for template set default procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для встановлення шаблону за замовчанням не були отримані сервером!','alert alert-warning')
         return
       #Check is the new record, which will be the default one, exists at all
       template = Provision_templates.query.filter_by(id=id).first()
       if not template:
-        logging.error(f"Admin>Template with ID {id} doesn't exists! Can set it as the default one!")
+        logging.error(f"Admin {current_user.realname}>Template with ID {id} doesn't exists! Can set it as the default one!")
         flash(f'Шаблон з ID {id} не існує у базі чомусь..','alert alert-warning')
         return
       #Check if it is already is the default one
@@ -164,11 +164,11 @@ def handler_templates(form):
       if template:
         template.isdefault = True
         db.session.commit()
-        logging.info(f"Admin>Template {template.name} set as default successfully!")
+        logging.info(f"Admin {current_user.realname}>Template {template.name} set as default successfully!")
         flash(f'Шаблон {template.name} успішно встановлен за замовчанням!','alert alert-success')
         return
   except Exception as err:
-    logging.error(f"Admin>handler_templates() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_templates() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing templates: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій шаблонів!','alert alert-danger')
 
@@ -188,10 +188,10 @@ def handler_cloudflare(form):
           flash(f'Аккаунт Cloudflare {cloudflare.account} з ID {form.get("buttonDeleteCloudflare").strip()} успішно видален! УВАГА! це був аккаунт за замовчанням. Не забудьте встановити новий аккаунт за замовчанням!','alert alert-success')  
         else:
           flash(f'Аккаунт Cloudflare {cloudflare.account} з ID {form.get("buttonDeleteCloudflare").strip()} успішно видален!','alert alert-success')        
-        logging.info(f"Admin>Cloudflare account {cloudflare.account} with ID {form.get('buttonDeleteCloudflare').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>Cloudflare account {cloudflare.account} with ID {form.get('buttonDeleteCloudflare').strip()} deleted successfully!")
         return
       else:
-        logging.error(f"Admin>Cloudflare account with ID {form.get('buttonDeleteCloudflare').strip()} deletion error - no such account!")
+        logging.error(f"Admin {current_user.realname}>Cloudflare account with ID {form.get('buttonDeleteCloudflare').strip()} deletion error - no such account!")
         flash(f'Помилка видалення аккаунту Cloudlfare з ID {form.get("buttonDeleteCloudflare").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add template request
@@ -199,27 +199,27 @@ def handler_cloudflare(form):
       name = form.get("new-cloudflare-name", "").strip()
       token = form.get("new-cloudflare-token", "").strip()
       if not name or not token:
-        logging.error(f"Admin>Some of important parameters for Cloudflare account add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for Cloudflare account add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення аккаунту Cloudflare не були отримані сервером!','alert alert-warning')
         return
       data = {"account": name, "token": token}
       new_account = Cloudflare(**data)
       db.session.add(new_account)
       db.session.commit()
-      logging.info(f"Admin>Cloudflare account {name} created successfully!")
+      logging.info(f"Admin {current_user.realname}>Cloudflare account {name} created successfully!")
       flash(f'Cloudflare аккаунт {name} успішно створен!','alert alert-success')
       return
     #processing set default template request
     elif "buttonDefaultCloudflare" in form:
       id = form.get("buttonDefaultCloudflare", "").strip()
       if not id:
-        logging.error(f"Admin>Some of important parameters for Cloudflare account set default procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for Cloudflare account set default procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для встановлення аккаунту Cloudflare за замовчанням не були отримані сервером!','alert alert-warning')
         return
       #Check is the new record, which will be the default one, exists at all
       acc = Cloudflare.query.filter_by(id=id).first()
       if not acc:
-        logging.error(f"Admin>Cloudflare account with ID {id} doesn't exists! Can set it as the default one!")
+        logging.error(f"Admin {current_user.realname}>Cloudflare account with ID {id} doesn't exists! Can set it as the default one!")
         flash(f'Cloudflare аккаунт з ID {id} не існує у базі чомусь..','alert alert-warning')
         return
       #Check if it is already is the default one
@@ -236,11 +236,11 @@ def handler_cloudflare(form):
       if account:
         account.isdefault = True
         db.session.commit()
-        logging.info(f"Admin>Cloudflare account {account.account} set as default successfully!")
+        logging.info(f"Admin {current_user.realname}>Cloudflare account {account.account} set as default successfully!")
         flash(f'Cloudflare аккаунт {account.account} успішно встановлен за замовчанням!','alert alert-success')
         return
   except Exception as err:
-    logging.error(f"Admin>handler_accounts() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_accounts() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing accounts: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій аккаунтів Cloudflare!','alert alert-danger')
 
@@ -255,30 +255,42 @@ def handler_ownership(form):
       if owner:
         db.session.delete(owner)
         db.session.commit()
-        logging.info(f"Admin>Owner with ID {form.get('buttonDeleteOwnership').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>Owner with ID {form.get('buttonDeleteOwnership').strip()} deleted successfully!")
         flash(f'Власник з ID {form.get("buttonDeleteOwnership").strip()} успішно видален від свого домену!','alert alert-success')
         return
       else:
-        logging.error(f"Admin>Owner with ID {form.get('buttonDeleteOwnership').strip()} deletion error - no such owner!")
+        logging.error(f"Admin {current_user.realname}>Owner with ID {form.get('buttonDeleteOwnership').strip()} deletion error - no such owner!")
         flash(f'Помилка видалення власника домену з ID {form.get("buttonDeleteOwnership").strip()} - такого не існує!','alert alert-warning')
+        return
+    #process delete request about site is cloned
+    if "buttonDeleteOwnershipClone" in form:
+      owner = Ownership.query.filter_by(id=form.get('buttonDeleteOwnershipClone').strip()).first()
+      if owner:
+        owner.cloned = ""
+        db.session.commit()
+        logging.info(f"Admin {current_user.realname}>Owner with ID {form.get('buttonDeleteOwnershipClone').strip()} site clone information deleted successfully!")
+        return
+      else:
+        logging.error(f"Admin {current_user.realname}>Owner with ID {form.get('buttonDeleteOwnershipClone').strip()} deletion error - no such owner!")
+        flash(f'Помилка видалення інформації про колнування - власник домену з ID {form.get("buttonDeleteOwnershipClone").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add user request
     elif "buttonAddOwnership" in form:
       domain = form.get("new-ownership-domain", "").strip()
       id = form.get("new-ownership-id", "").strip()
       if not domain or not id:
-        logging.error(f"Admin>Some of important parameters for ownership add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for ownership add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення власника домену не були отримані сервером!','alert alert-warning')
         return
       data = {"domain": domain, "owner": id}
       new_owner = Ownership(**data)
       db.session.add(new_owner)
       db.session.commit()
-      logging.info(f"Admin>Owner for {domain} created successfully!")
+      logging.info(f"Admin {current_user.realname}>Owner for {domain} created successfully!")
       flash(f'Власник для домену {domain} успішно створен!','alert alert-success')
       return
   except Exception as err:
-    logging.error(f"Admin>handler_ownership() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_ownership() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing ownership: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій власників доменів!','alert alert-danger')
 
@@ -298,10 +310,10 @@ def handler_servers(form):
           flash(f'Сервер {server.name} з ID {form.get("buttonDeleteServer").strip()} успішно видален! УВАГА! це був сервер за замовчанням. Не забудьте встановити новий сервер за замовчанням!','alert alert-success')
         else:
           flash(f'Сервер {server.name} з ID {form.get("buttonDeleteServer").strip()} успішно видален!','alert alert-success')
-        logging.info(f"Admin>Server {server.name} with ID {form.get('buttonDeleteServer').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>Server {server.name} with ID {form.get('buttonDeleteServer').strip()} deleted successfully!")
         return
       else:
-        logging.error(f"Admin>Server with ID {form.get('buttonDeleteServer').strip()} deletion error - no such server!")
+        logging.error(f"Admin {current_user.realname}>Server with ID {form.get('buttonDeleteServer').strip()} deletion error - no such server!")
         flash(f'Помилка видалення серверу з ID {form.get("buttonDeleteServer").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add template request
@@ -309,27 +321,27 @@ def handler_servers(form):
       name = form.get("new-server-name", "").strip()
       ip = form.get("new-server-ip", "").strip()
       if not name or not ip:
-        logging.error(f"Admin>Some of important parameters for server add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for server add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення серверу не були отримані сервером!','alert alert-warning')
         return
       data = {"name": name, "ip": ip}
       new_server = Servers(**data)
       db.session.add(new_server)
       db.session.commit()
-      logging.info(f"Admin>Server {name} created successfully!")
+      logging.info(f"Admin {current_user.realname}>Server {name} created successfully!")
       flash(f'Сервер {name} успішно створен!','alert alert-success')
       return
     #processing set default template request
     elif "buttonDefaultServer" in form:
       id = form.get("buttonDefaultServer", "").strip()
       if not id:
-        logging.error(f"Admin>Some of important parameters for server set default procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for server set default procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для встановлення серверу за замовчанням не були отримані сервером!','alert alert-warning')
         return
       #Check is the new record, which will be the default one, exists at all
       srv = Servers.query.filter_by(id=id).first()
       if not srv:
-        logging.error(f"Admin>Server with ID {id} doesn't exists! Can set it as the default one!")
+        logging.error(f"Admin {current_user.realname}>Server with ID {id} doesn't exists! Can set it as the default one!")
         flash(f'Сервер з ID {id} не існує у базі чомусь..','alert alert-warning')
         return
       #Check if it is already is the default one
@@ -346,11 +358,11 @@ def handler_servers(form):
       if server:
         server.isdefault = True
         db.session.commit()
-        logging.info(f"Admin>Server {server.name} set as default successfully!")
+        logging.info(f"Admin {current_user.realname}>Server {server.name} set as default successfully!")
         flash(f'Сервер {server.name} успішно встановлен за замовчанням!','alert alert-success')
         return
   except Exception as err:
-    logging.error(f"Admin>handler_servers() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_servers() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing servers: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій серверів!','alert alert-danger')
 
@@ -365,11 +377,11 @@ def handler_links(form):
       if link:
         db.session.delete(link)
         db.session.commit()
-        logging.info(f"Admin>Link with ID {form.get('buttonDeleteLink').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>Link with ID {form.get('buttonDeleteLink').strip()} deleted successfully!")
         flash(f'Лінк з ID {form.get("buttonDeleteLink").strip()} успішно видален від свого домену!','alert alert-success')
         return
       else:
-        logging.error(f"Admin>Link with ID {form.get('buttonDeleteLink').strip()} deletion error - no such link!")
+        logging.error(f"Admin {current_user.realname}>Link with ID {form.get('buttonDeleteLink').strip()} deletion error - no such link!")
         flash(f'Помилка видалення лінку з ID {form.get("buttonDeleteLink").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add link request
@@ -377,18 +389,18 @@ def handler_links(form):
       domain = form.get("new-link-domain", "").strip()
       account = form.get("new-link-account", "").strip()
       if not domain or not account:
-        logging.error(f"Admin>Some of important parameters for link add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for link add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення лінку домена з аккаунтом CF не були отримані сервером!','alert alert-warning')
         return
       data = {"domain": domain, "account": account}
       new_link = Domain_account(**data)
       db.session.add(new_link)
       db.session.commit()
-      logging.info(f"Admin>Link for {domain} created successfully!")
+      logging.info(f"Admin {current_user.realname}>Link for {domain} created successfully!")
       flash(f'Лінк для домену {domain} успішно створен!','alert alert-success')
       return
   except Exception as err:
-    logging.error(f"Admin>handler_links() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_links() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing links: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій лінку доменів до аккаунтів CF!','alert alert-danger')
 
@@ -403,11 +415,11 @@ def handler_accounts(form):
       if acc:
         db.session.delete(acc)
         db.session.commit()
-        logging.info(f"Admin>Account with ID {form.get('buttonDeleteAccount').strip()} deleted successfully!")
+        logging.info(f"Admin {current_user.realname}>Account with ID {form.get('buttonDeleteAccount').strip()} deleted successfully!")
         flash(f'Аккаунт Cloudflare з ID {form.get("buttonDeleteAccount").strip()} успішно видален від свого власника!','alert alert-success')
         return
       else:
-        logging.error(f"Admin>Account with ID {form.get('buttonDeleteAccount').strip()} deletion error - no such account!")
+        logging.error(f"Admin {current_user.realname}>Account with ID {form.get('buttonDeleteAccount').strip()} deletion error - no such account!")
         flash(f'Помилка видалення аккаунту з ID {form.get("buttonDeleteAccount").strip()} - такого не існує!','alert alert-warning')
         return
     #processing add account request
@@ -415,17 +427,17 @@ def handler_accounts(form):
       owner = form.get("new-accounts-id", "").strip()
       account = form.get("new-accounts-account", "").strip()
       if not owner or not account:
-        logging.error(f"Admin>Some of important parameters for account add procedure has not been received!")
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for account add procedure has not been received!")
         flash(f"Один або декілька важливих параметрів для створення аккаунту зв'язку користувача з аккаунтом CF не були отримані сервером!",'alert alert-warning')
         return
       data = {"account": account, "owner": owner}
       new_acc = Cloudflare_account_ownership(**data)
       db.session.add(new_acc)
       db.session.commit()
-      logging.info(f"Admin>Owner for account {account} created successfully!")
+      logging.info(f"Admin {current_user.realname}>Owner for account {account} created successfully!")
       flash(f'Власник для аккаунту {account} успішно створен!','alert alert-success')
       return
   except Exception as err:
-    logging.error(f"Admin>handler_accounts() global error: {err}")
+    logging.error(f"Admin {current_user.realname}>handler_accounts() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing accounts: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій лінку власників до аккаунтів CF!','alert alert-danger')

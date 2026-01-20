@@ -25,7 +25,7 @@ def catch_admin_panel():
   elif "buttonDeleteCloudflare" in request.form or "buttonDefaultCloudflare" in request.form or "buttonAddCloudflare" in request.form:
     handler_cloudflare(request.form)
     return redirect("/admin_panel/cloudflare/",302)
-  elif "buttonDeleteOwnership" in request.form or "buttonAddOwnership" in request.form:
+  elif "buttonDeleteOwnership" in request.form or "buttonDeleteOwnershipClone" in request.form or "buttonAddOwnership" in request.form:
     handler_ownership(request.form)
     return redirect("/admin_panel/owners/",302)
   elif "buttonDeleteServer" in request.form or "buttonDefaultServer" in request.form or "buttonAddServer" in request.form:
@@ -285,12 +285,15 @@ def admin_panel_owners():
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnership" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт та власника.">❌</button>    
+      <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnership" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт та власника.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.domain}</td>
     <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
     <td class="table-success cname-cell" >{s.created}</td>
-    <td class="table-success cname-cell" >{s.cloned}</td>
+    <form action="/admin_panel/" method="POST" id="postform" novalidate>
+    <td class="table-success cname-cell" >{s.cloned}
+      <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnershipClone" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити інформацію що цей сайт клонований.">❌</button>
+    </td></form>
   </tr>"""
     html_data += """
   </tbody>
