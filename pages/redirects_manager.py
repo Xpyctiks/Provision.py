@@ -22,8 +22,8 @@ def show_redirects():
       with open(file301, "r", encoding="utf-8") as f:
         content = f.read()
       pattern = re.compile(
-        r'location\s+(?P<typ>.)\s+(?P<path>/[^\s{]+)\s*{[^}]*?rewrite\s+\^\(.\*\)\$\s+(?P<target>https?://[^\s]+)\s+permanent;',
-        re.MULTILINE
+        r'location\s*=\s*(?P<path>/[^\s{]+)\s*{[^}]*?return\s+(?P<type>301)\s+(?P<target>https?://[^\s;]+);',
+        re.DOTALL
       )
       for match in pattern.finditer(content):
         table += f"""\n<tr>\n
@@ -31,7 +31,7 @@ def show_redirects():
         <td class="table-success">{match.group("path")}</td>
         <td class="table-success"><input type="checkbox" name="selected" value="{match.group("path")}"></td>
         <td class="table-success">{match.group("target")}</td>
-        <td class="table-success">{match.group("typ")}</td>
+        <td class="table-success">{match.group("type")}</td>
         <td class="table-success">
           <button class="btn btn-danger" type="submit" name="del_redir" value="{match.group("path")}">Видалити</button>
           <input type="hidden" name="sitename" value="{site}">

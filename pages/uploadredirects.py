@@ -35,7 +35,7 @@ def uploadredir_file():
         for line in redirectsFile:
           redirFrom, redirTo = line.strip().split(",")
           template = f"""location {type} {redirFrom} {{
-rewrite ^(.*)$ https://{sitename}{redirTo} permanent;
+  return 301 https://{sitename}{redirTo};
 }}
 """
           totalData += template
@@ -63,9 +63,9 @@ rewrite ^(.*)$ https://{sitename}{redirTo} permanent;
       else:
         type = "~"
       logging.info(f"Type of redirect: {type}")
-      logging.info(f"Redirect: From: {sitename} to {request.form.get('RedirectToField')}")
-      template = f"""location {type} {sitename} {{
-  rewrite ^(.*)$ https://{sitename}{request.form.get('RedirectToField')} permanent;
+      logging.info(f"Redirect: From: {sitename} to {request.form.get('RedirectToField').strip()}")
+      template = f"""location {type} {request.form.get('RedirectFromField').strip()} {{
+  return 301 https://{sitename}{request.form.get('RedirectToField').strip()};
 }}
 """
       with open(file301, "a", encoding="utf-8") as f:

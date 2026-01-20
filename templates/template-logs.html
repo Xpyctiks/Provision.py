@@ -18,6 +18,10 @@
       overflow-y: auto;
     }
 
+    body {
+      padding-top: 30px;
+    }
+
     .log-view {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 0.95rem;
@@ -44,28 +48,24 @@
 </head>
 <body class="vh-100">
 <main>
-<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-  <div class="container-fluid" style="height: 45px;">
-    <a class="navbar-brand" href="/">Система автоматичного розгортання сайтів:</a>
-    <div class="spinner-border text-warning" role="status" style="margin-top: 15px; visibility: hidden;" id="spinnerLoading">
+<div>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center me-auto">
+        <a class="navbar-brand" href="/">Лог роботи програми:</a>
+      </div>
+      <div class="mx-auto">
+        <a href="/" class="btn btn-info">⬅На головну</a>
+      </div>
+      <div class="ms-auto d-flex align-items-center">
+        <form class="d-flex" action="/logout" method="POST">
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+        </form>
+      </div>
     </div>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarCollapse">
-      <ul class="navbar-nav me-auto mb-2 mb-md-0">
-        <li class="nav-item">
-        </li>
-        <li></li>
-      </ul>
-      <a href="/" class="btn btn-info">⬅Повернутись на головну</a>&nbsp;
-      <form class="d-flex" action="/logout" method="POST">
-        <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
-      </form>
-    </div>
-  </div>
-</nav>
-<div class="container-fluid h-100 p-3" style="margin-top: 50px;">
+  </nav>
+</div>
+<div class="container-fluid h-100 p-3">
   <div class="row h-100">
     <div class="col-12 h-100 d-flex flex-column">
       <div class="text-container flex-grow-1 overflow-auto log-view" id="logBox">

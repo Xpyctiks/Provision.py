@@ -128,19 +128,6 @@ document.getElementById("Validate").addEventListener("click", function () {
   });
 });
 
-document.getElementById("postform").addEventListener("submit", function(event) {
-const input = document.getElementById("fileUpload");
-const value = input.value.trim();
-if (value === "") {
-  input.classList.add("is-invalid");
-  input.classList.remove("is-valid");
-  event.preventDefault();
-} else {
-  input.classList.remove("is-invalid");
-  input.classList.add("is-valid");
-}
-});
-
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
 var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl)

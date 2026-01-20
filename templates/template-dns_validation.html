@@ -8,72 +8,76 @@
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.png') }}" type='image/png' sizes="16x16" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+  <style>
+    body {
+      padding-top: 65px;
+    }
+  </style>
 </head>
 <body>
 <main>
 <div>
-<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">Система автоматичного розгортання сайтів:</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarCollapse">
-      <ul class="navbar-nav me-auto mb-2 mb-md-0">
-        <li class="nav-item">
-          <a class="nav-link active" id="totalLines" style="color: 0dcaf0;"></a>
-        </li>
-        <li>
-          <a class="nav-link active" id="totalRecords" style="color: 0dcaf0;"></a>
-        </li>
-        <span class="spinner-border text-warning" role="status" id="spinnerLoading" style="margin-left: 5px; margin-top: 5px; visibility: hidden;"></span>
-      </ul>
-      <a href="/" class="btn btn-info">⬅На головну</a>&nbsp;
-      <form class="d-flex" action="/logout" method="POST">
-        <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
-      </form>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center me-auto">
+        <a class="navbar-brand" href="/">Керування CNAME записами домену:</a>
+        <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
+      </div>
+      <div class="mx-auto">
+        <a href="/" class="btn btn-info">⬅На головну</a>
+      </div>
+      <div class="ms-auto d-flex align-items-center">
+        <form class="d-flex" action="/logout" method="POST">
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+        </form>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; min-height: 20vw;">
-  <div class="card-header" style="background-color: palegreen;">
-    <h4 style="text-align: center;">Валідація для пошукових систем домену {{ domain|safe }} :</h4>
-    <h6 style="text-align: center;">Аккаунт: {{ account|safe }}</h6>
-  </div>
-  <div class="card-body">
-    <form action="/dns_validation" method="POST" id="postform" class="needs-validation" novalidate>
-      <div id="currentRecords">
-        <h5 class="card-title">Вже існуючі записи типу CNAME:</h5>
-        <table class="table table-bordered">
-          <thead>
-            <tr class="table-warning">
-              <th scope="col" style="width: 150px;">CNAME:</th>
-              <th scope="col" style="width: 150px;">Значення:</th>
-            </tr>
-          </thead>
-          <tbody>      
-            {% for site in html_data %}
-            <tr class="table-success">
-              <td class="table-success cname-cell" >{{site.record_name|safe}}</td>
-              <td class="table-success"><button data-bs-toggle="tooltip" data-bs-placement="top" type="submit" class="btn btn-outline-warning" name="buttonDelCname" value="{{site.record_id|safe}}" onclick="fillCnameAndSubmit(this)" title="Видалити цей запис">❌</button>&nbsp;{{site.record_conent|safe}}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8 col-xl-8">
+      <div class="card mx-auto">
+        <div class="card-header" style="background-color: palegreen;">
+          <h4 style="text-align: center;">Валідація для пошукових систем домену {{ domain|safe }} :</h4>
+          <h6 style="text-align: center;">Аккаунт: {{ account|safe }}</h6>
+        </div>
+        <div class="card-body">
+          <form action="/dns_validation" method="POST" id="postform" class="needs-validation" novalidate>
+            <div id="currentRecords">
+              <h5 class="card-title">Вже існуючі записи типу CNAME:</h5>
+              <table class="table table-bordered">
+                <thead>
+                  <tr class="table-warning">
+                    <th scope="col" style="width: 50%;">CNAME:</th>
+                    <th scope="col" style="width: 50%;">Значення:</th>
+                  </tr>
+                </thead>
+                <tbody>      
+                  {% for site in html_data %}
+                  <tr class="table-success">
+                    <td class="table-success cname-cell" >{{site.record_name|safe}}</td>
+                    <td class="table-success"><button data-bs-toggle="tooltip" data-bs-placement="top" type="submit" class="btn btn-outline-warning" name="buttonDelCname" value="{{site.record_id|safe}}" onclick="fillCnameAndSubmit(this)" title="Видалити цей запис">❌</button>&nbsp;{{site.record_conent|safe}}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div id="add_dns_record" class="input-group mb-3 w-100">
+                <span class="input-group-text">CNAME</span>
+                <input type="text" class="form-control" placeholder="Напр.: 234dsfg34tasdf" aria-label="cname" name="cname">
+                <span class="input-group-text">Текст</span>
+                <input type="text" class="form-control" value="verify.bing.com" aria-label="cname_value" name="cname_value">
+            </div>
+            <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
+              <button type="submit" class="btn" style="background-color: palegreen;" name="buttonAddCname" value="{{ domain|safe }}" onclick="showLoading()">Додати новий запис CNAME</button>
+              <input type="hidden" name="account" value="{{ account|safe }}">
+              <input type="hidden" name="domain" value="{{ domain|safe }}">
+            </div>
+          </form>
+        </div>
       </div>
-      <div id="add_dns_record" class="input-group mb-3">
-          <span class="input-group-text">CNAME</span>
-          <input type="text" class="form-control" placeholder="Напр.: 234dsfg34tasdf" aria-label="cname" name="cname">
-          <span class="input-group-text">Текст</span>
-          <input type="text" class="form-control" value="verify.bing.com" aria-label="cname_value" name="cname_value">
-      </div>
-      <div style="margin-top: 40px;">
-        <button type="submit" class="btn" style="background-color: palegreen; margin-top: -30px; margin-left: 200px; width: 400px;" name="buttonAddCname" value="{{ domain|safe }}" onclick="showLoading()">Додати новий запис CNAME</button>
-        <input type="hidden" name="account" value="{{ account|safe }}">
-        <input type="hidden" name="domain" value="{{ domain|safe }}">
-      </div>
-    </form>
+    </div>
   </div>
 </div>
 {% with messages = get_flashed_messages(with_categories=true) %}
