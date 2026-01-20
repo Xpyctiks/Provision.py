@@ -5,7 +5,7 @@ from functions.provision_func import setupNginx,finishJob
 from flask import current_app,flash
 import functions.variables
 
-def start_clone(domain: str, source_site: str, selected_account: str, selected_server: str, realname: str):
+def start_clone(domain: str, source_site: str, selected_account: str, selected_server: str, realname: str, its_not_a_subdomain: bool = False):
   """Main function to clone any selected site to the new one, keeping all files and settings from the original site"""
   domain = domain.lower().strip()
   logging.info(f"---------------------------Starting clone of the site {source_site} to new site {domain} by {realname}----------------------------")
@@ -16,7 +16,7 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
   logging.info(f"Dst. path: {dstPath}")
   functions.variables.JOB_ID = f"Autoprovision"
   #First of all starting DNS and certificates check and setup procedure
-  if cloudflare_certificate(domain,selected_account,selected_server):
+  if cloudflare_certificate(domain,selected_account,selected_server,its_not_a_subdomain):
     try:
       result = shutil.copytree(srcPath, dstPath,dirs_exist_ok=True,symlinks=True)
       if result != dstPath:

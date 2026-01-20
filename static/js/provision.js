@@ -109,6 +109,8 @@ document.getElementById("Validate").addEventListener("click", function () {
   formData.append("domain", document.getElementById("domain").value);
   formData.append("selected_account", document.getElementById("selected_account").value);
   formData.append("selected_server", document.getElementById("selected_server").value);
+  const checkbox = document.getElementById("not-a-subdomain");
+  formData.append("not-a-subdomain", checkbox.checked ? "1" : "0");
   fetch("/validate", {
     method: "POST",
     body: formData
@@ -116,7 +118,7 @@ document.getElementById("Validate").addEventListener("click", function () {
   .then(response => response.json())
   .then(data => {
     document.getElementById("modalResultBody").innerHTML =
-      `<div class="alert alert-info">${data.message}</div>`;
+      `<div class="alert alert-secondary">${data.message}</div>`;
     modal.show();
   })
   .catch(error => {
@@ -138,3 +140,9 @@ if (value === "") {
   input.classList.add("is-valid");
 }
 });
+
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+

@@ -36,7 +36,7 @@
   </div>
 </nav>
 </div>
-<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 20vw;">
+<div class="card" style="margin-top: 7vh; margin-left: 30vw; width: 80vh; height: 22vw;">
   <div class="card-header" style="background-color: darkorange;">
     <h4 style="text-align: center;">Клонуємо сайт {{ source_site|safe }} :</h4>
   </div>
@@ -50,6 +50,10 @@
           Вкажіть домен.
         </div>
       </div>
+      <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="top">
+        <text>Це не субдомен&nbsp;<input class="form-check-input" data-bs-toggle="tooltip" data-bs-placement="top" type="checkbox" value="" id="not-a-subdomain" name="not-a-subdomain"></text>
+        <text data-bs-toggle="tooltip" data-bs-placement="top" title="Якщо перевірка сприймає ваш домен за субдомен, поставте цю галочку.Наприклад кореневий домен sol-casino.it.com сприймає як коренневий домен it.com та субдомен sol-casino">❓</text>
+      </span>
       <div class="mb-3 dropdown">
         <h5 class="card-title">Оберіть аккаунт CloudFlare на якому новий домен розташован:</h5>
         <button class="btn btn-secondary dropdown-toggle" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false" style="width: 580px;">{{first_cf|safe}}</button>

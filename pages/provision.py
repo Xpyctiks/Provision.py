@@ -4,6 +4,7 @@ import logging,os
 from db.database import Provision_templates
 from functions.provision_func import start_autoprovision
 from functions.pages_forms import *
+from functions.site_actions import normalize_domain
 
 provision_bp = Blueprint("provision", __name__)
 @provision_bp.route("/provision", methods=['GET'])
@@ -38,7 +39,7 @@ def do_provision():
     #starts main provision actions
     else:
       #cleans up the domain string
-      domain = request.form['domain'].strip().removeprefix("https://").removeprefix("http://").rstrip("/").lower()
+      domain = normalize_domain(request.form['domain'].removeprefix("https://").removeprefix("http://").rstrip("/"))
       finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
       if os.path.exists(finalPath):
         logging.info(f"---------------------------Starting automatic deploy for site {domain} by {current_user.realname}----------------------------")
@@ -46,11 +47,15 @@ def do_provision():
         flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
         logging.info(f"--------------------Automatic deploy for site {domain} from template {request.form['selected_template'].strip()} by {current_user.realname} finshed with error-----------------------")
         return redirect("/provision",302)
+      if 'not-a-subdomain' in request.form:
+        its_not_a_subdomain = True
+      else:
+        its_not_a_subdomain = False
       #Getting repository's git path after we know its name as given in the request
       repo = Provision_templates.query.filter_by(name=request.form['selected_template'].strip()).first()
       if repo:
         #starting autoprovision. If everything is ok, redirect to root page
-        if start_autoprovision(domain,request.form['selected_account'].strip(),request.form['selected_server'].strip(),repo.repository,current_user.realname):
+        if start_autoprovision(domain,request.form['selected_account'].strip(),request.form['selected_server'].strip(),repo.repository,current_user.realname,its_not_a_subdomain):
           flash(f"Сайт {domain} успішно встановлено!",'alert alert-success')
           logging.info(f"Site {domain} provisioned successfully!")
           return redirect("/",302)

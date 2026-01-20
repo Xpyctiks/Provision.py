@@ -10,7 +10,7 @@ from flask import current_app
 from db.database import Cloudflare, Servers
 from functions.tld import tld
 
-def cloudflare_certificate(domain: str, selected_account: str, selected_server: str):
+def cloudflare_certificate(domain: str, selected_account: str, selected_server: str, its_not_a_subdomain: bool = False):
   """Main function to automatically get and save certificates"""
   try:
     domain = domain.lower()
@@ -35,17 +35,24 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
     }
     #check if there is subdomain
     d = tld(domain)
-    if bool(d.subdomain):
+    #check if there is forced parameter this is not a subdomain
+    if its_not_a_subdomain:
+      logging.info(f"Cert. issue procedure: Forced by user usage of domain {domain} as the root domain for issue of {domain}")
+      params_check_domain_exists = {
+        "name": domain,
+        "per_page": 1
+      }  
+    elif not its_not_a_subdomain and bool(d.subdomain):
       domain2 = domain.strip().lower().rstrip(".")
       d2 = tld(domain2)
       domain = f"{d2.domain}.{d2.suffix}"
       logging.info(f"Cert. issue procedure: using domain {d2.domain}.{d2.suffix} as the root domain for issue of {domain}")
     else:
       logging.info(f"Cert. issue procedure: {domain} is the root domain. Validating as is.")
-    params_check_domain_exists = {
-      "name": domain,
-      "per_page": 1
-    }
+      params_check_domain_exists = {
+        "name": domain,
+        "per_page": 1
+      }
     #making request to check the domain's existance on the server
     result_check_domain_exists = requests.get(url_check_domain_exists, headers=headers, params=params_check_domain_exists).json()
     if result_check_domain_exists["success"] and result_check_domain_exists["result"]:

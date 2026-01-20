@@ -20,6 +20,11 @@ def do_validation():
     domain = str(normalize_domain(domain))
     server = request.form.get("selected_server").strip()
     account = request.form.get("selected_account").strip()
+    #Check if there is not-a-subdomain parameter set, means this is defenitly not a subdomain but full domain
+    if request.form.get('not-a-subdomain') == "1":
+      its_not_a_subdomain = True
+    else:
+      its_not_a_subdomain = False
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:
@@ -39,18 +44,24 @@ def do_validation():
     }
     #check if there is subdomain
     d = tld(domain)
-    if bool(d.subdomain):
-      domain2 = domain.strip().lower().rstrip(".")
-      d2 = tld(domain2)
-      print("1")
-      print(d2)
+    #if we have forced parameter this if definetily not a subdomain
+    if its_not_a_subdomain:
+      logging.info(f"Validation check: {domain} froced to be the root domain by This-is-not-a-subdomain checkbox.")
+      message += f"Для цієї перевірки ми <b>примусово</b> взяли домен <b>{domain}</b> як цілий кореневий домен:<br><br>"
       params = {
-        "name": f"{d2.domain}.{d2.suffix}",
+        "name": domain,
         "per_page": 1
       }
-      logging.info(f"Validation check: using domain {d2.domain}.{d2.suffix} as the root domain for validation of {domain}")
+    elif not its_not_a_subdomain and bool(d.subdomain):
+      params = {
+        "name": f"{d.domain}.{d.suffix}",
+        "per_page": 1
+      }
+      logging.info(f"Validation check: using domain {d.domain}.{d.suffix} as the root domain for validation of {domain}")
+      message += f"Для цієї перевірки ми взяли домен <b>{d.domain}.{d.suffix}</b> як кореневий домен, а <b>{d.subdomain}</b> як субдомен:<br><br>"
     else:
       logging.info(f"Validation check: {domain} is the root domain. Validating as is.")
+      message += f"Для цієї перевірки ми взяли домен <b>{domain}</b> як цілий кореневий домен:<br><br>"
       params = {
         "name": domain,
         "per_page": 1
@@ -58,7 +69,7 @@ def do_validation():
     #making request to check the domain's existance on the server
     r = requests.get(url, headers=headers,params=params).json()
     if r["success"] and r["result"]:
-      message += "[✅] Домен існує на цьому сервері<br>"
+      message += f"[✅] Домен {domain} існує на цьому сервері<br>"
       #getting domain's zone id to check its A records futher
       name_to_id = {i["name"]: i["id"] for i in r["result"]}
       id = name_to_id.get(domain)
@@ -77,7 +88,7 @@ def do_validation():
       response = {"message": message}
       return json.dumps(response)
     else:
-      message += "[❌] Домен НЕ існує на цьому сервері!"
+      message += f"[❌] Домен {domain} НЕ існує на цьому сервері!<br>Аккаунт: {account}<br><br>Перевірте чи вибран вірний аккаунт Cloudflare та чи не бачить система домен як субдомен."
       response = {"message": message}
       return json.dumps(response)
   except Exception as err:

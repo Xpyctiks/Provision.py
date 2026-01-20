@@ -114,7 +114,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
     logging.error(msg)
     return False
 
-def start_autoprovision(domain: str, selected_account: str, selected_server: str, template: str, realname: str):
+def start_autoprovision(domain: str, selected_account: str, selected_server: str, template: str, realname: str, its_not_a_subdomain: bool = False):
   """Starts main autoprovision process to deploy site from a git repo,DNS records and certificates automatically"""
   try:
     logging.info(f"---------------------------Starting automatic deploy for site {domain}  by {realname}----------------------------")
@@ -122,7 +122,7 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
     finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
     functions.variables.JOB_ID = f"Autoprovision"
     #First of all starting DNS and certificates check and setup procedure
-    if cloudflare_certificate(domain,selected_account,selected_server):
+    if cloudflare_certificate(domain,selected_account,selected_server,its_not_a_subdomain):
       os.makedirs(finalPath)
       logging.info(f"New directory {finalPath} created")
       os.chdir(finalPath)

@@ -55,8 +55,12 @@ def doClone():
         flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде клонувати!", 'alert alert-danger')
         logging.info(f"--------------------Clone of the site {source_site} as the {domain} by {current_user.realname} finshed with error-----------------------")
         return redirect("/clone?source_site={request.form['buttonStartClone']}",302)
+      if 'not-a-subdomain' in request.form:
+        its_not_a_subdomain = True
+      else:
+        its_not_a_subdomain = False
       #starting clone procedure
-      if start_clone(domain,source_site,selected_account,selected_server,current_user.realname):
+      if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,its_not_a_subdomain):
         flash(f"Сайт {source_site} успішно клоновано в сайт {domain}!",'alert alert-success')
         logging.info(f"Site {source_site} sucessfully cloned into {domain} site!")
         return redirect("/",302)
@@ -69,4 +73,4 @@ def doClone():
     logging.error(f"Provision page POST process error by {current_user.realname}: {err}")
     flash(f"Загальна помилка обробки POST запиту на сторінці /clone! Дивіться логи!",'alert alert-danger')
     asyncio.run(send_to_telegram(f"Clone page general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
-    return redirect("/clone?source_site={request.form['buttonStartClone']}",302)
+    return redirect(f"/clone?source_site={request.form['buttonStartClone']}",302)
