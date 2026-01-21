@@ -90,9 +90,14 @@
         <input type="hidden" name="sitename" value="{{site.site_name|safe}}">
         <u>Сайт розгорнут: {{site.getSiteCreated|safe}}</u>
       {{site.table_type2|safe}}
-        <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
-        <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
-        <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt</button>
+        <div class="d-flex flex-column">
+        <div>
+          <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
+          <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
+        </div>
+        <div class="mt-2">
+          <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt</button>
+        </div>
       </td>
       {{site.table_type2|safe}}
       <div class="accordion" id="folderAccordion{{site.id|safe}}">
