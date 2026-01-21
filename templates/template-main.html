@@ -21,6 +21,10 @@
         font-size: 22px;
       }
 
+    .table .dropdown-menu {
+      position: static;
+      margin-top: .25rem;
+    }
       .btn.disabled {
         pointer-events: none;
         opacity: 0.5;
@@ -75,7 +79,7 @@
     <thead>
       <tr class="table-warning">
         <th scope="col" style="width: 3%">ID</th>
-        <th scope="col" style="width: 18%">Можливі дії:</th>
+        <th scope="col" style="width: 16%">Можливі дії:</th>
         <th scope="col" style="width: 20%">Назва сайту: (Обрати всі:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox">)</th>
         <th scope="col">Шлях на сервері:&nbsp;<button id="closeAll" class="btn-sm btn-warning">Згорнути всі</button></th>
         <th scope="col">Власник:</th>
@@ -89,7 +93,7 @@
       <form method="post" action="/redirects_manager" id="redirect_form{{site.site_name|safe}}"></form>
       {{site.table_type2|safe}}
         <div class="dropdown mx-auto">
-          <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+          <a class="btn btn-outline-danger dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" data-bs-display="static">⚙ Можливі дії:</a>
           <ul class="dropdown-menu">
             <li><button class="btn btn-danger delete-btn dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" data-site="{{site.site_name|safe}}" name="delete" form="main_form" onclick="showLoading()" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">🙅‍♂️Видалити</button></li>
             <li><hr class="dropdown-divider"></li>

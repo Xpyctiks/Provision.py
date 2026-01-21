@@ -48,7 +48,7 @@ def index():
       if not acc:
         dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary disabled dropdown-item" type="submit" name="validation" value="{s}" style="margin-top: 5px;">📮DNS валідація</a><br>'
       else:
-        dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="validation" value="{s}" onclick="showLoading()" style="margin-top: 5px;" title="Керування CNAME записами для валідації домену для пошукових систем.">📮DNS валідація</a><br>'
+        dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="validation" value="{s}" onclick="showLoading()" style="margin-top: 5px;" title="Керування CNAME записами для валідації домену для пошукових систем.">📮DNS валідація</a>'
       #If everything is ok, main view:
       if os.path.islink(ngx_site) and os.path.isfile(php_site):
         html_data.append({

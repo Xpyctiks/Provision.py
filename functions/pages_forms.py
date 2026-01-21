@@ -97,7 +97,7 @@ def getSiteCreated(domain: str) -> str:
         #if the site is a cloned one
         return f"{owner.created.strftime('%d-%m-%Y %H:%M:%S')}.<br>Клон {owner.cloned}"
     else:
-      return "поки що не ясно 🤷🏼‍♂️"
+      return "невідомо🤷🏼‍♂️"
   except Exception as err:
     logging.error(f"getSiteCreated(): general error: {err}")
     return "ERROR!"
