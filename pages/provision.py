@@ -4,7 +4,7 @@ import logging,os
 from db.database import Provision_templates
 from functions.provision_func import start_autoprovision
 from functions.pages_forms import *
-from functions.site_actions import normalize_domain
+from functions.site_actions import normalize_domain,is_admin
 
 provision_bp = Blueprint("provision", __name__)
 @provision_bp.route("/provision", methods=['GET'])
@@ -18,7 +18,7 @@ def show_provision_page():
     cf_list, first_cf = loadClodflareAccounts()
     #parsing Servers accounts available
     server_list, first_server = loadServersList()
-    return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list)
+    return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"show_provision_page(): general error by {current_user.realname}: {err}")
     asyncio.run(send_to_telegram(f"show_provision_page(): general error: {err}",f"🚒Provision page render by {current_user.realname}:"))

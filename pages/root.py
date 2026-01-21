@@ -1,7 +1,7 @@
 import logging,os,re,asyncio
 from flask import render_template,Blueprint,current_app
 from flask_login import login_required,current_user
-from functions.site_actions import count_redirects
+from functions.site_actions import count_redirects, is_admin
 from functions.pages_forms import getSiteOwner,getSiteCreated
 from db.database import Domain_account,User
 from functions.send_to_telegram import send_to_telegram
@@ -22,16 +22,6 @@ def index():
       if os.path.isdir(os.path.join(current_app.config["WEB_FOLDER"], name))
     ]
     html_data = []
-    #check if user has admin rights and draw the admin panel link
-    user = User.query.filter_by(realname=current_user.realname).first()
-    if user:
-      rights = user.rights
-      if rights == 255:
-        rights_menu = '<li><a class="dropdown-item" href="/admin_panel" class="btn btn-secondary">🎮Панель адміністрування</a></li>'
-      else:
-        rights_menu = ""
-    else:
-      rights_menu = ""
     for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
       #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
       #variable with full path to nginx sites-enabled symlink to the site
@@ -128,7 +118,7 @@ def index():
           "robots_button": '',
           "dns_validation": ''
         })
-    return render_template("template-main.html",html_data=html_data,admin_panel=rights_menu)
+    return render_template("template-main.html",html_data=html_data,admin_panel=is_admin())
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")
     asyncio.run(send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:"))

@@ -505,3 +505,14 @@ def link_domain_and_account(domain: str, account: str):
     logging.error(f"link_domain_and_account() general error: {err}")
     asyncio.run(send_to_telegram(f"link_domain_and_account() general error: {err}",f"🚒Provision error by {current_user.realname}:"))
     return False
+
+def is_admin():
+  user = User.query.filter_by(realname=current_user.realname).first()
+  if user:
+    rights = user.rights
+    if rights == 255:
+      return '<li><a class="dropdown-item" href="/admin_panel" class="btn btn-secondary">🎮Панель адміністрування</a></li>'
+    else:
+      return ""
+  else:
+    return ""

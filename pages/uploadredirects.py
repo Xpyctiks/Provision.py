@@ -2,7 +2,7 @@ from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
 import logging,os,asyncio
 from werkzeug.utils import secure_filename
-from functions.site_actions import normalize_domain
+from functions.site_actions import normalize_domain,is_admin
 from functions.send_to_telegram import send_to_telegram
 
 uploadredir_bp = Blueprint("upload_redirects", __name__)
@@ -94,7 +94,7 @@ def show_uploadredir_file():
   try:
     args = request.args
     site = args.get('site')
-    return render_template("template-upload_redir.html",sitename=site)
+    return render_template("template-upload_redir.html",sitename=site,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"show_uploadredir_file(): general error by {current_user.realname}: {err}")
     asyncio.run(send_to_telegram(f"show_uploadredir_file(): general error: {err}",f"🚒Provision upload redirects error by {current_user.realname}:"))

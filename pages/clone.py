@@ -2,7 +2,7 @@ from flask import redirect,Blueprint,request,render_template,flash,current_app
 from flask_login import login_required,current_user
 from functions.pages_forms import *
 from functions.clone_func import *
-from functions.site_actions import normalize_domain
+from functions.site_actions import normalize_domain, is_admin
 import os,asyncio
 from functions.send_to_telegram import send_to_telegram
 
@@ -23,7 +23,7 @@ def showClonePage():
     cf_list, first_cf = loadClodflareAccounts()
     #parsing Servers accounts available
     server_list, first_server = loadServersList()
-    return render_template("template-clone.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list)
+    return render_template("template-clone.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"Clone page general render error by {current_user.realname}: {err}")
     asyncio.run(send_to_telegram(f"Clone page general render error: {err}",f"🚒Provision error by {current_user.realname}:"))

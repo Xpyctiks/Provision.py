@@ -27,8 +27,23 @@
         </form>
         <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
       </div>
+      <div class="dropdown mx-auto">
+        <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+        <ul class="dropdown-menu">
+          <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {{admin_panel|safe}}
+        </ul>
+      </div>
       <div class="mx-auto">
-        <a href="/" class="btn btn-success" type="submit" id="gotomain" name="gotomain">⬅На головну</a>
         <a href="/upload_redirects?site={{sitename|safe}}" class="btn btn-info" type="submit">🚀Додати/завантажити нові</a>
       </div>
       <div class="ms-auto d-flex align-items-center">

@@ -2,6 +2,7 @@ from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
 import os,logging,re,asyncio
 from functions.send_to_telegram import send_to_telegram
+from functions.site_actions import is_admin
 
 redirects_bp = Blueprint("redirects_manager", __name__)
 @redirects_bp.route("/redirects_manager", methods=['GET'])
@@ -43,7 +44,7 @@ def show_redirects():
         applyButton = "btn-warning"
       else:
         applyButton = "btn-outline-warning"
-      return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton)
+      return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton,admin_panel=is_admin())
     else:
       return redirect("/",302)
   except Exception as err:

@@ -5,6 +5,7 @@ from functions.send_to_telegram import send_to_telegram
 from werkzeug.utils import secure_filename
 from functions.pages_forms import *
 from functions.provision_func import *
+from functions.site_actions import is_admin
 
 upload_bp = Blueprint("upload", __name__)
 @upload_bp.route("/upload", methods=['POST'])
@@ -73,7 +74,7 @@ def show_upload_page():
     cf_list, first_cf = loadClodflareAccounts()
     #parsing Servers accounts available
     server_list, first_server = loadServersList()
-    return render_template("template-upload.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list)
+    return render_template("template-upload.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"Upload page general render error: {err}")
     asyncio.run(send_to_telegram(f"Upload page general render error: {err}",f"🚒Provision upload page:"))

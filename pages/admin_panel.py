@@ -5,6 +5,7 @@ from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *
 from functions.rights_required import rights_required
+from functions.site_actions import is_admin
 
 admin_panel_bp = Blueprint("admin_panel", __name__)
 
@@ -76,7 +77,7 @@ def admin_panel_settings():
   </div>
  </form>
 </div>"""
-    return render_template("template-admin_panel.html",active1="active",data=html_data)
+    return render_template("template-admin_panel.html",active1="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_settings(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_settings(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -141,7 +142,7 @@ def admin_panel_users():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active2="active",data=html_data)
+    return render_template("template-admin_panel.html",active2="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_users(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_users(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -196,7 +197,7 @@ def admin_panel_templates():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active3="active",data=html_data)
+    return render_template("template-admin_panel.html",active3="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_templates(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_templates(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -251,7 +252,7 @@ def admin_panel_cloudflare():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active4="active",data=html_data)
+    return render_template("template-admin_panel.html",active4="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_cloudflare(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_cloudflare(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -309,7 +310,7 @@ def admin_panel_owners():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active5="active",data=html_data)
+    return render_template("template-admin_panel.html",active5="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_owners(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_owners(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -364,7 +365,7 @@ def admin_panel_servers():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active6="active",data=html_data)
+    return render_template("template-admin_panel.html",active6="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_servers(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_servers(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -414,7 +415,7 @@ def admin_panel_links():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active7="active",data=html_data)
+    return render_template("template-admin_panel.html",active7="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_links(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_links(): global error {err}",f"🚒Provision error by {current_user.realname}"))
@@ -467,7 +468,7 @@ def admin_panel_accounts():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active8="active",data=html_data)
+    return render_template("template-admin_panel.html",active8="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_accounts(): global error {err}",f"🚒Provision error by {current_user.realname}"))
