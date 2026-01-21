@@ -1,4 +1,3 @@
-import argparse
 from functions.cli_func_account import *
 from functions.cli_func_cloudflare import *
 from functions.cli_func_owner import *
@@ -6,8 +5,15 @@ from functions.cli_func_servers import *
 from functions.cli_func_template import *
 from functions.cli_func_user import *
 from functions.cli_func_settings import *
-from main import with_app_context
+from flask import current_app
 import click
+
+def with_app_context(func):
+  """Decorator to run command inside Flask app context"""
+  def wrapper(*args, **kwargs):
+    with current_app.app_context():
+      return func(*args, **kwargs)
+  return wrapper
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 def show_cli():

@@ -69,34 +69,12 @@
   <div class="row h-100">
     <div class="col-12 h-100 d-flex flex-column">
       <div class="text-container flex-grow-1 overflow-auto log-view" id="logBox">
-        <pre id="logContent" class="mb-0">{{ log | e }}</pre>
+        <pre id="log-box" class="bg-dark text-light p-3" style="height: 80vh; overflow-y: auto;"></pre>
       </div>
     </div>
   </div>
 </div>
 </main>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const pre = document.getElementById('logContent');
-    const lines = pre.textContent.split('\n');
-    const colored = lines.map(line => {
-      let cls = '';
-      if (line.includes('ERROR')) cls = 'log-error';
-      else if (line.includes('WARN')) cls = 'log-warn';
-      else if (line.includes('INFO')) cls = 'log-info';
-      else if (line.includes('DEBUG')) cls = 'log-debug';
-      return cls
-        ? `<div class="${cls}">${line}</div>`
-        : `<div>${line}</div>`;
-    }).join('');
-    pre.innerHTML = colored;
-
-    const modalElement = document.getElementById("myModal");
-    if (modalElement) {
-      const modal = new bootstrap.Modal(modalElement);
-      modal.show();
-    }
-});
-</script>
+<script src="{{ url_for('static', filename='js/logs.js') }}"></script>
 </body>
 </html>

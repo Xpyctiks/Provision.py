@@ -30,7 +30,7 @@ login_manager.session_protection = "strong"
 login_manager.init_app(application)
 with application.app_context():
   db.create_all()
-from functions.cli_management import *
+from functions.cli_management import show_cli
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -38,12 +38,6 @@ def load_user(user_id):
 from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
-def with_app_context(func):
-  """Decorator to run command inside Flask app context"""
-  def wrapper(*args, **kwargs):
-    with application.app_context():
-      return func(*args, **kwargs)
-  return wrapper
-
 if __name__ == "__main__":
   show_cli()
+  application.run("192.168.10.150",80,debug=True)
