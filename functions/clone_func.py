@@ -3,11 +3,12 @@ from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
 from functions.provision_func import setupNginx,finishJob
 from flask import current_app,flash
+from functions.site_actions import normalize_domain
 import functions.variables
 
 def start_clone(domain: str, source_site: str, selected_account: str, selected_server: str, realname: str, its_not_a_subdomain: bool = False):
   """Main function to clone any selected site to the new one, keeping all files and settings from the original site"""
-  domain = domain.lower().strip()
+  domain = normalize_domain(domain)
   logging.info(f"---------------------------Starting clone of the site {source_site} to new site {domain} by {realname}----------------------------")
   logging.info(f"Cloudflare account: {selected_account}, IP of the server: {selected_server}")
   dstPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
@@ -18,6 +19,7 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
   #First of all starting DNS and certificates check and setup procedure
   if cloudflare_certificate(domain,selected_account,selected_server,its_not_a_subdomain):
     try:
+      #copying source site to the new destination
       result = shutil.copytree(srcPath, dstPath,dirs_exist_ok=True,symlinks=True)
       if result != dstPath:
         logging.error(f"Error while copying {srcPath} to {dstPath}!")

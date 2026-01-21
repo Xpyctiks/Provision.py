@@ -33,12 +33,14 @@ def setSiteOwner(domain: str) -> bool:
     else:
       #check the global variable if this is cloned site
       if functions.variables.CLONED_FROM != "":
+        logging.info(f"The CLONED_FROM variable is set to {functions.variables.CLONED_FROM}. Setting this value as DB value Cloned")
         new_owner = Ownership(
           domain=domain,
           owner=owner,
           cloned = functions.variables.CLONED_FROM
         )
       else:
+        logging.info(f"The CLONED_FROM variable is empty.No records to DB value Cloned")
         new_owner = Ownership(
           domain=domain,
           owner=owner,

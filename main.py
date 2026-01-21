@@ -261,5 +261,4 @@ if __name__ == "__main__":
   #else just show help info.
   elif len(sys.argv) <= 2:
     help_show()
-  application.run("192.168.10.150",80,debug=True)
   quit(0)
