@@ -17,33 +17,15 @@
       white-space: pre-wrap;
       overflow-y: auto;
     }
-
-    body {
-      padding-top: 30px;
-    }
-
     .log-view {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 0.95rem;
       background: #0f1115;
       color: #d1d5db;
     }
-
-    .log-info {
-      color: #38bdf8;
-    }
-
-    .log-warn {
-      color: #facc15;
-    }
-
-    .log-error {
-      color: #f87171;
-    }
-
-    .log-debug {
-      color: #a78bfa;
-    }
+    .log-ERROR { color: #ff6b6b; }
+    .log-WARNING { color: #feca57; }
+    .log-INFO { color: #48dbfb; }
   </style>
 </head>
 <body class="vh-100">
@@ -65,13 +47,9 @@
     </div>
   </nav>
 </div>
-<div class="container-fluid h-100 p-3">
-  <div class="row h-100">
-    <div class="col-12 h-100 d-flex flex-column">
-      <div class="text-container flex-grow-1 overflow-auto log-view" id="logBox">
-        <pre id="log-box" class="bg-dark text-light p-3" style="height: 80vh; overflow-y: auto;"></pre>
-      </div>
-    </div>
+<div class="col-12 h-100 d-flex flex-column">
+  <div class="text-container flex-grow-1 overflow-auto log-view" id="logBox">
+    <pre id="log-box" class="bg-dark text-light" style="height: 87vh; overflow-y: auto;"></pre>
   </div>
 </div>
 </main>

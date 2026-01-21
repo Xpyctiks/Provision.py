@@ -1,30 +1,28 @@
-  document.addEventListener('DOMContentLoaded', () => {
-    const pre = document.getElementById('logContent');
-    const lines = pre.textContent.split('\n');
-    const colored = lines.map(line => {
-      let cls = '';
-      if (line.includes('ERROR')) cls = 'log-error';
-      else if (line.includes('WARN')) cls = 'log-warn';
-      else if (line.includes('INFO')) cls = 'log-info';
-      else if (line.includes('DEBUG')) cls = 'log-debug';
-      return cls
-        ? `<div class="${cls}">${line}</div>`
-        : `<div>${line}</div>`;
-    }).join('');
-    pre.innerHTML = colored;
+function colorize(line) {
+  if (line.includes("ERROR"))
+    return `<span class="log-ERROR">${line}</span>`;
+  if (line.includes("WARNING"))
+    return `<span class="log-WARNING">${line}</span>`;
+  if (line.includes("INFO"))
+    return `<span class="log-INFO">${line}</span>`;
+  return line;
+}
 
-    const modalElement = document.getElementById("myModal");
-    if (modalElement) {
-      const modal = new bootstrap.Modal(modalElement);
-      modal.show();
-    }
-});
+function isNearBottom(el, threshold = 50) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+}
 
 async function loadLogs() {
-  const res = await fetch("/logs/api?lines=300");
+  const res = await fetch("/logs/api");
   const data = await res.json();
-  document.getElementById("log-box").textContent =
-    data.lines.join("");
+  const box = document.getElementById("log-box");
+  const shouldScroll = isNearBottom(box);
+  const html = data.lines.map(line => colorize(line)).join("");
+
+  document.getElementById("log-box").innerHTML = html;
+  if (shouldScroll) {
+    box.scrollTop = box.scrollHeight;
+  }
 }
 
 setInterval(loadLogs, 3000);
