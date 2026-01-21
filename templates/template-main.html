@@ -65,6 +65,9 @@
           {{admin_panel|safe}}
         </ul>
       </div>
+      <div class="d-flex align-items-center">
+        <input type="text" id="siteFilter" class="form-control form-control" placeholder="🔍 Фільтр по домену…">
+      </div>
       <div class="ms-auto d-flex align-items-center">
         <form action="/logout" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
