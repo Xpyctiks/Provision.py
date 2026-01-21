@@ -3,7 +3,7 @@ from flask_login import login_required,current_user
 import logging,asyncio,requests
 from db.database import Domain_account, Cloudflare
 from functions.send_to_telegram import send_to_telegram
-from functions.site_actions import normalize_domain
+from functions.site_actions import normalize_domain,is_admin
 
 dns_validation_bp = Blueprint("dns_validation", __name__)
 @dns_validation_bp.route("/dns_validation", methods=['GET'])
@@ -73,7 +73,7 @@ def dns_validation():
           "record_conent": record_content,
           "record_id": record_id
         })
-    return render_template("template-dns_validation.html",html_data=html_data,domain=domain,account=account)
+    return render_template("template-dns_validation.html",html_data=html_data,domain=domain,account=account,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"Dns_validation page general render error: {err}")
     asyncio.run(send_to_telegram(f"Dns_validationpage general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
