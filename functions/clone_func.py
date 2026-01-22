@@ -24,7 +24,7 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
       if result != dstPath:
         logging.error(f"Error while copying {srcPath} to {dstPath}!")
         asyncio.run(send_to_telegram(f"Error while copying {srcPath} to {dstPath}!",f"🚒Provision clone error:"))
-        flash('Помилка при копіюванні {srcPath} в {dstPath}','alert alert-danger')
+        flash(f'Помилка при копіюванні {srcPath} в {dstPath}','alert alert-danger')
         return False
       logging.info(f"Copying {srcPath} to {dstPath} is done successfully!")
       #setting git safe value to allow this folder works with git
