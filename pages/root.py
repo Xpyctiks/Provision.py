@@ -22,6 +22,12 @@ def index():
       if os.path.isdir(os.path.join(current_app.config["WEB_FOLDER"], name))
     ]
     html_data = []
+    users_list = []
+    #gathering all list of available users to put them into user filter list
+    ul = User.query.order_by(User.username).all()
+    for i, s in enumerate(ul, 1):
+      users_list.append(f'<option value="{s.realname}">{s.realname}</option>')
+    #starting main procedure
     for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
       #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
       #variable with full path to nginx sites-enabled symlink to the site
@@ -42,7 +48,7 @@ def index():
       #If everything is ok, main view:
       if os.path.islink(ngx_site) and os.path.isfile(php_site):
         html_data.append({
-          "table_type": f'<tr>\n<th scope="row" class="table-success">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}">\n<th scope="row" class="table-success">{i}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
           "site_name": s,
           "table_type2": '<td class="table-success">',
@@ -58,7 +64,7 @@ def index():
       #if nginx is ok but php is not
       elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
         html_data.append({
-          "table_type": f'<tr>\n<th scope="row" class="table-danger">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}">\n<th scope="row" class="table-danger">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": '<td class="table-danger">',
@@ -74,7 +80,7 @@ def index():
       #if php is ok but nginx is not
       elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
         html_data.append({
-          "table_type": f'<tr>\n<th scope="row" class="table-danger">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}">\n<th scope="row" class="table-danger">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": '<td class="table-danger">',
@@ -90,7 +96,7 @@ def index():
       #if really disabled
       elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
         html_data.append({
-          "table_type": f'<tr>\n<th scope="row" class="table-warning">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}">\n<th scope="row" class="table-warning">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": '<td class="table-warning">',
@@ -105,7 +111,7 @@ def index():
         })
       else:
         html_data.append({
-          "table_type": f'<tr>\n<th scope="row" class="table-danger">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}">\n<th scope="row" class="table-danger">{i}</th>',
           "button_2": '',
           "site_name": 'ЗАГАЛЬНА',
           "table_type2": '<td class="table-danger">',
@@ -118,7 +124,7 @@ def index():
           "robots_button": '',
           "dns_validation": ''
         })
-    return render_template("template-main.html",html_data=html_data,admin_panel=is_admin())
+    return render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list)
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")
     asyncio.run(send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:"))

@@ -173,12 +173,20 @@ btn.addEventListener("click", () => {
   });
 });
 
-document.getElementById("siteFilter").addEventListener("input", function () {
-  const filter = this.value.toLowerCase();
-  const rows = document.querySelectorAll("tbody tr");
+function applyFilters() {
+  const owner = document.getElementById("ownerFilter").value;
+  const text  = document.getElementById("siteFilter")?.value || "";
 
-  rows.forEach(row => {
-    const text = row.innerText.toLowerCase();
-    row.style.display = text.includes(filter) ? "" : "none";
+  document.querySelectorAll("tbody tr").forEach(row => {
+    const rowOwner = row.dataset.owner || "";
+    const rowText  = row.innerText.toLowerCase();
+
+    const matchOwner = !owner || rowOwner === owner;
+    const matchText  = !text || rowText.includes(text);
+
+    row.style.display = (matchOwner && matchText) ? "" : "none";
   });
-});
+}
+
+document.getElementById("ownerFilter").addEventListener("change", applyFilters);
+document.getElementById("siteFilter").addEventListener("input", applyFilters);
