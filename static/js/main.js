@@ -190,3 +190,15 @@ function applyFilters() {
 
 document.getElementById("ownerFilter").addEventListener("change", applyFilters);
 document.getElementById("siteFilter").addEventListener("input", applyFilters);
+
+function clearFilters() {
+  const siteFilter  = document.getElementById("siteFilter");
+  if (siteFilter) siteFilter.value = "";
+  applyFilters();
+}
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    clearFilters();
+  }
+});
