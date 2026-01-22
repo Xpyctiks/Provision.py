@@ -63,14 +63,17 @@ def doClone():
       if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,its_not_a_subdomain):
         flash(f"Сайт {source_site} успішно клоновано в сайт {domain}!",'alert alert-success')
         logging.info(f"Site {source_site} sucessfully cloned into {domain} site!")
+        finishJob("",domain,selected_account,selected_server)
         return redirect("/",302)
       else:
         logging.error(f"Error cloning of {source_site} as site {domain} - repository of template {request.form['selected_template']} is not found!")
         asyncio.run(send_to_telegram(f"Error cloning of {source_site} as site {domain} - repository of template {request.form['selected_template']} is not found!",f"🚒Provision clone page:"))
         flash(f"Помилка клонування {source_site} до сайту {domain} - репозиторій шаблону {request.form['selected_template']} не знайден!",'alert alert-danger')
+        finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         return redirect(f"/clone?source_site={source_site}",302)
   except Exception as err:
     logging.error(f"Provision page POST process error by {current_user.realname}: {err}")
     flash(f"Загальна помилка обробки POST запиту на сторінці /clone! Дивіться логи!",'alert alert-danger')
     asyncio.run(send_to_telegram(f"Clone page general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
+    finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
     return redirect(f"/clone?source_site={request.form.get('buttonStartClone')}",302)
