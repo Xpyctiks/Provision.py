@@ -33,7 +33,7 @@ def handler_users(form):
   try:
     #process delete user request
     if "buttonDeleteUser" in form:
-      user = User.query.filter_by(id=form.get('buttonDeleteUser').strip()).first()
+      user = User.query.filter_by(id=int(form.get('buttonDeleteUser').strip())).first()
       if user:
         db.session.delete(user)
         db.session.commit()
@@ -72,7 +72,7 @@ def handler_users(form):
     if "buttonMakeAdminUser" in form:
       user = User.query.filter_by(id=form.get('buttonMakeAdminUser').strip()).first()
       if user:
-        new_rights = User(id=user.id,rights=255)
+        new_rights = User(id=int(user.id),rights=255)
         db.session.merge(new_rights)
         db.session.commit()
         logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonMakeAdminUser').strip()} successfully set as admin!")
@@ -85,7 +85,7 @@ def handler_users(form):
     if "buttonRemoveAdminUser" in form:
       user = User.query.filter_by(id=form.get('buttonRemoveAdminUser').strip()).first()
       if user:
-        new_rights = User(id=user.id,rights=1)
+        new_rights = User(id=int(user.id),rights=1)
         db.session.merge(new_rights)
         db.session.commit()
         logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonRemoveAdminUser').strip()} successfully set as the regular user!")
@@ -107,7 +107,7 @@ def handler_templates(form):
   try:
     #processing delete template request
     if "buttonDeleteTemplate" in form:
-      template = Provision_templates.query.filter_by(id=form.get('buttonDeleteTemplate').strip()).first()
+      template = Provision_templates.query.filter_by(id=int(form.get('buttonDeleteTemplate').strip())).first()
       if template:
         isdefault = template.isdefault
         db.session.delete(template)
@@ -139,7 +139,7 @@ def handler_templates(form):
       return
     #processing set default template request
     elif "buttonDefaultTemplate" in form:
-      id = form.get("buttonDefaultTemplate", "").strip()
+      id = int(form.get("buttonDefaultTemplate", "").strip())
       if not id:
         logging.error(f"Admin {current_user.realname}>Some of important parameters for template set default procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для встановлення шаблону за замовчанням не були отримані сервером!','alert alert-warning')
@@ -179,7 +179,7 @@ def handler_cloudflare(form):
   try:
     #processing delete account request
     if "buttonDeleteCloudflare" in form:
-      cloudflare = Cloudflare.query.filter_by(id=form.get('buttonDeleteClourflare').strip()).first()
+      cloudflare = Cloudflare.query.filter_by(id=int(form.get('buttonDeleteClourflare').strip())).first()
       if cloudflare:
         isdefault = cloudflare.isdefault
         db.session.delete(cloudflare)
@@ -211,7 +211,7 @@ def handler_cloudflare(form):
       return
     #processing set default template request
     elif "buttonDefaultCloudflare" in form:
-      id = form.get("buttonDefaultCloudflare", "").strip()
+      id = int(form.get("buttonDefaultCloudflare", "").strip())
       if not id:
         logging.error(f"Admin {current_user.realname}>Some of important parameters for Cloudflare account set default procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для встановлення аккаунту Cloudflare за замовчанням не були отримані сервером!','alert alert-warning')
@@ -251,7 +251,7 @@ def handler_ownership(form):
   try:
     #process delete owner request
     if "buttonDeleteOwnership" in form:
-      owner = Ownership.query.filter_by(id=form.get('buttonDeleteOwnership').strip()).first()
+      owner = Ownership.query.filter_by(id=int(form.get('buttonDeleteOwnership').strip())).first()
       if owner:
         db.session.delete(owner)
         db.session.commit()
@@ -264,7 +264,7 @@ def handler_ownership(form):
         return
     #process delete request about site is cloned
     if "buttonDeleteOwnershipClone" in form:
-      owner = Ownership.query.filter_by(id=form.get('buttonDeleteOwnershipClone').strip()).first()
+      owner = Ownership.query.filter_by(id=int(form.get('buttonDeleteOwnershipClone').strip())).first()
       if owner:
         owner.cloned = ""
         db.session.commit()
@@ -277,12 +277,19 @@ def handler_ownership(form):
     #processing add user request
     elif "buttonAddOwnership" in form:
       domain = form.get("new-ownership-domain", "").strip()
-      id = form.get("new-ownership-id", "").strip()
+      id = int(form.get("new-ownership-id", "").strip())
+      if form.get("new-ownership-clone") != "":
+        clone = form.get("new-ownership-clone", "").strip()
+      else:
+        clone = ""
       if not domain or not id:
         logging.error(f"Admin {current_user.realname}>Some of important parameters for ownership add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення власника домену не були отримані сервером!','alert alert-warning')
         return
-      data = {"domain": domain, "owner": id}
+      if clone != "":
+        data = {"domain": domain, "owner": id, "cloned": clone}
+      else:
+        data = {"domain": domain, "owner": id}
       new_owner = Ownership(**data)
       db.session.add(new_owner)
       db.session.commit()
@@ -301,7 +308,7 @@ def handler_servers(form):
   try:
     #processing delete server request
     if "buttonDeleteServer" in form:
-      server = Servers.query.filter_by(id=form.get('buttonDeleteServer').strip()).first()
+      server = Servers.query.filter_by(id=int(form.get('buttonDeleteServer').strip())).first()
       if server:
         isdefault = server.isdefault
         db.session.delete(server)
@@ -333,7 +340,7 @@ def handler_servers(form):
       return
     #processing set default template request
     elif "buttonDefaultServer" in form:
-      id = form.get("buttonDefaultServer", "").strip()
+      id = int(form.get("buttonDefaultServer", "").strip())
       if not id:
         logging.error(f"Admin {current_user.realname}>Some of important parameters for server set default procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для встановлення серверу за замовчанням не були отримані сервером!','alert alert-warning')
@@ -373,7 +380,7 @@ def handler_links(form):
   try:
     #process delete link request
     if "buttonDeleteLink" in form:
-      link = Domain_account.query.filter_by(id=form.get('buttonDeleteLink').strip()).first()
+      link = Domain_account.query.filter_by(id=int(form.get('buttonDeleteLink').strip())).first()
       if link:
         db.session.delete(link)
         db.session.commit()
@@ -411,7 +418,7 @@ def handler_accounts(form):
   try:
     #process delete account request
     if "buttonDeleteAccount" in form:
-      acc = Cloudflare_account_ownership.query.filter_by(id=form.get('buttonDeleteAccount').strip()).first()
+      acc = Cloudflare_account_ownership.query.filter_by(id=int(form.get('buttonDeleteAccount').strip())).first()
       if acc:
         db.session.delete(acc)
         db.session.commit()

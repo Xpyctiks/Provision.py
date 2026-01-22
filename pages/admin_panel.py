@@ -13,36 +13,42 @@ admin_panel_bp = Blueprint("admin_panel", __name__)
 @login_required
 @rights_required(255)
 def catch_admin_panel():
-  """POST request processor: process all requests to /admin_panel page and takes one of the choosen action."""
-  if "buttonSaveSettings" in request.form:
-    handler_settings(request.form)
-    return redirect("/admin_panel/settings/",302)
-  elif "buttonAddUser" in request.form or "buttonDeleteUser" in request.form or "buttonMakeAdminUser" in request.form or "buttonRemoveAdminUser" in request.form:
-    handler_users(request.form)
-    return redirect("/admin_panel/users/",302)
-  elif "buttonDeleteTemplate" in request.form or "buttonDefaultTemplate" in request.form or "buttonAddTemplate" in request.form:
-    handler_templates(request.form)
-    return redirect("/admin_panel/templates/",302)
-  elif "buttonDeleteCloudflare" in request.form or "buttonDefaultCloudflare" in request.form or "buttonAddCloudflare" in request.form:
-    handler_cloudflare(request.form)
-    return redirect("/admin_panel/cloudflare/",302)
-  elif "buttonDeleteOwnership" in request.form or "buttonDeleteOwnershipClone" in request.form or "buttonAddOwnership" in request.form:
-    handler_ownership(request.form)
-    return redirect("/admin_panel/owners/",302)
-  elif "buttonDeleteServer" in request.form or "buttonDefaultServer" in request.form or "buttonAddServer" in request.form:
-    handler_servers(request.form)
-    return redirect("/admin_panel/servers/",302)
-  elif "buttonDeleteLink" in request.form or "buttonAddLink" in request.form:
-    handler_links(request.form)
-    return redirect("/admin_panel/links/",302)
-  elif "buttonDeleteAccount" in request.form or "buttonAddAccount" in request.form:
-    handler_accounts(request.form)
-    return redirect("/admin_panel/accounts/",302)
-  else:
-    flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
-    logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
-    asyncio.run(send_to_telegram("Something strange was received by /admin_panel via POST request and we can't process that.",f"🚒Provision error by {current_user.realname}"))
-    redirect("/",302)
+  try:
+    """POST request processor: process all requests to /admin_panel page and takes one of the choosen action."""
+    if "buttonSaveSettings" in request.form:
+      handler_settings(request.form)
+      return redirect("/admin_panel/settings/",302)
+    elif "buttonAddUser" in request.form or "buttonDeleteUser" in request.form or "buttonMakeAdminUser" in request.form or "buttonRemoveAdminUser" in request.form:
+      handler_users(request.form)
+      return redirect("/admin_panel/users/",302)
+    elif "buttonDeleteTemplate" in request.form or "buttonDefaultTemplate" in request.form or "buttonAddTemplate" in request.form:
+      handler_templates(request.form)
+      return redirect("/admin_panel/templates/",302)
+    elif "buttonDeleteCloudflare" in request.form or "buttonDefaultCloudflare" in request.form or "buttonAddCloudflare" in request.form:
+      handler_cloudflare(request.form)
+      return redirect("/admin_panel/cloudflare/",302)
+    elif "buttonDeleteOwnership" in request.form or "buttonDeleteOwnershipClone" in request.form or "buttonAddOwnership" in request.form:
+      handler_ownership(request.form)
+      return redirect("/admin_panel/owners/",302)
+    elif "buttonDeleteServer" in request.form or "buttonDefaultServer" in request.form or "buttonAddServer" in request.form:
+      handler_servers(request.form)
+      return redirect("/admin_panel/servers/",302)
+    elif "buttonDeleteLink" in request.form or "buttonAddLink" in request.form:
+      handler_links(request.form)
+      return redirect("/admin_panel/links/",302)
+    elif "buttonDeleteAccount" in request.form or "buttonAddAccount" in request.form:
+      handler_accounts(request.form)
+      return redirect("/admin_panel/accounts/",302)
+    else:
+      flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
+      logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
+      asyncio.run(send_to_telegram("Something strange was received by /admin_panel via POST request and we can't process that.",f"🚒Provision error by {current_user.realname}"))
+      redirect("/",302)
+  except Exception as err:
+    logging.error(f"catch_admin_panel(): global error {err}")
+    asyncio.run(send_to_telegram(f"catch_admin_panel(): global error {err}",f"🚒Provision error by {current_user.realname}"))
+    flash('Загальна помилка адмін панелі! Дивіться логи.', 'alert alert-danger')
+    return redirect("/",302)
 
 @admin_panel_bp.route("/admin_panel/", methods=['GET'])
 @login_required
@@ -305,6 +311,8 @@ def admin_panel_owners():
   <input type="text" class="form-control" id="field1" name="new-ownership-domain" value="">
   <span class="input-group-text">ID власника:</span>
   <input type="text" class="form-control" id="field2" name="new-ownership-id" value="">
+  <span class="input-group-text">Клон з:</span>
+  <input type="text" class="form-control" id="field3" name="new-ownership-clone" value="">
   <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddOwnership" onclick="showLoading()">Прив'язати домен</button>
    </div>
   </form>
