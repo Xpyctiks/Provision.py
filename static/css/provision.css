@@ -1,0 +1,15 @@
+body {
+  padding-top: 110px;
+}
+
+.dropdown-menu {
+  left: auto;
+  transform: none;
+}
+
+@media (min-width: 992px) {
+  .dropdown-menu {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+}

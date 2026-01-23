@@ -1,0 +1,17 @@
+.text-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-y: auto;
+}
+.log-view {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95rem;
+  background: #0f1115;
+  color: #d1d5db;
+}
+.log-ERROR { color: #ff6b6b; }
+.log-WARNING { color: #feca57; }
+.log-INFO { color: #48dbfb; }

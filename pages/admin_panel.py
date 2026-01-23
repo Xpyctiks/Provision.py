@@ -511,7 +511,7 @@ def admin_panel_messages():
         </form>
         <form action="/admin_panel/" method="POST" id="postform1" class="needs-validation" novalidate>
             <div class="col-12 col-md-12 mx-auto">
-              <button class="btn btn-danger btn-lg shadow-sm w-100 ClearMessages-btn" type="submit" name="buttonClearMessages">Очистити все (Зараз копій на всіх користувачів: {len(Messages.query.filter_by(foruserid=current_user.id).all())} шт.)</button>
+              <button class="btn btn-danger btn-lg shadow-sm w-100 ClearMessages-btn" type="submit" name="buttonClearMessages">Очистити все (Зараз копій на всіх користувачів: {len(Messages.query.all())} шт.)</button>
             </div>
           </div>
         </form>

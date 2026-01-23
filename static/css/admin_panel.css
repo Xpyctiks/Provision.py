@@ -1,0 +1,11 @@
+.settings-label {
+  min-width: 380px;
+  justify-content: flex-end;
+}
+.settings-value {
+  min-width: 450px;
+  justify-content: flex-start;
+}
+body {
+  padding-top: 70px;
+}
