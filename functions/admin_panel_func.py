@@ -448,3 +448,37 @@ def handler_accounts(form):
     logging.error(f"Admin {current_user.realname}>handler_accounts() global error: {err}")
     asyncio.run(send_to_telegram(f"Admin: global error during processing accounts: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій лінку власників до аккаунтів CF!','alert alert-danger')
+
+@rights_required(255)
+def handler_messages(form):
+  """Handler for saving some text message to DB and show it to all current users via flash window"""
+  logging.info(f"---------------------------Processing messages from admin panel by {current_user.realname}---------------------------")
+  try:
+    #process addition of the received message to DB
+    if "buttonPublishMessage" in form and form.get("message-textform").strip():
+      #getting list of all available users in DB
+      users = User.query.order_by(User.username).all()
+      for i, s in enumerate(users, 1):
+        data = {"foruserid": s.id, "text": form.get("message-textform").strip()}
+        new_msg = Messages(**data)
+        db.session.add(new_msg)
+        logging.info(f"Broadcast message successfully added for user {s.id}...")
+      db.session.commit()
+      logging.info(f"Admin {current_user.realname}>Broadcast message for all users added successfully for all available users in DB!")
+      flash(f'Массове повідомлення успішно додано в чергу для всіх користувачів!','alert alert-success')
+      return
+    #process full clearance of all messages in DB
+    elif "buttonClearMessages" in form:
+      Messages.query.delete()
+      db.session.commit()
+      logging.info(f"Admin {current_user.realname}>All messages were cleared in DB!")
+      flash(f'Всі всі очікуючі массові повідомлення успішно видалені з бази!','alert alert-success')
+      return
+    else:
+      logging.error(f"Admin {current_user.realname}>handler_messages() called without any actual parameter. How?")
+      flash(f'Не ясно як ви сюди потрапили, дивіться логи...','alert alert-warning')
+      return
+  except Exception as err:
+    logging.error(f"Admin {current_user.realname}>handler_publishMessage() global error: {err}")
+    asyncio.run(send_to_telegram(f"Admin: global error during addition of message: {err}",f"🚒Provision error by {current_user.realname}:"))
+    flash('Якась глобальна помилка при додаванні повідомлення! Дивіться логи!','alert alert-danger')

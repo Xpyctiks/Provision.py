@@ -1,10 +1,11 @@
 import logging,os,re,asyncio
-from flask import render_template,Blueprint,current_app
+from flask import render_template,Blueprint,current_app,flash
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
 from functions.pages_forms import getSiteOwner,getSiteCreated
-from db.database import Domain_account,User
+from db.database import Domain_account,User,Messages
 from functions.send_to_telegram import send_to_telegram
+from db.db import db
 
 #allows to sort with natural keys - when after 10 goes 11, not 20
 def natural_key(s):
@@ -124,6 +125,21 @@ def index():
           "robots_button": '',
           "dns_validation": ''
         })
+    #getting into DB and checking is there any messages for the current user
+    messages = Messages.query.filter_by(foruserid=current_user.id).all()
+    if len(messages) != 0:
+      logging.info(f"Some messages found for user {current_user.realname} - {len(messages)} of them...")
+      msg = ""
+      for i, s in enumerate(messages, 1):
+        msg += f"<strong>📫 Массове повідомлення №{i}</strong>\n"
+        msg += s.text+"\n"
+        del_msg = Messages.query.filter_by(id=s.id).first()
+        if del_msg:
+          db.session.delete(del_msg)
+          logging.info(f"Message with ID={s.id} deleted from DB as the read one.")
+      db.session.commit()
+      flash(msg,'alert alert-info')
+      logging.info(f"Flash popup windows is ready for the user {current_user.realname}...")
     return render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list)
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")

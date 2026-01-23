@@ -69,3 +69,9 @@ class Cloudflare_account_ownership(db.Model):
   account = db.Column(db.String(256), nullable=False)
   owner = db.Column(db.String(150), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
+
+class Messages(db.Model):
+  id = db.Column(db.Integer, primary_key=True)
+  foruserid = db.Column(db.Integer, nullable=False)
+  text = db.Column(db.Text, nullable=False)
+  created = db.Column(db.DateTime, default=datetime.now)

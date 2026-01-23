@@ -39,6 +39,9 @@ def catch_admin_panel():
     elif "buttonDeleteAccount" in request.form or "buttonAddAccount" in request.form:
       handler_accounts(request.form)
       return redirect("/admin_panel/accounts/",302)
+    elif "buttonPublishMessage" in request.form or "buttonClearMessages" in request.form:
+      handler_messages(request.form)
+      return redirect("/admin_panel/messages/",302)
     else:
       flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
       logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
@@ -477,6 +480,46 @@ def admin_panel_accounts():
  </div>
 </div>"""
     return render_template("template-admin_panel.html",active8="active",data=html_data,admin_panel=is_admin())
+  except Exception as err:
+    logging.error(f"admin_panel_accounts(): global error {err}")
+    asyncio.run(send_to_telegram(f"admin_panel_accounts(): global error {err}",f"🚒Provision error by {current_user.realname}"))
+    flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
+    return redirect("/",302)
+
+@admin_panel_bp.route("/admin_panel/messages/", methods=['GET'])
+@login_required
+@rights_required(255)
+def admin_panel_messages():
+  try:
+    html_data = f"""
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary text-white text-center">
+          <h4 class="mb-0">📮 Повідомлення всім користувачам</h4>
+        </div>
+        <form action="/admin_panel/" method="POST" id="postform1" class="needs-validation" novalidate>
+          <div class="card-body d-flex flex-column" style="min-height: 70vh;">
+            <textarea class="form-control font-monospace mb-3 flex-grow-1" style="resize: none; line-height: 1.4;" id="textform" name="message-textform" placeholder="Введіть текст повідомлення…" autofocus required></textarea>
+            <div class="invalid-feedback mb-3">
+              Повідомлення не може бути порожнім
+            </div>
+            <div class="col-12 col-md-8 mx-auto">
+              <button class="btn btn-warning btn-lg shadow-sm w-100 PublishMessage-btn" type="submit" name="buttonPublishMessage">Опублікувати повідомлення</button>
+            </div><br>
+        </form>
+        <form action="/admin_panel/" method="POST" id="postform1" class="needs-validation" novalidate>
+            <div class="col-12 col-md-12 mx-auto">
+              <button class="btn btn-danger btn-lg shadow-sm w-100 ClearMessages-btn" type="submit" name="buttonClearMessages">Очистити все (Зараз копій на всіх користувачів: {len(Messages.query.filter_by(foruserid=current_user.id).all())} шт.)</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>"""
+    return render_template("template-admin_panel.html",active9="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
     asyncio.run(send_to_telegram(f"admin_panel_accounts(): global error {err}",f"🚒Provision error by {current_user.realname}"))

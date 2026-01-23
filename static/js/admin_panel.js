@@ -52,6 +52,25 @@ document.querySelectorAll(".AdminUser-btn").forEach(btn => {
   });
 });
 
+document.querySelectorAll(".PublishMessage-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    if (!confirm(`Опублікувати повідомлення для всіх?`)) 
+    {
+      e.preventDefault();
+      hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".ClearMessages-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    if (!confirm(`Видалити АБСОЛЮТНО всі очікуючі повідомлення із базі?`)) 
+    {
+      e.preventDefault();
+      hideLoading();
+    }
+  });
+});
 
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -110,6 +129,23 @@ function syncSettings() {
     }
   });
   showLoading();
+}
+
+const form1 = document.getElementById("postform1");
+if (form1) {
+  document.getElementById("postform1").addEventListener("submit", function(event) {
+    const input = document.getElementById("textform");
+    const value = input.value.trim();
+    if (value === "") {
+      input.classList.add("is-invalid");
+      input.classList.remove("is-valid");
+      document.getElementById("spinnerLoading").style.visibility = "hidden";
+      event.preventDefault();
+    } else {
+      input.classList.remove("is-invalid");
+      input.classList.add("is-valid");
+    }
+  });
 }
 
 const form2 = document.getElementById("postform2");
