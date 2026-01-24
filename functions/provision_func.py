@@ -106,12 +106,12 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       logging.error(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
       asyncio.run(send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🚒🏁Provision job finish ({functions.variables.JOB_ID}):"))
       logging.error(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
-      return False
+      return True
     elif file == "" and domain != "" and emerg_shutdown == True:
       logging.error("Starting emergency shutdown after finish_job signal received with emergency=true flag...")
       asyncio.run(send_to_telegram(f"Autoprovision job by {current_user.realname} is interrupted due to errors! ",f"🚒🏁AutoProvision job finish for {domain}:"))
       logging.error(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
-      return False
+      return True
   except Exception as msg:
     logging.error(msg)
     return False

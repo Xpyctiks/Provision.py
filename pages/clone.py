@@ -72,7 +72,7 @@ def doClone():
         finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         return redirect(f"/clone?source_site={source_site}",302)
   except Exception as err:
-    logging.error(f"Provision page POST process error by {current_user.realname}: {err}")
+    logging.error(f"doClone(): POST process error by {current_user.realname}: {err}")
     flash(f"Загальна помилка обробки POST запиту на сторінці /clone! Дивіться логи!",'alert alert-danger')
     asyncio.run(send_to_telegram(f"Clone page general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
     finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)

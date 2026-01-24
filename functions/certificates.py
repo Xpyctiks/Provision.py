@@ -47,6 +47,10 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
       d2 = tld(domain2)
       domain = f"{d2.domain}.{d2.suffix}"
       logging.info(f"Cert. issue procedure: using domain {d2.domain}.{d2.suffix} as the root domain for issue of {domain}")
+      params_check_domain_exists = {
+        "name": domain,
+        "per_page": 1
+      }
     else:
       logging.info(f"Cert. issue procedure: {domain} is the root domain. Validating as is.")
       params_check_domain_exists = {
