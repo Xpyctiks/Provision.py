@@ -116,43 +116,6 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
     logging.error(msg)
     return False
 
-def start_autoprovision(domain: str, selected_account: str, selected_server: str, template: str, realname: str, its_not_a_subdomain: bool = False):
-  """Starts main autoprovision process to deploy site from a git repo,DNS records and certificates automatically"""
-  try:
-    logging.info(f"---------------------------Starting automatic deploy for site {domain}  by {realname}----------------------------")
-    logging.info(f"Cloudflare account: {selected_account}, Server: {selected_server}")
-    finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
-    functions.variables.JOB_ID = f"Autoprovision"
-    #First of all starting DNS and certificates check and setup procedure
-    if cloudflare_certificate(domain,selected_account,selected_server,its_not_a_subdomain):
-      os.makedirs(finalPath)
-      logging.info(f"New directory {finalPath} created")
-      os.chdir(finalPath)
-      logging.info(f"We are in {finalPath}")
-      result = subprocess.run(["sudo","git","clone",f"{template}","."], capture_output=True, text=True)
-      if result.returncode != 0:
-        logging.error(f"Error while git clone command: {result.stderr}")
-        asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
-        flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
-        return False
-      logging.info("Git clone done successfully!")
-      result2 = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
-      if result2.returncode != 0:
-        logging.error(f"Error while git add safe.directory: {result.stderr}")
-        asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
-      logging.info("Git add safe directory done successfully!")
-      #we add .zip to domain for backward compatibility with another functions of the system
-      if not setupNginx(domain+".zip"):
-        logging.error("start_autoprovision(): setupNginx() function returned an error!")
-        finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
-        return False
-      finishJob("",domain,selected_account,selected_server)
-      return True
-  except Exception as msg:
-    logging.error(f"start_autoprovision() error: {msg}")
-    asyncio.run(send_to_telegram(f"Autoprovision function error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
-    return False
-
 def setupPHP(file: str) -> bool:
   """Setups PHP config from the template and reloads the daemon"""
   try:
@@ -301,6 +264,7 @@ def findZip_1(selected_account: str, selected_server: str, realname: str) -> boo
     for file in files:
       if not checkZip_2(file,selected_account,selected_server,realname):
         logging.error("findZip_1(): checkZip_2() function returned an error!")
+        return False
     return True
   except Exception as msg:
     logging.error(f"findZip_1(): general error! {msg}")
@@ -344,4 +308,42 @@ def start_provision(selected_account: str, selected_server: str, realname: str) 
     return True
   except Exception as msg:
     logging.error(f"Autoprovision Error: {msg}")
+    return False
+
+def start_autoprovision(domain: str, selected_account: str, selected_server: str, template: str, realname: str, its_not_a_subdomain: bool = False):
+  """Starts main autoprovision process to deploy site from a git repo,DNS records and certificates automatically"""
+  try:
+    logging.info(f"---------------------------Starting automatic deploy for site {domain}  by {realname}----------------------------")
+    logging.info(f"Cloudflare account: {selected_account}, Server: {selected_server}")
+    finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
+    functions.variables.JOB_ID = f"Autoprovision"
+    #First of all starting DNS and certificates check and setup procedure
+    if cloudflare_certificate(domain,selected_account,selected_server,its_not_a_subdomain):
+      os.makedirs(finalPath)
+      logging.info(f"New directory {finalPath} created")
+      os.chdir(finalPath)
+      logging.info(f"We are in {finalPath}")
+      result = subprocess.run(["sudo","git","clone",f"{template}","."], capture_output=True, text=True)
+      if result.returncode != 0:
+        logging.error(f"Error while git clone command: {result.stderr}")
+        asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+        finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
+        flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
+        return False
+      logging.info("Git clone done successfully!")
+      result2 = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
+      if result2.returncode != 0:
+        logging.error(f"Error while git add safe.directory: {result.stderr}")
+        asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+      logging.info("Git add safe directory done successfully!")
+      #we add .zip to domain for backward compatibility with another functions of the system
+      if not setupNginx(domain+".zip"):
+        logging.error("start_autoprovision(): setupNginx() function returned an error!")
+        finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
+        return False
+      finishJob("",domain,selected_account,selected_server)
+      return True
+  except Exception as msg:
+    logging.error(f"start_autoprovision() error: {msg}")
+    asyncio.run(send_to_telegram(f"Autoprovision function error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
     return False

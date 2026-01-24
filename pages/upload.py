@@ -33,7 +33,7 @@ def upload_file():
         return redirect("/",302)
       selected_account = request.form.get("selected_account")
       selected_server = request.form.get("selected_server")
-      logging.info(f"----------------------------------Files Upload by {current_user.realname} IP:{request.remote_addr}---------------------------------------------")
+      logging.info(f"----------------------------------Files Upload by {current_user.realname}, IP:{request.remote_addr}, Real-IP:{request.headers.get('X-Real-IP', '-.-.-.-')}---------------------------------------------")
       #get name of the parent directory for the whole project
       current_file = pathlib.Path(__file__)
       directory = current_file.resolve().parent
@@ -49,7 +49,7 @@ def upload_file():
           logging.info(f">File {filename} uploaded and saved.")
       logging.info(f"All files uploaded to {project_root} successfully!")
       if not start_provision(selected_account,selected_server,current_user.realname):
-        finishJob(filename,"")
+        finishJob(filename,"",emerg_shutdown=True)
         logging.error(f"upload_file(): start_provision() master function finished with error!")
         flash(f"Розгортання завершилось з помилками! Дивіться логи!", 'alert alert-danger')
         return redirect("/",302)
