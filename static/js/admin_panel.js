@@ -214,3 +214,33 @@ if (form3) {
     }
   });
 }
+
+function applyFilters() {
+  const owner = document.getElementById("accountFilter").value;
+  const text  = document.getElementById("domainFilter")?.value || "";
+
+  document.querySelectorAll("tbody tr").forEach(row => {
+    const rowOwner = row.dataset.owner || "";
+    const rowText  = row.innerText.toLowerCase();
+
+    const matchOwner = !owner || rowOwner === owner;
+    const matchText  = !text || rowText.includes(text);
+
+    row.style.display = (matchOwner && matchText) ? "" : "none";
+  });
+}
+
+document.getElementById("accountFilter").addEventListener("change", applyFilters);
+document.getElementById("domainFilter").addEventListener("input", applyFilters);
+
+function clearFilters() {
+  const siteFilter  = document.getElementById("domainFilter");
+  if (siteFilter) siteFilter.value = "";
+  applyFilters();
+}
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    clearFilters();
+  }
+});

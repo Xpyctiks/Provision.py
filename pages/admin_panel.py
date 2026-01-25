@@ -81,8 +81,8 @@ def admin_panel_settings():
 </div>"""
         i = i + 1
     html_data += """
-  <div class="input-group mb-2">
-  <button type="submit" class="btn form-control SaveSettings-btn" style="background-color: palegreen;" name="buttonSaveSettings" onclick="syncSettings()">Зберегти налаштування</button>
+  <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
+    <button type="submit" class="btn form-control SaveSettings-btn w-100" style="background-color: palegreen;" name="buttonSaveSettings" onclick="syncSettings()">Зберегти налаштування</button>
   </div>
  </form>
 </div>"""
@@ -100,7 +100,7 @@ def admin_panel_users():
   try:
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -165,7 +165,7 @@ def admin_panel_templates():
   try:
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -220,7 +220,7 @@ def admin_panel_cloudflare():
   try:
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -275,7 +275,7 @@ def admin_panel_owners():
   try:
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -335,7 +335,7 @@ def admin_panel_servers():
   try:
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -388,9 +388,21 @@ def admin_panel_servers():
 @rights_required(255)
 def admin_panel_links():
   try:
+    users_list = ""
+    #gathering all list of available users to put them into user filter list
+    ul = db.session.query(Domain_account.account).distinct().order_by(Domain_account.account).all()
+    for i, s in enumerate(ul, 1):
+      users_list += f'<option value="{s.account}">{s.account}</option>\n\t\t'
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
+  <div class="d-flex align-items-center">
+    <input type="text" id="domainFilter" class="form-control" placeholder="🔍 Фільтр по домену…" autofocus>&nbsp;
+    <select id="accountFilter" class="form-select form-select">
+      <option value="">👤 Фільтр по аккаунту</option>
+      {users_list.strip()}
+    </select>
+  </div>
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -403,7 +415,7 @@ def admin_panel_links():
     links = Domain_account.query.order_by(Domain_account.id).all()
     for i, s in enumerate(links, 1):
       html_data += f"""
-  <tr class="table-success">
+  <tr class="table-success" data-owner="{s.account}">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
     <button type="submit" class="btn btn-outline-warning" name="buttonDeleteLink" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>    
@@ -412,17 +424,19 @@ def admin_panel_links():
     <td class="table-success cname-cell" >{s.account}</td>
     <td class="table-success cname-cell" >{s.created}</td>
   </tr>"""
-    html_data += """
+    html_data += f"""
   </tbody>
   </table>
   <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
-  <div class="input-group mb-2">
-  <span class="input-group-text">Домен:</span>
-  <input type="text" class="form-control" id="field1" name="new-link-domain" value="">
-  <span class="input-group-text">Аккаунт Cloudflare:</span>
-  <input type="text" class="form-control" id="field2" name="new-link-account" value="">
-  <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddLink" onclick="showLoading()">Додати</button>
-   </div>
+    <div class="input-group mb-2">
+      <span class="input-group-text">Домен:</span>
+      <input type="text" class="form-control" id="field1" name="new-link-domain" value="">
+      <span class="input-group-text">Аккаунт Cloudflare:</span>
+      <select id="new-link-account" name="new-link-account" class="form-select form-select">
+        {users_list.strip()}
+      </select>
+      <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddLink" onclick="showLoading()">Додати</button>
+    </div>
   </form>
  </div>
 </div>"""
@@ -438,9 +452,24 @@ def admin_panel_links():
 @rights_required(255)
 def admin_panel_accounts():
   try:
+    users_list = ""
+    #gathering all list of available users to put them into user filter list
+    ul = db.session.query(Cloudflare_account_ownership.owner).distinct().order_by(Cloudflare_account_ownership.owner).all()
+    for i, s in enumerate(ul, 1):
+      user = User.query.filter_by(id=s.owner).first()
+      if user:
+        username = user.realname
+      users_list += f'<option value="{s.owner}">{s.owner} ({username})</option>\n\t\t'
     html_data = f"""
 <div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
-  <table class="table table-bordered" style="margin-top: 60px;">
+  <table class="table table-bordered">
+  <div class="d-flex align-items-center">
+    <input type="text" id="domainFilter" class="form-control" placeholder="🔍 Фільтр по аккаунту…" autofocus>&nbsp;
+    <select id="accountFilter" class="form-select form-select">
+      <option value="">👤 Фільтр по власнику</option>
+      {users_list.strip()}
+    </select>
+  </div>
   <thead>
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
@@ -456,7 +485,7 @@ def admin_panel_accounts():
       if user:
         username = user.realname
       html_data += f"""
-  <tr class="table-success">
+  <tr class="table-success" data-owner="{s.owner}">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
     <button type="submit" class="btn btn-outline-warning" name="buttonDeleteAccount" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>    
@@ -465,17 +494,19 @@ def admin_panel_accounts():
     <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
     <td class="table-success cname-cell" >{s.created}</td>
   </tr>"""
-    html_data += """
+    html_data += f"""
   </tbody>
   </table>
   <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
-  <div class="input-group mb-2">
-  <span class="input-group-text">Аккаунт Cloudflare:</span>
-  <input type="text" class="form-control" id="field1" name="new-accounts-account" value="">
-  <span class="input-group-text">ID власника:</span>
-  <input type="text" class="form-control" id="field2" name="new-accounts-id" value="">
-  <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddAccount" onclick="showLoading()">Додати</button>
-   </div>
+    <div class="input-group mb-2">
+      <span class="input-group-text">Аккаунт Cloudflare:</span>
+      <input type="text" class="form-control" id="field1" name="new-accounts-account" value="">
+      <span class="input-group-text">ID власника:</span>
+      <select id="new-accounts-id" name="new-accounts-id" class="form-select form-select">
+        {users_list.strip()}
+      </select>
+      <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddAccount" onclick="showLoading()">Додати</button>
+    </div>
   </form>
  </div>
 </div>"""
