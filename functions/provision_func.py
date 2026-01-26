@@ -10,6 +10,7 @@ from db.database import Ownership,User
 from db.db import db
 from functions.site_actions import link_domain_and_account
 from pathlib import Path
+from functions.tld import tld
 
 def setSiteOwner(domain: str) -> bool:
   """Sets a site owner to the user, who did the provision job"""
@@ -147,14 +148,21 @@ def setupPHP(file: str) -> bool:
     asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
     return False
 
-def setupNginx(file: str) -> bool:
+def setupNginx(file: str,has_subdomain: str = "---") -> bool:
   """Setups Nginx config from the template and reloads the daemon"""
   try:
     logging.info(f"Configuring Nginx...Preparing certificates")
-    filename = os.path.basename(file)[:-4]
+    #if we get a TLD - use standart file name
+    if has_subdomain == "---":
+      filename = os.path.basename(file)[:-4]
+      crt_filename = filename
+    else:
+      filename = os.path.basename(file)[:-4]
+      crt_filename = has_subdomain
+      logging.info(f"setupNginx():We have a subdomain there...")
     #setting correct rights to our newly created certificates
-    os.chmod(current_app.config["NGX_CRT_PATH"]+filename+".crt", 0o600)
-    os.chmod(current_app.config["NGX_CRT_PATH"]+filename+".key", 0o600)
+    os.chmod(current_app.config["NGX_CRT_PATH"]+crt_filename+".crt", 0o600)
+    os.chmod(current_app.config["NGX_CRT_PATH"]+crt_filename+".key", 0o600)
     #preparing folder
     os.system(f"sudo chown -R {current_app.config['WWW_USER']}:{current_app.config['WWW_GROUP']} {os.path.join(current_app.config['WEB_FOLDER'],filename)}")
     logging.info(f"Folders and files ownership of {os.path.join(current_app.config['WEB_FOLDER'],filename)} changed to {current_app.config['WWW_USER']}:{current_app.config['WWW_GROUP']}")
@@ -167,7 +175,11 @@ def setupNginx(file: str) -> bool:
     else:
       logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
       asyncio.run(send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({functions.variables.JOB_ID}):"))
-    config = create_nginx_config(filename)
+    #running template config according to our domain or its subdomain for crtificates
+    if has_subdomain == "---":
+      config = create_nginx_config(filename,"---")
+    else:
+      config = create_nginx_config(filename,crt_filename)
     with open(os.path.join(current_app.config["NGX_SITES_PATHAV"],filename), 'w',encoding='utf8') as fileC:
       fileC.write(config)
     logging.info(f"Nginx config {os.path.join(current_app.config['NGX_SITES_PATHAV'],filename)} created")
@@ -336,8 +348,20 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
         logging.error(f"Error while git add safe.directory: {result.stderr}")
         asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
       logging.info("Git add safe directory done successfully!")
+      #prepare subdomain functions
+      if its_not_a_subdomain:
+        has_subdomain = "---"
+        logging.info("start_autoprovision(): we have forced parameter not_a_subdomain - passing it to setupNginx()")
+      else:
+        d = tld(domain)
+        if bool(d.subdomain):
+          has_subdomain = f"{d.domain}.{d.suffix}"
+          logging.info("start_autoprovision(): we have detected a subdomain - passing it to setupNginx()")
+        else:
+          has_subdomain = "---"
+          logging.info("start_autoprovision(): we have not detected a subdomain - passing it to setupNginx()")
       #we add .zip to domain for backward compatibility with another functions of the system
-      if not setupNginx(domain+".zip"):
+      if not setupNginx(domain+".zip",has_subdomain):
         logging.error("start_autoprovision(): setupNginx() function returned an error!")
         finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         return False

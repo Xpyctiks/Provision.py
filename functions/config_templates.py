@@ -29,8 +29,13 @@ php_admin_value[disable_functions] = apache_child_terminate,apache_get_modules,a
 """
   return config
 
-def create_nginx_config(filename: str) -> str:
+def create_nginx_config(filename: str,has_subdomain: str = "---") -> str:
   """Template. Function which creates an Nginx configuration for a site, taken from filename parameter."""
+  #check if we have a subdomain to use correct certificates name
+  if has_subdomain == "---":
+    crt_filename = filename
+  else:
+    crt_filename = has_subdomain
   config = f"""server {{
     listen 203.161.35.70:80;
     server_name {filename} www.{filename};
@@ -45,8 +50,8 @@ def create_nginx_config(filename: str) -> str:
 server {{
   listen 203.161.35.70:443 ssl http2;
   server_name www.{filename};
-  ssl_certificate /etc/nginx/ssl/{filename}.crt;
-  ssl_certificate_key /etc/nginx/ssl/{filename}.key;
+  ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
+  ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
   access_log /var/log/nginx/access_{filename}.log postdata;
   error_log /var/log/nginx/error_{filename}.log;
 
@@ -58,8 +63,8 @@ server {{
 server {{
   listen 203.161.35.70:443 ssl http2;
   server_name {filename};
-  ssl_certificate /etc/nginx/ssl/{filename}.crt;
-  ssl_certificate_key /etc/nginx/ssl/{filename}.key;
+  ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
+  ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
   include mime.types;
   access_log /var/log/nginx/access_{filename}.log postdata;
   error_log /var/log/nginx/error_{filename}.log;

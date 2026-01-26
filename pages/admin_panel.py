@@ -6,6 +6,7 @@ from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *
 from functions.rights_required import rights_required
 from functions.site_actions import is_admin
+from datetime import datetime
 
 admin_panel_bp = Blueprint("admin_panel", __name__)
 
@@ -132,7 +133,7 @@ def admin_panel_users():
     <td class="table-success cname-cell" >{s.rights}
     {button}
     </td></form>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += """
   </tbody>
@@ -190,7 +191,7 @@ def admin_panel_templates():
     <td class="table-success cname-cell" >{s.isdefault}
     <button type="submit" class="btn btn-outline-warning DefaultTemplate-btn" name="buttonDefaultTemplate" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний шаблон за замовчанням">✅</button>    
     </td></form>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += """
   </tbody>
@@ -245,7 +246,7 @@ def admin_panel_cloudflare():
     <td class="table-success cname-cell" >{s.isdefault}
     <button type="submit" class="btn btn-outline-warning" name="buttonDefaultCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний аккаунт за замовчанням">✅</button>    
     </td></form>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += """
   </tbody>
@@ -299,7 +300,7 @@ def admin_panel_owners():
     </td></form>
     <td class="table-success cname-cell" >{s.domain}</td>
     <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.cloned}
       <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnershipClone" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити інформацію що цей сайт клонований.">❌</button>
@@ -360,7 +361,7 @@ def admin_panel_servers():
     <td class="table-success cname-cell" >{s.isdefault}
     <button type="submit" class="btn btn-outline-warning" name="buttonDefaultServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний сервер за замовчанням">✅</button>
     </td></form>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += """
   </tbody>
@@ -422,7 +423,7 @@ def admin_panel_links():
     </td></form>
     <td class="table-success cname-cell" >{s.domain}</td>
     <td class="table-success cname-cell" >{s.account}</td>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += f"""
   </tbody>
@@ -492,7 +493,7 @@ def admin_panel_accounts():
     </td></form>
     <td class="table-success cname-cell" >{s.account}</td>
     <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
-    <td class="table-success cname-cell" >{s.created}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += f"""
   </tbody>
