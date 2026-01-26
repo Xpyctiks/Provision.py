@@ -5,6 +5,7 @@ from functions.provision_func import setupNginx,finishJob
 from flask import current_app,flash
 from functions.site_actions import normalize_domain
 import functions.variables
+from functions.tld import tld
 
 def start_clone(domain: str, source_site: str, selected_account: str, selected_server: str, realname: str, its_not_a_subdomain: bool = False):
   """Main function to clone any selected site to the new one, keeping all files and settings from the original site"""
@@ -38,7 +39,19 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
           logging.info("Git add safe directory done successfully!")
       #Set the global variable to the name of the source site. This value will be applied to DB record while setSiteOwner() procedure
       functions.variables.CLONED_FROM = source_site
-      if not setupNginx(domain+".zip"):
+      #prepare subdomain functions
+      if its_not_a_subdomain:
+        has_subdomain = "---"
+        logging.info("start_clone(): we have forced parameter not_a_subdomain - passing it to setupNginx()")
+      else:
+        d = tld(domain)
+        if bool(d.subdomain):
+          has_subdomain = f"{d.domain}.{d.suffix}"
+          logging.info("start_clone(): we have detected a subdomain - passing it to setupNginx()")
+        else:
+          has_subdomain = "---"
+          logging.info("start_clone(): we have not detected a subdomain - passing it to setupNginx()")
+      if not setupNginx(domain+".zip",has_subdomain):
         logging.error("start_clone(): setupNginx() function returned an error!")
         return False
       #the last moment - turn off indexing in Db of the clonned site
