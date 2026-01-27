@@ -13,7 +13,7 @@ function isNearBottom(el, threshold = 50) {
 }
 
 async function loadLogs() {
-  const res = await fetch("/logs/api");
+  const res = await fetch("/logs/api/");
   const data = await res.json();
   const box = document.getElementById("log-box");
   const shouldScroll = isNearBottom(box);

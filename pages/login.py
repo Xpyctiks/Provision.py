@@ -6,7 +6,7 @@ from functions.send_to_telegram import send_to_telegram
 from datetime import timedelta
 
 login_bp = Blueprint("login", __name__)
-@login_bp.route("/login", methods=['POST'])
+@login_bp.route("/login/", methods=['POST'])
 def do_login():
   """POST request processor: logging in the user."""
   try:
@@ -29,14 +29,14 @@ def do_login():
       logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Login: Wrong password \"{password}\" for user \"{username}\", IP:{ip}, Real-IP:{real_ip}")
       asyncio.run(send_to_telegram("🚷Provision:",f"Login error! Wrong password for user \"{username}\", IP:{request.remote_addr}, Real-IP:{real_ip}"))
       flash('Невірний юзер або пароль!', 'alert alert-danger')
-      return redirect("/login",302)
+      return redirect("/login/",302)
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>do_login(): general error: {err}")
     asyncio.run(send_to_telegram(f"do_login(): general error: {err}",f"🚒Provision login error:"))
     flash(f"Неочікувана помилка при POST запиту на сторінці /login! Дивіться логи!", 'alert alert-danger')
-    return redirect("/login",302)
+    return redirect("/login/",302)
 
-@login_bp.route("/login", methods=['GET'])
+@login_bp.route("/login/", methods=['GET'])
 def show_login_page():
   """GET request: shows /login page"""
   try:

@@ -5,7 +5,7 @@ from functions.send_to_telegram import send_to_telegram
 from functions.site_actions import normalize_domain
 
 robots_bp = Blueprint("/robots", __name__)
-@robots_bp.route("/robots", methods=['POST'])
+@robots_bp.route("/robots/", methods=['POST'])
 @login_required
 def editRobots():
   try:
@@ -25,7 +25,7 @@ def editRobots():
     flash(f'Помилка при POST запиті на сторінці /robots! Дивіться логи!','alert alert-danger')
     return redirect("/",302)
 
-@robots_bp.route("/robots", methods=['GET'])
+@robots_bp.route("/robots/", methods=['GET'])
 @login_required
 def showRobots():
   try:

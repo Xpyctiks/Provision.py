@@ -6,7 +6,7 @@ from functions.send_to_telegram import send_to_telegram
 from functions.site_actions import normalize_domain,is_admin
 
 dns_validation_bp = Blueprint("dns_validation", __name__)
-@dns_validation_bp.route("/dns_validation", methods=['GET'])
+@dns_validation_bp.route("/dns_validation/", methods=['GET'])
 @login_required
 def dns_validation():
   """GET request: shows /dns_validation page where you can see,remove and add CNAME records"""
@@ -79,7 +79,7 @@ def dns_validation():
     flash(f"Неочікувана помилка на сторінці ДНС валідації, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
-@dns_validation_bp.route("/dns_validation", methods=['POST'])
+@dns_validation_bp.route("/dns_validation/", methods=['POST'])
 @login_required
 def dns_del_cname():
   """POST request processor: deletes the given CNAME records from DNS records via API to Cloudflare"""

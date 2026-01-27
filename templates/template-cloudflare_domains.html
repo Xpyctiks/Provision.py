@@ -7,7 +7,7 @@
   <title>1000 sites provision system</title>
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.png') }}" type='image/png' sizes="16x16" />
   <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
-  <link href="{{ url_for('static', filename='css/clone.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/provision.css') }}" rel="stylesheet" crossorigin="anonymous">
   <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -24,19 +24,17 @@
         <ul class="dropdown-menu">
           <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
           <li><hr class="dropdown-divider"></li>
           {{admin_panel|safe}}
         </ul>
       </div>
       <div class="ms-auto d-flex align-items-center">
-        <form class="d-flex" action="/logout/" method="POST">
+        <form class="d-flex" action="/logout" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
@@ -47,12 +45,12 @@
   <div class="row justify-content-center">
     <div class="col-12 col-md-10 col-lg-8 col-xl-8">
       <div class="card mx-auto">
-        <div class="card-header" style="background-color: darkorange;">
-          <h4 style="text-align: center;">Клонуємо сайт {{ source_site|safe }} :</h4>
+        <div class="card-header">
+          <h4 style="text-align: center;">Додати новий домен до аккаунту Cloudflare:</h4>
         </div>
         <div class="card-body">
-          <form action="/clone/" method="POST" id="postform" class="needs-validation" novalidate>
-            <h5 class="card-title">Вкажіть домен майбутнього сайту:</h5>
+          <form action="/cloudflare_domains/" method="POST" id="postform" class="needs-validation" novalidate>
+            <h5 class="card-title">Вкажіть домен який буде додано під аккаунт:</h5>
             <div class="input-group mb-3">
               <span class="input-group-text">https://</span>
               <input type="text" class="form-control" id="domain" name="domain" autofocus required>
@@ -60,49 +58,31 @@
                 Вкажіть домен.
               </div>
             </div>
-            <div class="input-group-text">
-              <input class="form-check-input" data-bs-toggle="tooltip" data-bs-placement="top" type="checkbox" value="" id="not-a-subdomain" name="not-a-subdomain">
-              <label for="not-a-subdomain">&nbsp;Це не субдомен
-                <span class="form-check-label" data-bs-toggle="tooltip" data-bs-placement="top" title="Якщо перевірка сприймає ваш домен за субдомен, поставте цю галочку.Наприклад кореневий домен sol-casino.it.com сприймає як коренневий домен it.com та субдомен sol-casino">❓</span>
-              </label>
-            </div>
             <div class="mb-3 dropdown">
-              <h5 class="card-title">Оберіть аккаунт CloudFlare на якому новий домен розташован:</h5>
+              <h5 class="card-title">Оберіть аккаунт CloudFlare на якому цей домен буде розташован:</h5>
               <div class="row g-2">
                 <div class="col-12 col-md-8">
                   <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false">{{first_cf|safe}}</button>
                   <ul class="dropdown-menu" aria-labelledby="Account">
-                  {{cf_list|safe}}
+                    {{cf_list|safe}}
                   </ul>
                 </div>
                 <div class="col-12 col-md-4">
-                  <button class="btn btn-warning w-100" type="button" id="Validate" value="Validate">Перевірити</button>
+                  <button class="btn btn-warning w-100" type="button" id="buttonShowZones" value="ShowZones">Показати вже існуючі</button>
                 </div>
-              </div>
               <input type="hidden" name="selected_account" id="selected_account" value="{{first_cf|safe}}" required>
               <div class="invalid-feedback">
                 Оберіть аккаунт CloudFlare.
               </div>
             </div>
-            <div class="mb-3 dropdown">
-              <h5 class="card-title">Оберіть на який сервер будуть вести DNS записи:</h5>
-              <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Server" data-bs-toggle="dropdown" aria-expanded="false" style="width: 755px;">{{first_server|safe}}</button>
-              <ul class="dropdown-menu" aria-labelledby="Account">
-                {{server_list|safe}}
-              </ul>
-              <input type="hidden" name="selected_server" id="selected_server" value="{{first_server|safe}}" required>
-              <div class="invalid-feedback">
-                Оберіть на який сервер будуть DNS записи
-              </div>
-            </div>
             <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
-              <button type="submit" class="btn btn-warning" name="buttonStartClone" value="{{ source_site|safe }}" onclick="showLoading()">Почати клонування</button>
+              <button type="submit" class="btn btn-info w-100" name="buttonAddZone" value="Submit" onclick="showLoading()">Додати новий домен</button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  </div>
+  </div>       
 </div>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -116,7 +96,7 @@
       <div class="modal-body">
         <ul class=flashes style="margin-top: 33px;" id="message">
           {% for category, message in messages %}
-          <li class="{{ category }}">{{ message|safe }}</li>
+          <li class="{{ category }}">{{ message|safe}}</li>
           {% endfor %}
         </ul>
       </div>    
@@ -130,7 +110,7 @@
 {% endwith %}
 <!-- Modal -->
 <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="resultModalLabel">Результат</h5>
@@ -144,7 +124,7 @@
     </div>
   </div>
 </div>
-<script src="{{ url_for('static', filename='js/provision.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cloudflare_domains.js') }}"></script>
 </main>
 </body>
 </html>

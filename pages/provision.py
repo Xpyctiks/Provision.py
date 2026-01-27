@@ -7,7 +7,7 @@ from functions.pages_forms import *
 from functions.site_actions import normalize_domain,is_admin
 
 provision_bp = Blueprint("provision", __name__)
-@provision_bp.route("/provision", methods=['GET'])
+@provision_bp.route("/provision/", methods=['GET'])
 @login_required
 def show_provision_page():
   """GET request: shows /provision page"""
@@ -24,7 +24,7 @@ def show_provision_page():
     flash('Загальна помилка на сторінці /provision! Дивіться логи!','alert alert-danger')
     return redirect("/",302)
 
-@provision_bp.route("/provision", methods=['POST'])
+@provision_bp.route("/provision/", methods=['POST'])
 @login_required
 def do_provision():
   """POST request processor: process automatic site deployment"""
@@ -33,7 +33,6 @@ def do_provision():
     if not request.form['domain'] or not request.form['selected_template'] or not request.form['selected_server'] or not request.form['selected_account'] or not request.form['buttonSubmit']:
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       logging.error(f"provision() error: some of important parameters has not been sent!")
-      asyncio.run(send_to_telegram(f"provision(): some of the important parameters has not been received!",f"🚒Provision function:"))
       return redirect("/",302)
     #starts main provision actions
     else:
@@ -45,7 +44,7 @@ def do_provision():
         logging.error(f"Site {domain} already exists! Remove it before new deploy!")
         flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде розгорнути знову!", 'alert alert-danger')
         logging.info(f"--------------------Automatic deploy for site {domain} from template {request.form['selected_template'].strip()} by {current_user.realname} finshed with error-----------------------")
-        return redirect("/provision",302)
+        return redirect("/provision/",302)
       if 'not-a-subdomain' in request.form:
         its_not_a_subdomain = True
       else:
@@ -61,7 +60,7 @@ def do_provision():
         else:
           logging.error(f"Error while site {domain} provision!")
           flash(f"Помилки при запуску сайту {domain}, дивіться логи!",'alert alert-danger')
-          return redirect("/provision",302)
+          return redirect("/provision/",302)
       else:
         flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
         logging.error(f"Error getting repository path for the given name({request.form['selected_template']}) from the request")

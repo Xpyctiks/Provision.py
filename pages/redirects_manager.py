@@ -4,7 +4,7 @@ import os,logging,re
 from functions.site_actions import is_admin
 
 redirects_bp = Blueprint("redirects_manager", __name__)
-@redirects_bp.route("/redirects_manager", methods=['GET'])
+@redirects_bp.route("/redirects_manager/", methods=['GET'])
 @login_required
 def show_redirects():
   try:

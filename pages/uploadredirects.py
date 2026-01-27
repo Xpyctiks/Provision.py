@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 from functions.site_actions import normalize_domain,is_admin
 
 uploadredir_bp = Blueprint("upload_redirects", __name__)
-@uploadredir_bp.route("/upload_redirects", methods=['POST'])
+@uploadredir_bp.route("/upload_redirects/", methods=['POST'])
 @login_required
 def uploadredir_file():
   """POST request processor: getting uploaded CSV file and takes redirects from it."""
@@ -85,7 +85,7 @@ def uploadredir_file():
     flash(f"Неочікувана помилка при POST запиту на сторінці /upload_redirects! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
-@uploadredir_bp.route("/upload_redirects", methods=['GET'])
+@uploadredir_bp.route("/upload_redirects/", methods=['GET'])
 @login_required
 def show_uploadredir_file():
   """GET request: show /upload_redirects page."""

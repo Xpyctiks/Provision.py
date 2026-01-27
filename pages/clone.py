@@ -7,7 +7,7 @@ from functions.provision_func import finishJob
 import os
 
 clone_bp = Blueprint("clone", __name__)
-@clone_bp.route("/clone", methods=['GET'])
+@clone_bp.route("/clone/", methods=['GET'])
 @login_required
 def showClonePage():
   """GET request: show /clone page"""
@@ -28,7 +28,7 @@ def showClonePage():
     flash(f"Неочікувана помилка на сторінці колнування, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
-@clone_bp.route("/clone", methods=['POST'])
+@clone_bp.route("/clone/", methods=['POST'])
 @login_required
 def doClone():
   """POST request processor: processes a site clone request"""

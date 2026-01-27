@@ -111,7 +111,7 @@ document.getElementById("Validate").addEventListener("click", function () {
   formData.append("selected_server", document.getElementById("selected_server").value);
   const checkbox = document.getElementById("not-a-subdomain");
   formData.append("not-a-subdomain", checkbox.checked ? "1" : "0");
-  fetch("/validate", {
+  fetch("/validate/", {
     method: "POST",
     body: formData
   })

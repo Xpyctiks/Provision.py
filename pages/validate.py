@@ -6,7 +6,7 @@ from functions.site_actions import normalize_domain
 from functions.tld import tld
 
 validate_bp = Blueprint("validate", __name__)
-@validate_bp.route("/validate", methods=['POST'])
+@validate_bp.route("/validate/", methods=['POST'])
 @login_required
 def do_validation():
   """POST request processor: does validation of the given domain and returns the result"""
@@ -95,7 +95,7 @@ def do_validation():
     flash(f"Неочікувана помилка при POST запиту на сторінці /validate! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
-@validate_bp.route("/validate", methods=['GET'])
+@validate_bp.route("/validate/", methods=['GET'])
 @login_required
 def show_validation():
   """GET request: nothing should be in here. Just redirect if somebody hit this page accidently."""

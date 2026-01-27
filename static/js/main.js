@@ -4,39 +4,40 @@ document.addEventListener("DOMContentLoaded", function () {
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
   }
+});
 
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-      const mainSite = btn.dataset.site;
-      const selectedSites = Array.from(
-        document.querySelectorAll(".selected-site:checked")
-      ).map(chk => chk.value);
-      if (!selectedSites.includes(mainSite)) {
-        selectedSites.push(mainSite);
-      }
-      const sitesList = selectedSites.join(", ");
-      if (!confirm(`Ви дійсно хочете видалити наступні сайти?\n\n${sitesList}`)) {
-        e.preventDefault();
-      }
-    });
+document.querySelectorAll(".delete-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    const mainSite = btn.dataset.site;
+    const selectedSites = Array.from(
+      document.querySelectorAll(".selected-site:checked")
+    ).map(chk => chk.value);
+    if (!selectedSites.includes(mainSite)) {
+      selectedSites.push(mainSite);
+    }
+    const sitesList = selectedSites.join(", ");
+    if (!confirm(`Ви дійсно хочете видалити наступні сайти?\n\n${sitesList}`)) {
+      e.preventDefault();
+    }
   });
+});
 
-  document.querySelectorAll(".gitpull-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-      const mainSite = btn.dataset.site;
-      const selectedSites = Array.from(
-        document.querySelectorAll(".selected-site:checked")
-      ).map(chk => chk.value);
-      if (!selectedSites.includes(mainSite)) {
-        selectedSites.push(mainSite);
+document.querySelectorAll(".gitpull-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+    const mainSite = btn.dataset.site;
+    const selectedSites = Array.from(
+      document.querySelectorAll(".selected-site:checked")
+    ).map(chk => chk.value);
+    if (!selectedSites.includes(mainSite)) {
+      selectedSites.push(mainSite);
+    }
+    const sitesList = selectedSites.join(", ");
+    if (!confirm(`Оновити код до актуального на наступних сайтах?\n\n${sitesList}`)) {
+      e.preventDefault();
       }
-      const sitesList = selectedSites.join(", ");
-      if (!confirm(`Оновити код до актуального на наступних сайтах?\n\n${sitesList}`)) {
-        e.preventDefault();
-        }
-      });
     });
 });
+
 
 document.addEventListener('show.bs.collapse', async function (event) {
   let button = event.target.previousElementSibling.querySelector("button");
@@ -107,14 +108,14 @@ function checkAll(bx) {
   var cbs = document.getElementsByTagName('input');
   for(var i=0; i < cbs.length; i++) {
   if(cbs[i].type == 'checkbox') {
-    cbs[i].checked = bx.checked;
-  }
+      cbs[i].checked = bx.checked;
+    }
   }
 }
 
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-  return new bootstrap.Tooltip(tooltipTriggerEl)
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
 let domain = null;
@@ -134,7 +135,7 @@ function openEditor(domain) {
 function saveEditor() {
   const content = document.getElementById("editorTextarea").value;
   const domain = document.getElementById("domain").value;
-  fetch("/robots", {
+  fetch("/robots/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

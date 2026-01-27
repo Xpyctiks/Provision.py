@@ -4,7 +4,7 @@ import os
 from functions.site_actions import *
 
 action_bp = Blueprint("action", __name__)
-@action_bp.route("/action", methods=['POST'])
+@action_bp.route("/action/", methods=['POST'])
 @login_required
 def do_action():
   """POST request processor: process all requests to /action page."""

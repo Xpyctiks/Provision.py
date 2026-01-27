@@ -22,13 +22,13 @@
       <div class="dropdown mx-auto">
         <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/cloudflare_domains" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
           {{admin_panel|safe}}
         </ul>
@@ -41,7 +41,7 @@
         </select>
       </div>
       <div class="ms-auto d-flex align-items-center">
-        <form action="/logout" method="POST">
+        <form action="/logout/" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
@@ -64,8 +64,8 @@
     <tbody>
       {% for site in html_data %}
       {{site.table_type|safe}}
-      <form method="post" action="/action" id="main_form"></form>
-      <form method="post" action="/redirects_manager" id="redirect_form{{site.site_name|safe}}"></form>
+      <form method="post" action="/action/" id="main_form"></form>
+      <form method="post" action="/redirects_manager/" id="redirect_form{{site.site_name|safe}}"></form>
       {{site.table_type2|safe}}
         <div class="dropdown mx-auto">
           <a class="btn btn-outline-danger dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" data-bs-display="static">⚙ Можливі дії:</a>

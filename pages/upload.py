@@ -8,7 +8,7 @@ from functions.provision_func import *
 from functions.site_actions import is_admin
 
 upload_bp = Blueprint("upload", __name__)
-@upload_bp.route("/upload", methods=['POST'])
+@upload_bp.route("/upload/", methods=['POST'])
 @login_required
 def upload_file():
   """POST request processor: getting uploaded zip archive and deploys the site from it."""
@@ -62,7 +62,7 @@ def upload_file():
     flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
-@upload_bp.route("/upload", methods=['GET'])
+@upload_bp.route("/upload/", methods=['GET'])
 @login_required
 def show_upload_page():
   """GET request: show /upload page."""

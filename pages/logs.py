@@ -4,7 +4,7 @@ import logging,os
 from functions.site_actions import is_admin
 
 logs_bp = Blueprint("logs", __name__)
-@logs_bp.route("/logs", methods=['GET'])
+@logs_bp.route("/logs/", methods=['GET'])
 @login_required
 def showLogs():
   """Simple functions that shows up a current content of programm log file."""
@@ -15,7 +15,7 @@ def showLogs():
     flash(f"Загальна помилка сторінки логу!",'alert alert-danger')
     return redirect("/",302)
 
-@logs_bp.route("/logs/api")
+@logs_bp.route("/logs/api/")
 def logs_api():
   lines = int(request.args.get("lines", 200))
   log_file = current_app.config["LOG_FILE"]

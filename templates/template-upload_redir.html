@@ -28,13 +28,13 @@
         <ul class="dropdown-menu">
           <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/cloudflare_domains" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
           {{admin_panel|safe}}
         </ul>
@@ -43,7 +43,7 @@
         <a href="/redirects_manager?site={{sitename|safe}}" class="btn btn-info">Назад до менеджера редіректів</a>
       </div>
       <div class="ms-auto d-flex align-items-center">
-        <form class="d-flex" action="/logout" method="POST">
+        <form class="d-flex" action="/logout/" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
@@ -58,7 +58,7 @@
           <h5 style="text-align: center;">Додавання редіректів для {{sitename|safe}}:</h5>
         </div>
         <div class="card-body">
-          <form action="/upload_redirects" method="POST" enctype="multipart/form-data">
+          <form action="/upload_redirects/" method="POST" enctype="multipart/form-data">
           <p class="card-text">Можете завантажити .CSV файл з вашими редіректами.</p>
           <span class="badge rounded-pill bg-info text-dark">Приклад вмісту .CSV файлу:</span>
           <p>Хочемо зробити редірект з <font color=blue>https://site.com</font><font color=red>/news/latest/</font> на <font color=blue>https://site.com</font><font color=orange>/hottest/latest/</font>:</p>

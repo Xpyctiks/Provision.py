@@ -28,19 +28,19 @@
         <ul class="dropdown-menu">
           <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/cloudflare_domains" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
           {{admin_panel|safe}}
         </ul>
       </div>
       <div class="ms-auto d-flex align-items-center">
-        <form class="d-flex" action="/logout" method="POST">
+        <form class="d-flex" action="/logout/" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
@@ -56,7 +56,7 @@
           <h6 style="text-align: center;">Аккаунт: {{ account|safe }}</h6>
         </div>
         <div class="card-body">
-          <form action="/dns_validation" method="POST" id="postform" class="needs-validation" novalidate>
+          <form action="/dns_validation/" method="POST" id="postform" class="needs-validation" novalidate>
             <div id="currentRecords">
               <h5 class="card-title">Вже існуючі записи типу CNAME:</h5>
               <table class="table table-bordered">
@@ -105,7 +105,7 @@
       <div class="modal-body">
         <ul class=flashes style="margin-top: 33px;" id="message">
           {% for category, message in messages %}
-          <li class="{{ category }}">{{ message }}</li>
+          <li class="{{ category }}">{{ message|safe }}</li>
           {% endfor %}
         </ul>
       </div>    
