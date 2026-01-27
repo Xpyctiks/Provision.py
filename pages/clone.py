@@ -2,7 +2,8 @@ from flask import redirect,Blueprint,request,render_template,flash,current_app
 from flask_login import login_required,current_user
 from functions.pages_forms import *
 from functions.clone_func import *
-from functions.site_actions import normalize_domain, is_admin
+from functions.site_actions import normalize_domain,is_admin
+from functions.provision_func import finishJob
 import os
 
 clone_bp = Blueprint("clone", __name__)
