@@ -50,7 +50,6 @@ def catch_admin_panel():
       redirect("/",302)
   except Exception as err:
     logging.error(f"catch_admin_panel(): global error {err}")
-    asyncio.run(send_to_telegram(f"catch_admin_panel(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка адмін панелі! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -90,7 +89,6 @@ def admin_panel_settings():
     return render_template("template-admin_panel.html",active1="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_settings(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_settings(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -155,7 +153,6 @@ def admin_panel_users():
     return render_template("template-admin_panel.html",active2="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_users(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_users(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -210,7 +207,6 @@ def admin_panel_templates():
     return render_template("template-admin_panel.html",active3="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_templates(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_templates(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -265,7 +261,6 @@ def admin_panel_cloudflare():
     return render_template("template-admin_panel.html",active4="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_cloudflare(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_cloudflare(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -325,7 +320,6 @@ def admin_panel_owners():
     return render_template("template-admin_panel.html",active5="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_owners(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_owners(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -380,7 +374,6 @@ def admin_panel_servers():
     return render_template("template-admin_panel.html",active6="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_servers(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_servers(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -444,7 +437,6 @@ def admin_panel_links():
     return render_template("template-admin_panel.html",active7="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_links(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_links(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -514,7 +506,6 @@ def admin_panel_accounts():
     return render_template("template-admin_panel.html",active8="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_accounts(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 
@@ -554,6 +545,5 @@ def admin_panel_messages():
     return render_template("template-admin_panel.html",active9="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
-    asyncio.run(send_to_telegram(f"admin_panel_accounts(): global error {err}",f"🚒Provision error by {current_user.realname}"))
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)

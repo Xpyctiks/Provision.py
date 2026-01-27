@@ -52,7 +52,6 @@ def setSiteOwner(domain: str) -> bool:
     return True
   except Exception as msg:
     logging.error(f"Error setting owner {owner} for domain {domain}: {msg}")
-    asyncio.run(send_to_telegram(f"Error setting owner {owner} for domain {domain}: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
     return False
 
 def genJobID() -> None:
@@ -110,11 +109,10 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       return True
     elif file == "" and domain != "" and emerg_shutdown == True:
       logging.error("Starting emergency shutdown after finish_job signal received with emergency=true flag...")
-      asyncio.run(send_to_telegram(f"Autoprovision job by {current_user.realname} is interrupted due to errors! ",f"🚒🏁AutoProvision job finish for {domain}:"))
       logging.error(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
       return True
   except Exception as msg:
-    logging.error(msg)
+    logging.error(f"finishJob(): global error {msg}")
     return False
 
 def setupPHP(file: str) -> bool:
@@ -137,15 +135,12 @@ def setupPHP(file: str) -> bool:
         return True
       else:
         logging.error(f"setupPHP(): PHP reload failed!. {result.stderr}")
-        asyncio.run(send_to_telegram(f"setupPHP(): {result.stderr}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         return False
     else:
       logging.error(f"Error while reloading PHP: {result.stdout.strip()} {result.stderr.strip()}")
-      asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
       return False
   except Exception as msg:
     logging.error(f"Error while configuring PHP. Error: {msg}")
-    asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
     return False
 
 def setupNginx(file: str,has_subdomain: str = "---") -> bool:
@@ -197,12 +192,10 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
         return False
     else:
       logging.error(f"Error while restarting Nginx: {result.stderr.strip()}")
-      asyncio.run(send_to_telegram(f"Error while restarting Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
       return False
     return True
   except Exception as msg:
     logging.error(f"setupNginx(): Error while configuring Nginx: {msg}")
-    asyncio.run(send_to_telegram(f"setupNginx(): {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
     return False
 
 def unZip_3(file: str, selected_account: str, selected_server: str, realname: str) -> bool:
@@ -338,7 +331,6 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
       result = subprocess.run(["sudo","git","clone",f"{template}","."], capture_output=True, text=True)
       if result.returncode != 0:
         logging.error(f"Error while git clone command: {result.stderr}")
-        asyncio.run(send_to_telegram(f"Error while git clone command!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
         finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         flash('Помилка при клонуванні із гіт репозиторію!','alert alert-danger')
         return False
@@ -346,7 +338,6 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
       result2 = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
       if result2.returncode != 0:
         logging.error(f"Error while git add safe.directory: {result.stderr}")
-        asyncio.run(send_to_telegram(f"Error while git add safe directory!",f"🚒Provision job error({functions.variables.JOB_ID}):"))
       logging.info("Git add safe directory done successfully!")
       #prepare subdomain functions
       if its_not_a_subdomain:
@@ -369,5 +360,4 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
       return True
   except Exception as msg:
     logging.error(f"start_autoprovision() error: {msg}")
-    asyncio.run(send_to_telegram(f"Autoprovision function error: {msg}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
     return False

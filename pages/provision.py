@@ -21,7 +21,6 @@ def show_provision_page():
     return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"show_provision_page(): general error by {current_user.realname}: {err}")
-    asyncio.run(send_to_telegram(f"show_provision_page(): general error: {err}",f"🚒Provision page render by {current_user.realname}:"))
     flash('Загальна помилка на сторінці /provision! Дивіться логи!','alert alert-danger')
     return redirect("/",302)
 
@@ -69,6 +68,5 @@ def do_provision():
       return redirect("/",302)
   except Exception as err:
     logging.error(f"do_provision(): general error by {current_user.realname}: {err}")
-    asyncio.run(send_to_telegram(f"do_provision(): general error: {err}",f"🚒Provision page by {current_user.realname}:"))
     flash('Загальна помилка при обробці POST запиту на сторінці /provision! Дивіться логи!','alert alert-danger')
     return redirect("/",302)

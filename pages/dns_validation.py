@@ -76,7 +76,6 @@ def dns_validation():
     return render_template("template-dns_validation.html",html_data=html_data,domain=domain,account=account,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"Dns_validation page general render error: {err}")
-    asyncio.run(send_to_telegram(f"Dns_validationpage general render error: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash(f"Неочікувана помилка на сторінці ДНС валідації, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
@@ -131,7 +130,6 @@ def dns_del_cname():
     result_del_cname = requests.delete(url_del_cname,headers=headers)
     if result_del_cname.status_code != 200:
       logging.error(f"-----------------------dns_del_cname(): API returned an error: {result_del_cname.text}-----------------------")
-      asyncio.run(send_to_telegram(f"dns_del_cname(): API returned an error: {result_del_cname.text}",f"🚒Provision error by {current_user.realname}:"))
       flash(f"API повернуло помилку при спробі видалення запису {request.form.get('cname')}. Дивіться логи!", 'alert alert-danger')
       return redirect("/",302)
     else:
@@ -139,7 +137,6 @@ def dns_del_cname():
       return redirect(f"/dns_validation?domain={request.form.get('domain')}",302)
   except Exception as err:
     logging.error(f"dns_del_cname(): general error: {err}")
-    asyncio.run(send_to_telegram(f"dns_del_cname(): general error: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash(f"Неочікувана помилка при спробі видалення ДНС запису, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
@@ -204,7 +201,6 @@ def dns_add_cname():
     result_add_cname = requests.post(url_add_cname,headers=headers,json=data)
     if result_add_cname.status_code != 200:
       logging.error(f"-----------------------dns_add_cname(): API returned an error: {result_add_cname.text}-----------------------")
-      asyncio.run(send_to_telegram(f"dns_add_cname(): API returned an error: {result_add_cname.text}",f"🚒Provision error by {current_user.realname}:"))
       flash(f"API повернуло помилку при спробі додавання запису {request.form['cname']}. Дивіться логи!", 'alert alert-danger')
       return redirect("/",302)
     else:
@@ -213,6 +209,5 @@ def dns_add_cname():
       return redirect(f"/",302)
   except Exception as err:
     logging.error(f"dns_add_cname(): general error: {err}")
-    asyncio.run(send_to_telegram(f"dns_add_cname(): general error: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash(f"Неочікувана помилка при спробі додавання ДНС запису, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

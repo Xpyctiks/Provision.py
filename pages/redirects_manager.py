@@ -1,7 +1,6 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
-import os,logging,re,asyncio
-from functions.send_to_telegram import send_to_telegram
+import os,logging,re
 from functions.site_actions import is_admin
 
 redirects_bp = Blueprint("redirects_manager", __name__)
@@ -49,6 +48,5 @@ def show_redirects():
       return redirect("/",302)
   except Exception as err:
     logging.error(f"show_redirects(): general error by {current_user.realname}: {err}")
-    asyncio.run(send_to_telegram(f"show_redirects(): general error: {err}",f"🚒Provision redirects manager error by {current_user.realname}:"))
     flash(f"Неочікувана помилка при POST запиту на сторінці /uredirects_manager! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

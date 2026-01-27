@@ -59,7 +59,6 @@ def upload_file():
       return redirect("/",302)
   except Exception as err:
     logging.error(f"Upload page general error: {err}")
-    asyncio.run(send_to_telegram(f"Upload page general error: {err}",f"🚒Provision upload page:"))
     flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
@@ -77,6 +76,5 @@ def show_upload_page():
     return render_template("template-upload.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"Upload page general render error: {err}")
-    asyncio.run(send_to_telegram(f"Upload page general render error: {err}",f"🚒Provision upload page:"))
     flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

@@ -1,8 +1,7 @@
 from flask import flash
 from flask_login import current_user
-import logging,asyncio
+import logging
 from db.database import *
-from functions.send_to_telegram import send_to_telegram
 from werkzeug.security import generate_password_hash
 from functions.rights_required import rights_required
 
@@ -23,8 +22,8 @@ def handler_settings(form):
     flash('Нові параметри збережено та застосовано!','alert alert-success')
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_settings() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during saving settings: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка збереження параметрів программи!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_users(form):
@@ -97,8 +96,8 @@ def handler_users(form):
         return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_users() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing users: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій користувачів!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_templates(form):
@@ -169,8 +168,8 @@ def handler_templates(form):
         return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_templates() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing templates: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій шаблонів!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_cloudflare(form):
@@ -241,8 +240,8 @@ def handler_cloudflare(form):
         return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_accounts() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing accounts: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій аккаунтів Cloudflare!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_ownership(form):
@@ -298,8 +297,8 @@ def handler_ownership(form):
       return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_ownership() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing ownership: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій власників доменів!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_servers(form):
@@ -370,8 +369,8 @@ def handler_servers(form):
         return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_servers() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing servers: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій серверів!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_links(form):
@@ -408,8 +407,8 @@ def handler_links(form):
       return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_links() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing links: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій лінку доменів до аккаунтів CF!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_accounts(form):
@@ -446,8 +445,8 @@ def handler_accounts(form):
       return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_accounts() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during processing accounts: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Помилка обробки функцій лінку власників до аккаунтів CF!','alert alert-danger')
+    return
 
 @rights_required(255)
 def handler_messages(form):
@@ -480,5 +479,5 @@ def handler_messages(form):
       return
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_publishMessage() global error: {err}")
-    asyncio.run(send_to_telegram(f"Admin: global error during addition of message: {err}",f"🚒Provision error by {current_user.realname}:"))
     flash('Якась глобальна помилка при додаванні повідомлення! Дивіться логи!','alert alert-danger')
+    return

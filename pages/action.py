@@ -1,4 +1,4 @@
-from flask import redirect,Blueprint,request,render_template
+from flask import redirect,Blueprint,request
 from flask_login import login_required
 import os
 from functions.site_actions import *
@@ -42,7 +42,6 @@ def do_action():
     return redirect("/",302)
   except Exception as err:
     logging.error(f"do_action(): general error by {current_user.realname}: {err}")
-    asyncio.run(send_to_telegram(f"do_action(): general error: {err}",f"🚒Provision action page error by {current_user.realname}:"))
     flash(f"Неочікувана помилка при POST запиту на сторінці /action! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
@@ -69,6 +68,5 @@ def showstructure():
     return html
   except Exception as err:
     logging.error(f"showstructure(): general error by {current_user.realname}: {err}")
-    asyncio.run(send_to_telegram(f"showstructure(): general error: {err}",f"🚒Provision showstructure() error by {current_user.realname}:"))
     flash(f"Неочікувана помилка при GET запиту на сторінці /action/showstructire/! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

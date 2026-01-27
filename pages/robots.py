@@ -22,7 +22,6 @@ def editRobots():
     return jsonify({"status": "ok"})
   except Exception as msg:
     logging.error(f"editRobots() general error by {current_user.realname}: {msg}")
-    asyncio.run(send_to_telegram(f"editRobots() general error by {current_user.realname}: {msg}",f"🚒Provision robots edior:"))
     flash(f'Помилка при POST запиті на сторінці /robots! Дивіться логи!','alert alert-danger')
     return redirect("/",302)
 

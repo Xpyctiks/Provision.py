@@ -3,7 +3,6 @@ from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config, create_php_config
 from flask_login import current_user
-import functions.variables
 from db.db import db
 from db.database import *
 from functions.cli_management import del_account,del_owner
@@ -35,11 +34,10 @@ def delete_site(sitename: str) -> bool:
         logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
       else:
         logging.error(f"Nginx reload failed!. {result2.stderr}")
-        asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+        error_message += f"Error while reloading Nginx: {result1.stderr.strip()}\n"
     else:
-      logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
-      error_message += f"Error while reloading Nginx: {result1.stderr.strip()}\n"
-      asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision site delete error({sitename}):"))
+      logging.error(f"Error while Nginx config test: {result1.stderr.strip()}")
+      error_message += f"Помилка тестування конфігурації Nginx: {result1.stderr.strip()}\n"
     #------------------------Delete in php pool.d/
     php = os.path.join(current_app.config["PHP_POOL"],sitename+".conf")
     php_dis = os.path.join(current_app.config["PHP_POOL"],sitename+".conf.disabled")
@@ -61,11 +59,10 @@ def delete_site(sitename: str) -> bool:
         logging.info(f"PHP reloaded successfully.")
       else:
         logging.error(f"PHP reload failed!. {result3.stderr}")
-        asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+        error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}\n"
     else:
-      logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
-      error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}\n"
-      asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision site delete error({sitename}):"))
+      logging.error(f"Error while PHP config. test: {result2.stderr.strip()}")
+      error_message += f"Помилка тестування конфігурації PHP: {result2.stderr.strip()}\n"
     #--------------Delete of the site folder
     path = os.path.join(current_app.config["WEB_FOLDER"],sitename)
     if not os.path.isdir(path):
@@ -110,7 +107,6 @@ def delete_site(sitename: str) -> bool:
   except Exception as msg:
     logging.error(f"Error while site delete. Error: {msg}")
     error_message += f"Глобальна помилка видалення сайту: {msg}"
-    asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision site delete error({sitename}):"))
     return False
 
 def del_selected_sites(sitename: str,delArray: list) -> bool:
@@ -147,11 +143,10 @@ def disable_site(sitename: str) -> None:
           logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
         else:
           logging.error(f"Nginx reload failed!. {result2.stderr}")
-          asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+          error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
       else:
-        logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
-        error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
-        asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision site disable error({sitename}):"))
+        logging.error(f"Error while Nginx config test: {result1.stderr.strip()}")
+        error_message += f"Помилка при тестуванні конфігурації веб сервера Nginx: {result1.stderr.strip()}"
     else:
       logging.error(f"Nginx site disable error - symlink {ngx} is not exist")
       error_message += f"Помилка при перезавантаженні веб сервера Nginx"
@@ -169,18 +164,16 @@ def disable_site(sitename: str) -> None:
           logging.info(f"PHP reloaded successfully.")
         else:
           logging.error(f"PHP reload failed!. {result3.stderr}")
-          asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+          error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
       else:
-        logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
-        error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
-        asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision site disable error({sitename}):"))
+        logging.error(f"Error while test PHP config: {result2.stderr.strip()}")
+        error_message += f"Помилка при тестуванні конфігурації PHP: {result2.stderr.strip()}"
     else:
       logging.error(f"PHP site conf. disable error - symlink {php} is not exist")
       error_message += f"Помилка при перезавантаженні PHP"
   except Exception as msg:
     logging.error(f"Error while site disable. Error: {msg}")
     error_message += f"Глобальна помилка про спробі деактивації сайту: {msg}"
-    asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision site disable error({sitename}):"))
   if len(error_message) > 0:
     flash(error_message, 'alert alert-danger')
   else:
@@ -233,11 +226,10 @@ def enable_site(sitename: str) -> None:
         logging.info(f"Nginx reloaded successfully. Result: {result2.stderr.strip()}")
       else:
         logging.error(f"Nginx reload failed!. {result2.stderr}")
-        asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+        error_message += f"Помилка перезавантаження Nginx: {result2.stderr}"
     else:
-      logging.error(f"Error while reloading Nginx: {result1.stderr.strip()}")
-      error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
-      asyncio.run(send_to_telegram(f"Error while reloading Nginx",f"🚒Provision site disable error({sitename}):"))
+      logging.error(f"Error while Nginx config. test: {result1.stderr.strip()}")
+      error_message += f"Помилка при тестуванні конфігурації веб сервера Nginx: {result1.stderr.strip()}"
     #start of checks - php
     result2 = subprocess.run(["sudo",current_app.config['PHPFPM_PATH'],"-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result2.stderr):
@@ -249,15 +241,13 @@ def enable_site(sitename: str) -> None:
         logging.info(f"PHP reloaded successfully.")
       else:
         logging.error(f"PHP reload failed!. {result3.stderr}")
-        asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+        error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
     else:
-      logging.error(f"Error while reloading PHP: {result2.stderr.strip()}")
-      error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
-      asyncio.run(send_to_telegram(f"Error while reloading PHP",f"🚒Provision site disable error({sitename}):"))
+      logging.error(f"Error testing configuration of PHP: {result2.stderr.strip()}")
+      error_message += f"Помилка тесту конфігурації PHP: {result2.stderr.strip()}"
   except Exception as msg:
     logging.error(f"Global error while site enable. Error: {msg}")
     error_message += f"Глобальна помилка при спробі активації сайту: {msg}"
-    asyncio.run(send_to_telegram(f"Error: {msg}",f"🚒Provision site enable global error({sitename}):"))
   if len(error_message) > 0:
     flash(error_message, 'alert alert-danger')
   else:
@@ -312,11 +302,9 @@ def del_redirect(location: str,sitename: str, callable: int = 0) -> bool:
     else:
       logging.error(f"Error delete redirects of {sitename}: {file301} is not exists,but it is not possible because you are deleting from it!")
       flash(f"Error delete redirects of {sitename}: {file301} is not exists!", 'alert alert-danger')
-      asyncio.run(send_to_telegram(f"{file301} is not exists,but it is not possible because you are deleting from it!",f"🚒Provision redirects delete error:"))
       return False
   except Exception as msg:
     logging.error(f"Privision Global Error:", f"{msg}")
-    asyncio.run(send_to_telegram(f"{file301} is not exists, but it is not possible because you are deleting from it.",f"🚒Provision Global Error:"))
     return False
 
 def del_selected_redirects(array: list,sitename: str) -> bool:
@@ -342,7 +330,6 @@ def del_selected_redirects(array: list,sitename: str) -> bool:
     return True
   except Exception as msg:
     logging.error(f"del_selected_redirects() Global Error: {msg}")
-    asyncio.run(send_to_telegram(f"del_selected_redirects() Global Error: {msg}",f"🚒Provision Global Error:"))
     return False
 
 def applyChanges(sitename: str) -> bool:
@@ -362,11 +349,9 @@ def applyChanges(sitename: str) -> bool:
       logging.info(f"Nginx reload error!. Result: {result2.stderr.strip()}")
       flash(f"Помилка застосування нової конфігурації веб сервером!.",'alert alert-danger')
       logging.info(f"-----------------------Applying changes in Nginx finished with error!-----------------")
-      asyncio.run(send_to_telegram(f"Changes apply error: Nginx has bad configuration",f"🚒Provision Error"))
       return False
   else:
     logging.error(f"Error reloading Nginx: {result1.stderr.strip()}")
-    asyncio.run(send_to_telegram(f"Changes apply error: Nginx has bad configuration",f"🚒Provision Error"))
     flash(f"Error reloading Nginx! Some error in configuration, see logs:\n{result1.stderr.strip()}",'alert alert-danger')
     logging.info(f"-----------------------Applying changes in Nginx finished-----------------")
     return False
@@ -393,7 +378,6 @@ def makePull(domain: str, pullArray: list = []) -> bool:
         result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
         if result.returncode != 0:
           logging.error(f"Git pull for {domain} returned error: {result.stderr}")
-          asyncio.run(send_to_telegram(f"Git pull error for site {domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:"))
           flash(f"Помилка оновлення коду із репозиторію {path}: {result.stderr}.",'alert alert-danger')
           logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
           return False
@@ -405,17 +389,18 @@ def makePull(domain: str, pullArray: list = []) -> bool:
               logging.info(f"DB migration done successfully!")
             else:
               logging.error(f"DB migration error for {domain}: {result3.stderr}")
-              asyncio.run(send_to_telegram(f"DB migration for {domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:"))
+              flash(f"Помилка оновлення бази для {domain} після пулу!.",'alert alert-warning')
+              return False
           else:
             logging.error(f"DB migration error for {domain}: bin/ folder not found. we are in {os.curdir}")
-            asyncio.run(send_to_telegram(f"DB migration error: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:"))
+            flash(f"Помилка оновлення бази для {domain} після пулу!.",'alert alert-warning')
+            return False
           flash(f"Код для сайту {domain} успішно оновлено із репозиторію!.",'alert alert-success')
           logging.info(f"Git pull for {domain} done successfully!")
           logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
           return True
       else:
         logging.error(f"Git pull for {domain} returned error: site folder {path} not exists!")
-        asyncio.run(send_to_telegram(f"Git pull for {domain} returned error: site folder {path} not exists!",f"🚒Provision pull by {current_user.realname}:"))
         flash(f"Помилка оновлення коду із репозиторію: папка {domain} чомусь не існує!",'alert alert-danger')
         logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
         return False
@@ -454,7 +439,6 @@ def makePull(domain: str, pullArray: list = []) -> bool:
       return True
   except Exception as msg:
     logging.error(f"Makepull() Global Error:", "{msg}")
-    asyncio.run(send_to_telegram(f"makePull() global error: {msg}",f"🚒Provision pull by {current_user.realname}:"))
     logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
     return False
 
@@ -466,12 +450,10 @@ def normalize_domain(domain: str):
     domain = idna.encode(domain).decode()
   except idna.IDNAError:
     logging.error(f"Invalid IDNA domain {domain}!")
-    asyncio.run(send_to_telegram(f"Invalid IDNA domain {domain}!",f"🚒Provision error by {current_user.realname}:"))
     flash(f"Помилка перевірки змінної домена для ДНС валідації, дивіться логи!", 'alert alert-danger')
     return redirect("/",301)
   if not DOMAIN_RE.fullmatch(domain):
     logging.error(f"Invalid domain format {domain}!")
-    asyncio.run(send_to_telegram(f"Invalid domain format {domain}!",f"🚒Provision error by {current_user.realname}:"))
     flash(f"Помилка перевірки змінної домена для ДНС валідації, дивіться логи!", 'alert alert-danger')
     return redirect("/",301)
   return domain
@@ -503,7 +485,6 @@ def link_domain_and_account(domain: str, account: str):
     return True
   except Exception as err:
     logging.error(f"link_domain_and_account() general error: {err}")
-    asyncio.run(send_to_telegram(f"link_domain_and_account() general error: {err}",f"🚒Provision error by {current_user.realname}:"))
     return False
 
 def is_admin():

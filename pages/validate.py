@@ -1,9 +1,8 @@
 from flask import Blueprint,request,flash,redirect
 from flask_login import login_required,current_user
-import json,requests,logging,asyncio
+import json,requests,logging
 from db.database import Cloudflare, Servers
 from functions.site_actions import normalize_domain
-from functions.send_to_telegram import send_to_telegram
 from functions.tld import tld
 
 validate_bp = Blueprint("validate", __name__)
@@ -93,7 +92,6 @@ def do_validation():
       return json.dumps(response)
   except Exception as err:
     logging.error(f"do_validation(): general error: {err}")
-    asyncio.run(send_to_telegram(f"do_validation(): general error: {err}",f"🚒Provision validation page error:"))
     flash(f"Неочікувана помилка при POST запиту на сторінці /validate! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 

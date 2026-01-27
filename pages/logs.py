@@ -1,7 +1,6 @@
 from flask import render_template,redirect,Blueprint,current_app,flash,jsonify, request
-from flask_login import login_required,current_user
-from functions.send_to_telegram import send_to_telegram
-import logging,os,asyncio
+from flask_login import login_required
+import logging,os
 from functions.site_actions import is_admin
 
 logs_bp = Blueprint("logs", __name__)
@@ -12,7 +11,6 @@ def showLogs():
   try:
     return render_template("template-logs.html",admin_panel=is_admin())
   except Exception as err:
-    asyncio.run(send_to_telegram(f"Global show log page error! {err}!",f"🚒Provision log page by {current_user.realname}:"))
     logging.error(f"Logs page showLogs() gereral error: {err}")
     flash(f"Загальна помилка сторінки логу!",'alert alert-danger')
     return redirect("/",302)

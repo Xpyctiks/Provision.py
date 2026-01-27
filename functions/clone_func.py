@@ -1,7 +1,6 @@
-import os,asyncio,logging,shutil,subprocess,sqlite3
-from functions.send_to_telegram import send_to_telegram
+import os,logging,shutil,subprocess,sqlite3
 from functions.certificates import cloudflare_certificate
-from functions.provision_func import setupNginx,finishJob
+from functions.provision_func import setupNginx
 from flask import current_app,flash
 from functions.site_actions import normalize_domain
 import functions.variables
@@ -24,7 +23,6 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
       result = shutil.copytree(srcPath, dstPath,dirs_exist_ok=True,symlinks=True)
       if result != dstPath:
         logging.error(f"Error while copying {srcPath} to {dstPath}!")
-        asyncio.run(send_to_telegram(f"Error while copying {srcPath} to {dstPath}!",f"🚒Provision clone error:"))
         flash(f'Помилка при копіюванні {srcPath} в {dstPath}','alert alert-danger')
         return False
       logging.info(f"Copying {srcPath} to {dstPath} is done successfully!")
@@ -34,7 +32,6 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
         result = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
         if result.returncode != 0:
           logging.error(f"Error while git add safe.directory for {finalPath}: {result.stderr}")
-          asyncio.run(send_to_telegram(f"Error while git add safe directory for {finalPath}!",f"🚒Provision clone error:"))
         else:
           logging.info("Git add safe directory done successfully!")
       #Set the global variable to the name of the source site. This value will be applied to DB record while setSiteOwner() procedure
@@ -69,7 +66,6 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
       return True
     except Exception as msg:
       logging.error(f"start_clone() general error: {msg}")
-      asyncio.run(send_to_telegram(f"start_clone() general error: {msg}",f"🚒Provision clone error:"))
       return False
   else:
     logging.error(f"start_clone(): function cloudflare_certificate() returned an error!")

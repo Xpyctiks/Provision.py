@@ -1,6 +1,5 @@
-import logging,asyncio
+import logging
 from db.database import *
-from functions.send_to_telegram import send_to_telegram
 
 def loadTemplatesList():
   try:
@@ -22,7 +21,6 @@ def loadTemplatesList():
     return templates_list, first_template
   except Exception as err:
     logging.error(f"loadTemplatesList() error: {err}")
-    asyncio.run(send_to_telegram(f"loadTemplatesList() error: {err}",f"🚒Provision page render:"))
     return "Error", "Error"
 
 def loadClodflareAccounts():
@@ -45,7 +43,6 @@ def loadClodflareAccounts():
     return cf_list, first_cf
   except Exception as err:
     logging.error(f"loadClodflareAccounts() error: {err}")
-    asyncio.run(send_to_telegram(f"loadClodflareAccounts() error: {err}",f"🚒Provision page render:"))
     return "Error", "Error"
 
 def loadServersList():
@@ -68,7 +65,6 @@ def loadServersList():
     return server_list, first_server
   except Exception as err:
     logging.error(f"loadServersList() error: {err}")
-    asyncio.run(send_to_telegram(f"loadServersList() error: {err}",f"🚒Provision page render:"))
     return "Error", "Error"
 
 def getSiteOwner(domain: str) -> str:
