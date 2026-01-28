@@ -120,7 +120,7 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
 
 let domain = null;
 function openEditor(domain) {
-  fetch(`/robots?domain=${encodeURIComponent(domain)}`)
+  fetch(`/robots/?domain=${encodeURIComponent(domain)}`)
     .then(response => response.json())
     .then(data => {
       document.getElementById("editorTextarea").value = data.content;

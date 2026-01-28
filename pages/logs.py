@@ -1,4 +1,4 @@
-from flask import render_template,redirect,Blueprint,current_app,flash,jsonify, request
+from flask import render_template,redirect,Blueprint,current_app,flash,jsonify
 from flask_login import login_required
 import logging,os
 from functions.site_actions import is_admin
@@ -17,15 +17,11 @@ def showLogs():
 
 @logs_bp.route("/logs/api/")
 def logs_api():
-  lines = int(request.args.get("lines", 200))
   log_file = current_app.config["LOG_FILE"]
-
   if not os.path.exists(log_file):
     return jsonify({"error": "Log not found"}), 404
-
   with open(log_file, "r", encoding="utf-8", errors="replace") as f:
-    data = f.readlines()[-lines:]
-
+    data = f.readlines()
   return jsonify({
     "lines": data,
     "count": len(data)
