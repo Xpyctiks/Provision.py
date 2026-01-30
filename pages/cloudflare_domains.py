@@ -210,13 +210,13 @@ def del_existingDomain():
       result_del_domain = requests.delete(url_del_domain, headers=headers).json()
       if result_del_domain["success"] and result_del_domain["result"]:
         logging.info(f"Domain {domain} successfully deleted from Cloudflare account {account}!")
-        flash(f'Домен {account} успішно видален з аккаунту {account}!','alert alert-success')
+        flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
         return redirect(f"/cloudflare_domains/",302)
       else:
         logging.error(f"Error deleting domain {domain} from Cloudflare account {account}!")
-        flash(f'Помилка при видаленні домену {account} з аккаунту {account}!','alert alert-danger')
+        flash(f'Помилка при видаленні домену {domain} з аккаунту {account}!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
   except Exception as err:
     logging.error(f"del_existingDomain(): POST process error by {current_user.realname}: {err}")
-    flash(f'Домен {account} успішно видален з аккаунту {account}!','alert alert-success')
+    flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
     return redirect(f"/cloudflare_domains/",302)

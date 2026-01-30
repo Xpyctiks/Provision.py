@@ -38,7 +38,6 @@ document.querySelectorAll(".gitpull-btn").forEach(btn => {
     });
 });
 
-
 document.addEventListener('show.bs.collapse', async function (event) {
   let button = event.target.previousElementSibling.querySelector("button");
   let path = button.dataset.path;
@@ -77,6 +76,7 @@ function hideLoading() {
 
 document.addEventListener("DOMContentLoaded", function () {
   hideLoading();
+  overlayLoader();
 });
 
 window.addEventListener("pageshow", function (event) {
@@ -121,15 +121,15 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
 let domain = null;
 function openEditor(domain) {
   fetch(`/robots/?domain=${encodeURIComponent(domain)}`)
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById("editorTextarea").value = data.content;
-      document.getElementById("domain").value = domain
-    })
-    .catch(err => {
-      alert("Помилка завантаження");
-      console.error(err);
-    });
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById("editorTextarea").value = data.content;
+    document.getElementById("domain").value = domain
+  })
+  .catch(err => {
+    alert("Помилка завантаження");
+    console.error(err);
+  });
 }
 
 function saveEditor() {
@@ -203,3 +203,8 @@ document.addEventListener("keydown", function (e) {
     clearFilters();
   }
 });
+
+function overlayLoader() {
+  const overlayLoader = document.getElementById("overlayLoader");
+  overlayLoader.classList.add("d-none");
+}
