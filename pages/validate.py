@@ -35,7 +35,7 @@ def do_validation():
       logging.error(f"IP of the server {server} is not found during validation procedure")
       return f'{{"message": "IP of the server {server} is not found during validation procedure"}}'
     ip = srv.ip
-    url = "https://api.cloudflare.com/client/v4/zones?per_page=50"
+    url = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
     headers = {
       "X-Auth-Email": account,
       "X-Auth-Key": token,

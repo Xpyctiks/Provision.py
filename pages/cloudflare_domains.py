@@ -110,32 +110,42 @@ def show_existingDomains():
       logging.error(f"Token for CF account {account} is not found in DB during show domains procedure!")
       return f'{{"message": "Token for CF account {account} is not found during validation procedure"}}'
     token = tkn.token
-    url = "https://api.cloudflare.com/client/v4/zones?per_page=50"
+    pages = 1
+    url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={pages}"
     headers = {
       "X-Auth-Email": account,
       "X-Auth-Key": token,
       "Content-Type": "application/json"
     }
+    #requesting first page with limit 50 zones per page, then checks how much pages are there at all
     r = requests.get(url, headers=headers).json()
-    if r["success"] and r["result"]:
+    if r["success"] == True:
+      #how much pages we have at all
+      total_pages = r["result_info"]["total_pages"]
+      logging.info(f"total_pages={total_pages}")
       i = 0
-      for zone in r["result"]:
-        name = zone["name"]
-        plan_name = zone["plan"]["name"]
-        status = zone["status"]
-        if status == "active":
-          table_color = "table-success"
-        else:
-          table_color = "table-warning"
-        message_table += f"""\t<tr>
-        <th scope="row" class="{table_color}">{i}&nbsp;<form class="d-inline" method="post" action="/cloudflare_domains/delete_domain/"><button class="btn btn-outline-danger delDomain-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити цей домен з аккаунту." name="buttonDelAccount" value="{name}" type="submit">❌</button>
-          <input type="hidden" name="selected_account" value="{account}"></form>
-        </th>
-        <td class="{table_color}">{name}</td>
-        <td class="{table_color}">{plan_name}</td>
-        <td class="{table_color}">{status}</td>
-    </tr>\n"""
-        i = i + 1
+      while pages <= total_pages:
+        url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={pages}"
+        logging.info(f"pages={pages}")
+        r = requests.get(url, headers=headers).json()
+        for zone in r["result"]:
+          name = zone["name"]
+          plan_name = zone["plan"]["name"]
+          status = zone["status"]
+          if status == "active":
+            table_color = "table-success"
+          else:
+            table_color = "table-warning"
+          message_table += f"""\t<tr>
+          <th scope="row" class="{table_color}">{i}&nbsp;<form class="d-inline" method="post" action="/cloudflare_domains/delete_domain/"><button class="btn btn-outline-danger delDomain-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити цей домен з аккаунту." name="buttonDelAccount" value="{name}" type="submit">❌</button>
+            <input type="hidden" name="selected_account" value="{account}"></form>
+          </th>
+          <td class="{table_color}">{name}</td>
+          <td class="{table_color}">{plan_name}</td>
+          <td class="{table_color}">{status}</td>
+      </tr>\n"""
+          i = i + 1
+        pages = pages + 1
     message = f"""
 <div class="container-fluid px-2">
   <div class="table-responsive">

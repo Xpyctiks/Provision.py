@@ -25,7 +25,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
       logging.error(f"IP of the server {selected_server} is not found during validation procedure")
       return f'{{"message": "IP of the server {selected_server} is not found during validation procedure"}}'
     ip = srv.ip
-    url_check_domain_exists = "https://api.cloudflare.com/client/v4/zones?per_page=50"
+    url_check_domain_exists = f"https://api.cloudflare.com/client/v4/zones"
     headers = {
       "X-Auth-Email": selected_account,
       "X-Auth-Key": token,

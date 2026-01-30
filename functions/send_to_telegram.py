@@ -1,7 +1,7 @@
 import logging,httpx
 from flask import current_app
 
-async def send_to_telegram(message: str, subject: str = "__name__", ) -> None:
+async def send_to_telegram(message: str, subject: str = "Provision", ) -> None:
   """Sends messages via Telegram if TELEGRAM_CHATID and TELEGRAM_TOKEN are both set. Requires "message" parameters and can accept "subject" """
   TELEGRAM_CHATID: str = current_app.config["TELEGRAM_CHATID"]
   TELEGRAM_TOKEN: str = current_app.config["TELEGRAM_TOKEN"]
