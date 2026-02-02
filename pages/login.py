@@ -27,7 +27,7 @@ def do_login():
       return redirect("/",302)
     else:
       logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Login: Wrong password \"{password}\" for user \"{username}\", IP:{ip}, Real-IP:{real_ip}")
-      send_to_telegram("🚷Provision:",f"Login error! Wrong password for user \"{username}\", IP:{request.remote_addr}, Real-IP:{real_ip}")
+      send_to_telegram(f"Login error! Wrong password for user \"{username}\", IP:{request.remote_addr}, Real-IP:{real_ip}","🚷Provision:",)
       flash('Невірний юзер або пароль!', 'alert alert-danger')
       return redirect("/login/",302)
   except Exception as err:
