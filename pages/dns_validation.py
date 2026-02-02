@@ -1,6 +1,6 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
-import logging,asyncio,requests
+import logging,requests
 from db.database import Domain_account, Cloudflare
 from functions.send_to_telegram import send_to_telegram
 from functions.site_actions import normalize_domain,is_admin
@@ -29,7 +29,7 @@ def dns_validation():
       account = res.account
     else:
       logging.error(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...")
-      asyncio.run(send_to_telegram(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...",f"🚒Provision error by {current_user.realname}:"))
+      send_to_telegram(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...",f"🚒Provision error by {current_user.realname}:")
       flash(f"Аккаунт для домена {domain} не знайден в базі! Як ви взагалі опинилсь на цій сторінці...", 'alert alert-danger')
       return redirect("/",302)
     tkn = Cloudflare.query.filter_by(account=account).first()
@@ -37,7 +37,7 @@ def dns_validation():
       token = tkn.token
     else:
       logging.error(f"Token for account {account} is not found in DB! Strange error...")
-      asyncio.run(send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:"))
+      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",302)
     #Getting zoneID for the given domain
@@ -52,8 +52,8 @@ def dns_validation():
       "per_page": 1
     }
     result_check_domain = requests.get(url_check_domain, headers=headers, params=params_check_domain).json()
-    if result_check_domain["success"] and result_check_domain["result"]:
-      name_to_id = {i["name"]: i["id"] for i in result_check_domain["result"]}
+    if result_check_domain.get("success") and result_check_domain.get("result"):
+      name_to_id = {i.get("name"): i.get("id") for i in result_check_domain.get("result")}
       zone_id = name_to_id.get(domain)
     url_get_records = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
     params_get_records = {
@@ -62,7 +62,7 @@ def dns_validation():
       "direction": "asc"
     }
     result_get_records = requests.get(url_get_records,headers=headers,params=params_get_records).json()
-    if result_get_records["success"] and result_get_records["result"]:
+    if result_get_records.get("success") and result_get_records.get("result"):
       records = result_get_records.get("result", [])
       for record in records:
         record_name = record.get("name")
@@ -98,7 +98,7 @@ def dns_del_cname():
     account = ""
     token = ""
     #taking domain parameter, making it safe
-    domain = request.form["domain"]
+    domain = request.form.get("domain")
     domain = normalize_domain(domain)
     #cloudflare account
     account = request.form["account"]
@@ -108,7 +108,7 @@ def dns_del_cname():
       token = tkn.token
     else:
       logging.error(f"-----------------------dns_del_cname(): Token for account {account} is not found in DB! Strange error...-----------------------")
-      asyncio.run(send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:"))
+      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",301)
     #Getting zoneID for the given domain
@@ -123,8 +123,8 @@ def dns_del_cname():
       "per_page": 1
     }
     result_check_domain = requests.get(url_check_domain, headers=headers, params=params_check_domain).json()
-    if result_check_domain["success"] and result_check_domain["result"]:
-      name_to_id = {i["name"]: i["id"] for i in result_check_domain["result"]}
+    if result_check_domain.get("success") and result_check_domain.get("result"):
+      name_to_id = {i.get("name"): i.get("id") for i in result_check_domain.get("result")}
       zone_id = name_to_id.get(domain)
     url_del_cname = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{request.form.get('buttonDelCname')}"
     result_del_cname = requests.delete(url_del_cname,headers=headers)
@@ -161,7 +161,7 @@ def dns_add_cname():
     account = ""
     token = ""
     #taking domain parameter, making it safe
-    domain = request.form["domain"]
+    domain = request.form.get("domain")
     domain = normalize_domain(domain)
     #cloudflare account
     account = request.form.get("account")
@@ -171,7 +171,7 @@ def dns_add_cname():
       token = tkn.token
     else:
       logging.error(f"-----------------------dns_add_cname(): Token for account {account} is not found in DB! Strange error...-----------------------")
-      asyncio.run(send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:"))
+      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",302)
     #Getting zoneID for the given domain
@@ -186,8 +186,8 @@ def dns_add_cname():
       "per_page": 1
     }
     result_check_domain = requests.get(url_check_domain, headers=headers, params=params_check_domain).json()
-    if result_check_domain["success"] and result_check_domain["result"]:
-      name_to_id = {i["name"]: i["id"] for i in result_check_domain["result"]}
+    if result_check_domain.get("success") and result_check_domain.get("result"):
+      name_to_id = {i.get("name"): i.get("id") for i in result_check_domain.get("result")}
       zone_id = name_to_id.get(domain)
     url_add_cname = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/"
     data = {
@@ -201,7 +201,7 @@ def dns_add_cname():
     result_add_cname = requests.post(url_add_cname,headers=headers,json=data)
     if result_add_cname.status_code != 200:
       logging.error(f"-----------------------dns_add_cname(): API returned an error: {result_add_cname.text}-----------------------")
-      flash(f"API повернуло помилку при спробі додавання запису {request.form['cname']}. Дивіться логи!", 'alert alert-danger')
+      flash(f"API повернуло помилку при спробі додавання запису {request.form.get('cname')}. Дивіться логи!", 'alert alert-danger')
       return redirect("/",302)
     else:
       logging.info(f"-----------------------CNAME record {request.form.get('cname')} with value {request.form.get('cname_value')} added sucessfully!-----------------------")

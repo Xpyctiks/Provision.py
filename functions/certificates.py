@@ -57,12 +57,12 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
       }
     #making request to check the domain's existance on the server
     result_check_domain_exists = requests.get(url_check_domain_exists, headers=headers, params=params_check_domain_exists).json()
-    if result_check_domain_exists["success"] and result_check_domain_exists["result"]:
+    if result_check_domain_exists.get("success") and result_check_domain_exists.get("result"):
       logging.info(f"The selected domain {orig_domain} exists on the account {selected_account}")
       if issue_cert(domain,selected_account,token):
         logging.info("Starting preparation to DNS records setup...")
         #getting domain's zone id to check its A records futher
-        name_to_id = {i["name"]: i["id"] for i in result_check_domain_exists["result"]}
+        name_to_id = {i.get("name"): i.get("id") for i in result_check_domain_exists.get("result")}
         #get zone ID for the selected domain
         zone_id = name_to_id.get(domain)
         #get current DNS records for the domain
@@ -80,7 +80,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         #if we successfully got some data and there is the result with some A records in there
         elif result_dns_records.get("success") and len(result_dns_records.get("result")) > 0:
           #getting all records of type A
-          records = {item["name"]: item["content"] for item in result_dns_records["result"] if item["type"] == "A"}
+          records = {item.get("name"): item.get("content") for item in result_dns_records.get("result") if item.get("type") == "A"}
           if records:
             for name, content in records.items():
               if content == ip:
@@ -268,11 +268,11 @@ def issue_cert(domain: str,account: str, token: str):
   try:
     logging.info(f"Starting certificate issue for domain {domain} on the account {account}")
     #check if we already have certificates - do nothing
-    if os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".crt")) and os.path.exists(os.path.join(current_app.config['NGX_CRT_PATH'],domain+".key")):
-      logging.info(f"{os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt')} and {os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key')} already exist on the server. Skipping certificates issue!")
+    if os.path.exists(os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+".crt")) and os.path.exists(os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+".key")):
+      logging.info(f"{os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+'.crt')} and {os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+'.key')} already exist on the server. Skipping certificates issue!")
       return True
     else:
-      logging.info(f"{os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.crt')} and {os.path.join(current_app.config['NGX_CRT_PATH'],domain+'.key')} are not exist on the server. Starting issue procedure...")
+      logging.info(f"{os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+'.crt')} and {os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+'.key')} are not exist on the server. Starting issue procedure...")
     key, csr = generate_key_and_csr(domain)
     response = request_cloudflare_cert(csr,domain,account,token)
     if not response.get("success"):
@@ -280,11 +280,11 @@ def issue_cert(domain: str,account: str, token: str):
       return False
     cert = response["result"]["certificate"]
     key = key.decode()
-    keyFile = os.path.join(current_app.config['NGX_CRT_PATH'],domain+".key")
+    keyFile = os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+".key")
     with open(keyFile, "w") as f:
       f.write(key)
       logging.info(f"Certificate key {keyFile} saved.")
-    crtFile = os.path.join(current_app.config['NGX_CRT_PATH'],domain+".crt")
+    crtFile = os.path.join(current_app.config.get('NGX_CRT_PATH'),domain+".crt")
     with open(crtFile, "w") as f:
       f.write(cert)
       logging.info(f"Certificate {crtFile} saved.")

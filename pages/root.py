@@ -1,4 +1,4 @@
-import logging,os,re,asyncio
+import logging,os,re
 from flask import render_template,Blueprint,current_app,flash
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
@@ -19,8 +19,8 @@ def index():
   try:
     sites_list = []
     sites_list = [
-      name for name in os.listdir(current_app.config["WEB_FOLDER"])
-      if os.path.isdir(os.path.join(current_app.config["WEB_FOLDER"], name))
+      name for name in os.listdir(current_app.config.get("WEB_FOLDER"))
+      if os.path.isdir(os.path.join(current_app.config.get("WEB_FOLDER"), name))
     ]
     html_data = []
     users_list = []
@@ -36,7 +36,7 @@ def index():
       #variable with full path to php pool config of the site
       php_site = os.path.join(current_app.config["PHP_POOL"],s+".conf")
       #check robots.txt for existance and change its button color
-      if os.path.exists(os.path.join(current_app.config['WEB_FOLDER'],s,"public","robots.txt")):
+      if os.path.exists(os.path.join(current_app.config.get('WEB_FOLDER'),s,"public","robots.txt")):
         robots_button = "btn-primary"
       else:
         robots_button = "btn-light"
@@ -56,7 +56,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
+          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '✅OK',
           "robots_button": robots_button,
@@ -72,7 +72,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
+          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '🚨Помилка конфігураціх РНР',
           "robots_button": robots_button,
@@ -88,7 +88,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
+          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '🚨Помилка конфігураціх Nginx',
           "robots_button": robots_button,
@@ -104,7 +104,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config["WEB_FOLDER"],s),
+          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '🚧Сайт вимкнено',
           "robots_button": robots_button,
@@ -143,5 +143,5 @@ def index():
     return render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list)
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")
-    asyncio.run(send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:"))
+    send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:")
     return "root.py ERROR!"

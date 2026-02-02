@@ -1,6 +1,6 @@
 from flask import request,redirect,flash,Blueprint,current_app,jsonify
 from flask_login import current_user, login_required
-import logging,asyncio,os
+import logging,os
 from functions.send_to_telegram import send_to_telegram
 from functions.site_actions import normalize_domain
 
@@ -12,10 +12,10 @@ def editRobots():
     data = request.json
     domain = normalize_domain(data["domain"])
     content = data["content"]
-    robots_file = os.path.join(current_app.config['WEB_FOLDER'],domain,"public","robots.txt")
+    robots_file = os.path.join(current_app.config.get('WEB_FOLDER'),domain,"public","robots.txt")
     if robots_file in ('/', '/home', '/root', '/etc', '/var', '/tmp', os.path.expanduser("~")):
       logging.error(f"editRobots() error by {current_user.realname}: unsafe path found in robots.txt path - {robots_file}")
-      asyncio.run(send_to_telegram(f"editRobots() error by {current_user.realname}: unsafe path found in robots.txt path!",f"🚒Provision robots edior:"))
+      send_to_telegram(f"editRobots() error by {current_user.realname}: unsafe path found in robots.txt path!",f"🚒Provision robots edior:")
       return jsonify({"error": "Unsafe path!"})
     with open(robots_file, "w") as f:
       f.write(content)
@@ -40,11 +40,11 @@ def showRobots():
         return jsonify({"content": "#empty file. Replace with new text content"})
     else:
       logging.error(f"showRobots() error by {current_user.realname}: domain variable is not recevied.")
-      asyncio.run(send_to_telegram("showRobots() error by {current_user.realname}: domain variable is not recevied.",f"🚒Provision robots edior:"))
+      send_to_telegram(f"showRobots() error by {current_user.realname}: domain variable is not recevied.",f"🚒Provision robots edior:")
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       return redirect("/",301)
   except Exception as msg:
     logging.error(f"showRobots() general error by {current_user.realname}: {msg}")
     flash(f'Помилка при POST запиті на сторінці /robots! Дивіться логи!','alert alert-danger')
-    asyncio.run(send_to_telegram(f"showRobots() general error by {current_user.realname}: {msg}",f"🚒Provision robots edior:"))
+    send_to_telegram(f"showRobots() general error by {current_user.realname}: {msg}",f"🚒Provision robots edior:")
     return jsonify({"error": str(msg)}), 500

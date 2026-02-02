@@ -1,4 +1,4 @@
-import logging,os,subprocess,asyncio,re,shutil,idna
+import logging,os,subprocess,re,shutil,idna
 from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config, create_php_config
@@ -13,8 +13,8 @@ def delete_site(sitename: str) -> bool:
   try:
     logging.info(f"-----------------------Starting single site delete: {sitename} by {current_user.realname}-----------------")
     #-------------------------Delete Nginx site config
-    ngx_en = os.path.join(current_app.config["NGX_SITES_PATHEN"],sitename)
-    ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
+    ngx_en = os.path.join(current_app.config.get("NGX_SITES_PATHEN"),sitename)
+    ngx_av = os.path.join(current_app.config.get("NGX_SITES_PATHAV"),sitename)
     #delete in nginx/sites-enabled
     if os.path.islink(ngx_en):
       os.unlink(ngx_en)
@@ -39,8 +39,8 @@ def delete_site(sitename: str) -> bool:
       logging.error(f"Error while Nginx config test: {result1.stderr.strip()}")
       error_message += f"Помилка тестування конфігурації Nginx: {result1.stderr.strip()}\n"
     #------------------------Delete in php pool.d/
-    php = os.path.join(current_app.config["PHP_POOL"],sitename+".conf")
-    php_dis = os.path.join(current_app.config["PHP_POOL"],sitename+".conf.disabled")
+    php = os.path.join(current_app.config.get("PHP_POOL"),sitename+".conf")
+    php_dis = os.path.join(current_app.config.get("PHP_POOL"),sitename+".conf.disabled")
     if os.path.isfile(php):
       os.unlink(php)
       logging.info(f"PHP config {php} deleted successfully")
@@ -49,10 +49,10 @@ def delete_site(sitename: str) -> bool:
       logging.info(f"PHP config {php_dis} deleted successfully")
     else:
       logging.info(f"PHP config {php} already deleted")
-    result2 = subprocess.run(["sudo",current_app.config["PHPFPM_PATH"],"-t"], capture_output=True, text=True)
+    result2 = subprocess.run(["sudo",current_app.config.get("PHPFPM_PATH"),"-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result2.stderr):
     #gettings digits of PHP version from the path to the PHP-FPM
-      phpVer = re.search(r"(.*)(\d\.\d)",current_app.config["PHPFPM_PATH"]).group(2)
+      phpVer = re.search(r"(.*)(\d\.\d)",current_app.config.get("PHPFPM_PATH")).group(2)
       logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
       result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
       if  result3.returncode == 0:
@@ -64,7 +64,7 @@ def delete_site(sitename: str) -> bool:
       logging.error(f"Error while PHP config. test: {result2.stderr.strip()}")
       error_message += f"Помилка тестування конфігурації PHP: {result2.stderr.strip()}\n"
     #--------------Delete of the site folder
-    path = os.path.join(current_app.config["WEB_FOLDER"],sitename)
+    path = os.path.join(current_app.config.get("WEB_FOLDER"),sitename)
     if not os.path.isdir(path):
       logging.error(f"Site folder delete error - {path} - is not a directory!")
       error_message += f"Помилка видалення папки сайту - {path} - це не є папка!\n"
@@ -86,7 +86,7 @@ def delete_site(sitename: str) -> bool:
         status = 1
     #if we have errors during delete procedure - send an alert
     if status > 0:
-      asyncio.run(send_to_telegram(f"Errors while deleting the site. Check logs!",f"🚒Provision site delete error({sitename}):"))
+      send_to_telegram(f"Errors while deleting the site. Check logs!",f"🚒Provision site delete error({sitename}):")
       logging.error(f"Root folder {path} is not deleted because some files or folders are still inside.")
     else:
       os.rmdir(path)
@@ -132,7 +132,7 @@ def disable_site(sitename: str) -> None:
   try:
     logging.info(f"-----------------------Starting site disable: {sitename} by {current_user.realname}-----------------")
     #disable Nginx site
-    ngx = os.path.join(current_app.config["NGX_SITES_PATHEN"],sitename)
+    ngx = os.path.join(current_app.config.get("NGX_SITES_PATHEN"),sitename)
     if os.path.isfile(ngx) or os.path.islink(ngx):
       os.unlink(ngx)
       logging.info(f"Nginx symlink {ngx} removed")
@@ -151,13 +151,13 @@ def disable_site(sitename: str) -> None:
       logging.error(f"Nginx site disable error - symlink {ngx} is not exist")
       error_message += f"Помилка при перезавантаженні веб сервера Nginx"
     #php disable
-    php = os.path.join(current_app.config["PHP_POOL"],sitename+".conf")
+    php = os.path.join(current_app.config.get("PHP_POOL"),sitename+".conf")
     if os.path.isfile(php) or os.path.islink(php):
       os.rename(php,php+".disabled")
-      result2 = subprocess.run(["sudo",current_app.config["PHPFPM_PATH"],"-t"], capture_output=True, text=True)
+      result2 = subprocess.run(["sudo",current_app.config.get("PHPFPM_PATH"),"-t"], capture_output=True, text=True)
       if  re.search(r".*test is successful.*",result2.stderr):
       #gettings digits of PHP version from the path to the PHP-FPM
-        phpVer = re.search(r"(.*)(\d\.\d)",current_app.config["PHPFPM_PATH"]).group(2)
+        phpVer = re.search(r"(.*)(\d\.\d)",current_app.config.get("PHPFPM_PATH")).group(2)
         logging.info(f"PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
         result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
         if  result3.returncode == 0:
@@ -186,10 +186,10 @@ def enable_site(sitename: str) -> None:
   try:
     logging.info(f"-----------------------Starting site enable: {sitename} by {current_user.realname}-----------------")
     #enable Nginx site
-    ngx_en = os.path.join(current_app.config["NGX_SITES_PATHEN"],sitename)
-    ngx_av = os.path.join(current_app.config["NGX_SITES_PATHAV"],sitename)
-    php_cnf = os.path.join(current_app.config["PHP_POOL"],sitename+".conf")
-    php_cnf_dis = os.path.join(current_app.config["PHP_POOL"],sitename+".conf.disabled")
+    ngx_en = os.path.join(current_app.config.get("NGX_SITES_PATHEN"),sitename)
+    ngx_av = os.path.join(current_app.config.get("NGX_SITES_PATHAV"),sitename)
+    php_cnf = os.path.join(current_app.config.get("PHP_POOL"),sitename+".conf")
+    php_cnf_dis = os.path.join(current_app.config.get("PHP_POOL"),sitename+".conf.disabled")
     #--------------------check if there is no active symlink to the site
     #in sites-enabled is not exists, but in sites-available it is
     if not os.path.islink(ngx_en) and os.path.isfile(ngx_av):
@@ -217,7 +217,7 @@ def enable_site(sitename: str) -> None:
       config = create_php_config(sitename)
       with open(php_cnf, 'w',encoding='utf8') as fileC:
         fileC.write(config)
-      logging.info(f"PHP config {os.path.join(current_app.config['PHP_POOL'],sitename)} created because it wasn't exist")
+      logging.info(f"PHP config {os.path.join(current_app.config.get('PHP_POOL'),sitename)} created because it wasn't exist")
     #start of checks - nginx
     result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
@@ -231,7 +231,7 @@ def enable_site(sitename: str) -> None:
       logging.error(f"Error while Nginx config. test: {result1.stderr.strip()}")
       error_message += f"Помилка при тестуванні конфігурації веб сервера Nginx: {result1.stderr.strip()}"
     #start of checks - php
-    result2 = subprocess.run(["sudo",current_app.config['PHPFPM_PATH'],"-t"], capture_output=True, text=True)
+    result2 = subprocess.run(["sudo",current_app.config.get('PHPFPM_PATH'),"-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result2.stderr):
     #gettings digits of PHP version from the path to the PHP-FPM
       phpVer = re.search(r"(.*)(\d\.\d)",current_app.config['PHPFPM_PATH']).group(2)
@@ -262,7 +262,7 @@ def del_redirect(location: str,sitename: str, callable: int = 0) -> bool:
     else:
       #creating counter to count how much redirects were processed from the general count
       counter = 1
-    file301 = os.path.join(current_app.config["NGX_ADD_CONF_DIR"],"301-" + sitename + ".conf")
+    file301 = os.path.join(current_app.config.get("NGX_ADD_CONF_DIR"),"301-" + sitename + ".conf")
     #get into the site's config and uncomment one string
     if os.path.exists(file301):
       logging.info(f"Starting delete operation for {location}...")
@@ -359,7 +359,7 @@ def applyChanges(sitename: str) -> bool:
 def count_redirects(site: str) -> str:
   """This function is counts current available redirects for every site while general site list is loading"""
   try:
-    with open(os.path.join(current_app.config["NGX_ADD_CONF_DIR"],"301-"+site+".conf"), "r", encoding="utf-8") as f:
+    with open(os.path.join(current_app.config.get("NGX_ADD_CONF_DIR"),"301-"+site+".conf"), "r", encoding="utf-8") as f:
       count = int(sum(1 for _ in f) / 3)
       return str(count)
   except Exception:
@@ -371,7 +371,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
     #When a single site pull
     if len(pullArray) == 0:
       logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname}-----------------")
-      path = os.path.join(current_app.config["WEB_FOLDER"],domain)
+      path = os.path.join(current_app.config.get("WEB_FOLDER"),domain)
       if os.path.exists(path):
         os.chdir(path)
         logging.info(f"Successfully got into {path}")
@@ -411,14 +411,14 @@ def makePull(domain: str, pullArray: list = []) -> bool:
       message = ""
       #starting pull procedure one by one
       for i, curr_domain in enumerate(pullArray,1):
-        path = os.path.join(current_app.config["WEB_FOLDER"],curr_domain)
+        path = os.path.join(current_app.config.get("WEB_FOLDER"),curr_domain)
         if os.path.exists(path):
           os.chdir(path)
           logging.info(f"Successfully got into {path}")
           result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
           if result.returncode != 0:
             logging.error(f"Git pull for {domain} returned error: {result.stderr}")
-            asyncio.run(send_to_telegram(f"Git pull error for site {curr_domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:"))
+            send_to_telegram(f"Git pull error for site {curr_domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:")
             message += f"[❌] Помилка оновлення коду для {curr_domain}\n"
           else:
             message += f"[✅] Код {curr_domain} успішно оновлено!\n"
@@ -430,10 +430,10 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                 logging.info(f"DB migration for {curr_domain} done successfully!")
               else:
                 logging.error(f"DB migration error: {result3.stderr}")
-                asyncio.run(send_to_telegram(f"DB migration for {curr_domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:"))
+                send_to_telegram(f"DB migration for {curr_domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:")
             else:
               logging.error(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}")
-              asyncio.run(send_to_telegram(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:"))
+              send_to_telegram(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:")
       flash(message,'alert alert-info')
       logging.info(f"-----------------------Bunch git pull by {current_user.realname} is done!-----------------")
       return True
@@ -466,7 +466,7 @@ def link_domain_and_account(domain: str, account: str):
     acc = Cloudflare.query.filter_by(account=account).first()
     if not acc:
       logging.error(f"link_domain_and_account() Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible!")
-      asyncio.run(send_to_telegram(f"link_domain_and_account() Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible!",f"🚒Provision error by {current_user.realname}:"))
+      send_to_telegram(f"link_domain_and_account() Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible!",f"🚒Provision error by {current_user.realname}:")
       return False
     #Check if the given account is already linked with the given domain
     check = Domain_account.query.filter_by(domain=domain).all()

@@ -1,6 +1,6 @@
 from flask import redirect,Blueprint,request,render_template,flash
 from flask_login import login_required, current_user
-import logging,asyncio
+import logging
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *
@@ -46,7 +46,7 @@ def catch_admin_panel():
     else:
       flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
       logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
-      asyncio.run(send_to_telegram("Something strange was received by /admin_panel via POST request and we can't process that.",f"🚒Provision error by {current_user.realname}"))
+      send_to_telegram("Something strange was received by /admin_panel via POST request and we can't process that.",f"🚒Provision error by {current_user.realname}")
       redirect("/",302)
   except Exception as err:
     logging.error(f"catch_admin_panel(): global error {err}")

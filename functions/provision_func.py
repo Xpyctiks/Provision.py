@@ -1,5 +1,5 @@
 
-import os,subprocess,shutil,glob,zipfile,random,string,re,asyncio,logging
+import os,subprocess,shutil,glob,zipfile,random,string,re,logging
 from functions.config_templates import create_nginx_config, create_php_config
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
@@ -21,7 +21,7 @@ def setSiteOwner(domain: str) -> bool:
       owner = users.id
     else:
       logging.error(f"setSiteOwner() can not find info in Db about user {current_app.realname}!")
-      asyncio.run(send_to_telegram(f"setSiteOwner() can not find info in Db about user {current_app.realname}",f"🚒Provision job error({functions.variables.JOB_ID}):"))
+      send_to_telegram(f"setSiteOwner() can not find info in Db about user {current_app.realname}",f"🚒Provision job error({functions.variables.JOB_ID}):")
       return False
     logging.info(f"Setting site {domain} owner to user {current_user.realname} with ID {owner}")
     #check if the current user is already an owner of the given domain
@@ -74,14 +74,14 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
         setSiteOwner(os.path.basename(file)[:-4])
         #writing link of domain and its account to the database
         link_domain_and_account(os.path.basename(file)[:-4],selected_account)
-        asyncio.run(send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):"))
+        send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):")
         logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
         #quit only if we use zip files. if web provision - not to interrupt flow
         if functions.variables.JOB_ID != f"Autoprovision":
           return True
       else:
         logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
-        asyncio.run(send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:"))
+        send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:")
         functions.variables.JOB_COUNTER += 1
         #writing site owner info to the database
         setSiteOwner(os.path.basename(file)[:-4])
@@ -93,7 +93,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       setSiteOwner(os.path.basename(domain))
       #writing link of domain and its account to the database
       link_domain_and_account(domain,selected_account)
-      asyncio.run(send_to_telegram(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:"))
+      send_to_telegram(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:")
       logging.info(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
       return True
     #the function was called after emergency exit from some other place
@@ -104,7 +104,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       if os.path.exists(filename):
         os.remove(filename)
       logging.error(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
-      asyncio.run(send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🚒🏁Provision job finish ({functions.variables.JOB_ID}):"))
+      send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🚒🏁Provision job finish ({functions.variables.JOB_ID}):")
       logging.error(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
       return True
     elif file == "" and domain != "" and emerg_shutdown == True:
@@ -121,13 +121,13 @@ def setupPHP(file: str) -> bool:
     logging.info(f"Configuring PHP...")
     filename = os.path.basename(file)[:-4]
     config = create_php_config(filename)
-    with open(os.path.join(current_app.config["PHP_POOL"],filename)+".conf", 'w',encoding='utf8') as fileC:
+    with open(os.path.join(current_app.config.get("PHP_POOL"),filename)+".conf", 'w',encoding='utf8') as fileC:
       fileC.write(config)
-    logging.info(f"PHP config {os.path.join(current_app.config['PHP_POOL'],filename)} created")
-    result = subprocess.run(["sudo",current_app.config["PHPFPM_PATH"],"-t"], capture_output=True, text=True)
+    logging.info(f"PHP config {os.path.join(current_app.config.get('PHP_POOL'),filename)} created")
+    result = subprocess.run(["sudo",current_app.config.get("PHPFPM_PATH"),"-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result.stderr):
       #gettings digits of PHP version from the path to the PHP-FPM
-      phpVer = re.search(r"(.*)(\d\.\d)",current_app.config["PHPFPM_PATH"]).group(2)
+      phpVer = re.search(r"(.*)(\d\.\d)",current_app.config.get("PHPFPM_PATH")).group(2)
       logging.info(f"PHP config test passed successfully: {result.stderr.strip()}. Reloading PHP, version {phpVer}...")
       result = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
       if  result.returncode == 0:
@@ -156,11 +156,11 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
       crt_filename = has_subdomain
       logging.info(f"setupNginx():We have a subdomain there...")
     #setting correct rights to our newly created certificates
-    os.chmod(current_app.config["NGX_CRT_PATH"]+crt_filename+".crt", 0o600)
-    os.chmod(current_app.config["NGX_CRT_PATH"]+crt_filename+".key", 0o600)
+    os.chmod(current_app.config.get("NGX_CRT_PATH")+crt_filename+".crt", 0o600)
+    os.chmod(current_app.config.get("NGX_CRT_PATH")+crt_filename+".key", 0o600)
     #preparing folder
-    os.system(f"sudo chown -R {current_app.config['WWW_USER']}:{current_app.config['WWW_GROUP']} {os.path.join(current_app.config['WEB_FOLDER'],filename)}")
-    logging.info(f"Folders and files ownership of {os.path.join(current_app.config['WEB_FOLDER'],filename)} changed to {current_app.config['WWW_USER']}:{current_app.config['WWW_GROUP']}")
+    os.system(f"sudo chown -R {current_app.config.get('WWW_USER')}:{current_app.config.get('WWW_GROUP')} {os.path.join(current_app.config.get('WEB_FOLDER'),filename)}")
+    logging.info(f"Folders and files ownership of {os.path.join(current_app.config.get('WEB_FOLDER'),filename)} changed to {current_app.config.get('WWW_USER')}:{current_app.config.get('WWW_GROUP')}")
     #preparing redirects config
     if os.path.exists("/etc/nginx/additional-configs/"):
       redirect_file = os.path.join("/etc/nginx/additional-configs/","301-" + filename + ".conf")
@@ -169,18 +169,18 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
       logging.info(f"File for redirects {redirect_file} created successfully!")
     else:
       logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
-      asyncio.run(send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({functions.variables.JOB_ID}):"))
+      send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({functions.variables.JOB_ID}):")
     #running template config according to our domain or its subdomain for crtificates
     if has_subdomain == "---":
       config = create_nginx_config(filename,"---")
     else:
       config = create_nginx_config(filename,crt_filename)
-    with open(os.path.join(current_app.config["NGX_SITES_PATHAV"],filename), 'w',encoding='utf8') as fileC:
+    with open(os.path.join(current_app.config.get("NGX_SITES_PATHAV"),filename), 'w',encoding='utf8') as fileC:
       fileC.write(config)
-    logging.info(f"Nginx config {os.path.join(current_app.config['NGX_SITES_PATHAV'],filename)} created")
-    if not os.path.exists(os.path.join(current_app.config["NGX_SITES_PATHEN"],filename)):
-      os.symlink(os.path.join(current_app.config["NGX_SITES_PATHAV"],filename),os.path.join(current_app.config["NGX_SITES_PATHEN"],filename))
-    logging.info(f"Nginx config {os.path.join(current_app.config['NGX_SITES_PATHEN'],filename)} symlink created")
+    logging.info(f"Nginx config {os.path.join(current_app.config.get('NGX_SITES_PATHAV'),filename)} created")
+    if not os.path.exists(os.path.join(current_app.config.get("NGX_SITES_PATHEN"),filename)):
+      os.symlink(os.path.join(current_app.config.get("NGX_SITES_PATHAV"),filename),os.path.join(current_app.config.get("NGX_SITES_PATHEN"),filename))
+    logging.info(f"Nginx config {os.path.join(current_app.config.get('NGX_SITES_PATHEN'),filename)} symlink created")
     result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
       logging.info(f"Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
@@ -204,7 +204,7 @@ def unZip_3(file: str, selected_account: str, selected_server: str, realname: st
     #Getting the site name from the archive name
     filename = os.path.basename(file)[:-4]
     #Getting the full path to the folder
-    finalPath = os.path.join(current_app.config["WEB_FOLDER"],filename)
+    finalPath = os.path.join(current_app.config.get("WEB_FOLDER"),filename)
     logging.info(f"Unpacking {file} to {finalPath}")
     if not os.path.exists(finalPath):
       os.makedirs(finalPath)
@@ -232,7 +232,7 @@ def unZip_3(file: str, selected_account: str, selected_server: str, realname: st
 def checkZip_2(file: str, selected_account: str, selected_server: str, realname: str) -> bool:
   """Step2: Checks zip file for it content"""
   logging.info(f">>>Start processing of archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} total - {file}")
-  asyncio.run(send_to_telegram(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL}: {file}",f"🎢Provisoin job start({functions.variables.JOB_ID}):"))
+  send_to_telegram(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL}: {file}",f"🎢Provisoin job start({functions.variables.JOB_ID}):")
   try:
     #Preparing full path + "public" folder
     found = 0
@@ -244,7 +244,7 @@ def checkZip_2(file: str, selected_account: str, selected_server: str, realname:
         logging.info("checkZip_2(): public/ folder found!")
     if found < 1:
       logging.error(f"Looks like public/ folder is absent in {file}!")
-      asyncio.run(send_to_telegram(f"Job #{functions.variables.JOB_COUNTER} error: Looks like public/ folder is absent in {file}",f"🚒Provision job error:"))
+      send_to_telegram(f"Job #{functions.variables.JOB_COUNTER} error: Looks like public/ folder is absent in {file}",f"🚒Provision job error:")
       logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
       return False
     else:
@@ -320,7 +320,7 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
   try:
     logging.info(f"---------------------------Starting automatic deploy for site {domain}  by {realname}----------------------------")
     logging.info(f"Cloudflare account: {selected_account}, Server: {selected_server}")
-    finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
+    finalPath = os.path.join(current_app.config.get("WEB_FOLDER"),domain)
     functions.variables.JOB_ID = f"Autoprovision"
     #First of all starting DNS and certificates check and setup procedure
     if cloudflare_certificate(domain,selected_account,selected_server,its_not_a_subdomain):

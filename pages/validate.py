@@ -67,10 +67,10 @@ def do_validation():
       }
     #making request to check the domain's existance on the server
     r = requests.get(url, headers=headers,params=params).json()
-    if r["success"] and r["result"]:
+    if r.get("success") and r.get("result"):
       message += f"[✅] Домен {domain} існує на цьому сервері<br>"
       #getting domain's zone id to check its A records futher
-      name_to_id = {i["name"]: i["id"] for i in r["result"]}
+      name_to_id = {i.get("name"): i.get("id") for i in r.get("result")}
       id = name_to_id.get(domain)
       url = f"https://api.cloudflare.com/client/v4/zones/{id}/dns_records"
       r = requests.get(url, headers=headers).json()
@@ -78,7 +78,7 @@ def do_validation():
         message += "[❌] Не вдалося отримати DNS записи<br>"
         return json.dumps({"message": message})
       #getting all records of type A
-      records = {item["name"]: item["content"] for item in r["result"] if item["type"] == "A"}
+      records = {item.get("name"): item.get("content") for item in r.get("result") if item.get("type") == "A"}
       for name, content in records.items():
         if content == ip:
           message += f'[✅] {name} A запис відповідає серверу {server}<br>'

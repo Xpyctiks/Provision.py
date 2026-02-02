@@ -11,34 +11,34 @@ def do_action():
   try:
     #sites delete block
     if (request.form.get('delete') and not request.form.get('selected')):
-      delete_site(request.form['delete'].strip())
+      delete_site(request.form.get('delete').strip())
       return redirect(f"/",301)
     elif (request.form.get('delete') and request.form.get('selected')):
       array = request.form.getlist("selected")
-      del_selected_sites(request.form['delete'].strip(),array)
+      del_selected_sites(request.form.get('delete').strip(),array)
       return redirect(f"/",301)
     #sites actions
     elif (request.form.get('disable')):
       disable_site(request.form['disable'].strip())
     elif (request.form.get('enable')):
-      enable_site(request.form['enable'].strip())
+      enable_site(request.form.get('enable').strip())
     #redirects management block
     elif (request.form.get('del_redir') and not request.form.get('selected')):
-      del_redirect(request.form['del_redir'].strip(),request.form['sitename'].strip())
-      return redirect(f"/redirects_manager?site={request.form['sitename'].strip()}",302)
+      del_redirect(request.form.get('del_redir').strip(),request.form.get('sitename').strip())
+      return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",302)
     elif (request.form.get('del_redir') and request.form.get('selected')):
       array = request.form.getlist("selected")
-      del_selected_redirects(array,request.form['sitename'].strip())
-      return redirect(f"/redirects_manager?site={request.form['sitename'].strip()}",302)
+      del_selected_redirects(array,request.form.get('sitename').strip())
+      return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",302)
     elif (request.form.get('applyChanges')):
-      applyChanges(request.form['sitename'].strip())
-      return redirect(f"/redirects_manager?site={request.form['sitename'].strip()}",302)
+      applyChanges(request.form.get('sitename').strip())
+      return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",302)
     #Git block
     elif (request.form.get('gitPull') and not request.form.get('selected')):
       makePull(request.form['gitPull'].strip())
     elif (request.form.get('gitPull') and request.form.get('selected')):
       pullArray = request.form.getlist("selected")
-      makePull(request.form['gitPull'].strip(),pullArray)
+      makePull(request.form.get('gitPull').strip(),pullArray)
     return redirect("/",302)
   except Exception as err:
     logging.error(f"do_action(): general error by {current_user.realname}: {err}")

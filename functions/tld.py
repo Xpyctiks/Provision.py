@@ -1,4 +1,4 @@
-import tldextract,os,logging,asyncio
+import tldextract,os,logging
 from pathlib import Path
 from functions.send_to_telegram import send_to_telegram
 
@@ -10,6 +10,6 @@ try:
     os.makedirs(cache_dir, exist_ok=True)
 except Exception as err:
   logging.error(f"tld.py general error: {err}")
-  asyncio.run(send_to_telegram(f"tld.py general error: {err}",f"🚒Provision validation page error:"))
+  send_to_telegram(f"tld.py general error: {err}",f"🚒Provision validation page error:")
 
 tld = tldextract.TLDExtract(cache_dir=cache_dir,fallback_to_snapshot=True)

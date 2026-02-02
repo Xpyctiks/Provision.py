@@ -11,8 +11,8 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
   domain = normalize_domain(domain)
   logging.info(f"---------------------------Starting clone of the site {source_site} to new site {domain} by {realname}----------------------------")
   logging.info(f"Cloudflare account: {selected_account}, IP of the server: {selected_server}")
-  dstPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
-  srcPath = os.path.join(current_app.config["WEB_FOLDER"],source_site)
+  dstPath = os.path.join(current_app.config.get("WEB_FOLDER"),domain)
+  srcPath = os.path.join(current_app.config.get("WEB_FOLDER"),source_site)
   logging.info(f"Src. path: {srcPath}")
   logging.info(f"Dst. path: {dstPath}")
   functions.variables.JOB_ID = f"Autoprovision"
@@ -27,8 +27,8 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
         return False
       logging.info(f"Copying {srcPath} to {dstPath} is done successfully!")
       #setting git safe value to allow this folder works with git
-      finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
-      if os.path.exists(os.path.join(current_app.config["WEB_FOLDER"],domain,".git")):
+      finalPath = os.path.join(current_app.config.get("WEB_FOLDER"),domain)
+      if os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,".git")):
         result = subprocess.run(["sudo","git","config","--global", "--add", "safe.directory", f"{finalPath}"], capture_output=True, text=True)
         if result.returncode != 0:
           logging.error(f"Error while git add safe.directory for {finalPath}: {result.stderr}")

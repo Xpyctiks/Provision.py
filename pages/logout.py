@@ -1,6 +1,6 @@
 from flask import redirect,flash,Blueprint,session,request
 from flask_login import current_user
-import logging,asyncio
+import logging
 from flask_login import logout_user, login_required, current_user
 from functions.send_to_telegram import send_to_telegram
 
@@ -19,7 +19,7 @@ def do_logout():
     return redirect("/login/",302)
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>do_login(): general error: {err}")
-    asyncio.run(send_to_telegram(f"do_login(): general error: {err}",f"🚒Provision login error:"))
+    send_to_telegram(f"do_login(): general error: {err}",f"🚒Provision login error:")
     flash(f"Неочікувана помилка при POST запиту на сторінці /login! Дивіться логи!", 'alert alert-danger')
     return redirect("/login/",302)
 
@@ -35,6 +35,6 @@ def show_logout():
     return redirect("/",302)
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>show_logout(): general error: {err}")
-    asyncio.run(send_to_telegram(f"show_logout(): general error: {err}",f"🚒Provision logout error:"))
+    send_to_telegram(f"show_logout(): general error: {err}",f"🚒Provision logout error:")
     flash(f"Неочікувана помилка при GET запиту на сторінці /logout! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

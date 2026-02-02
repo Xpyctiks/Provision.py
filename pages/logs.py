@@ -17,7 +17,7 @@ def showLogs():
 
 @logs_bp.route("/logs/api/")
 def logs_api():
-  log_file = current_app.config["LOG_FILE"]
+  log_file = current_app.config.get("LOG_FILE")
   if not os.path.exists(log_file):
     return jsonify({"error": "Log not found"}), 404
   with open(log_file, "r", encoding="utf-8", errors="replace") as f:

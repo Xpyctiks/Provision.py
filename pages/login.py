@@ -1,5 +1,5 @@
 from flask import render_template,request,redirect,flash,Blueprint,session
-import logging,asyncio
+import logging
 from flask_login import login_user,current_user
 from db.database import User
 from functions.send_to_telegram import send_to_telegram
@@ -27,12 +27,12 @@ def do_login():
       return redirect("/",302)
     else:
       logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Login: Wrong password \"{password}\" for user \"{username}\", IP:{ip}, Real-IP:{real_ip}")
-      asyncio.run(send_to_telegram("🚷Provision:",f"Login error! Wrong password for user \"{username}\", IP:{request.remote_addr}, Real-IP:{real_ip}"))
+      send_to_telegram("🚷Provision:",f"Login error! Wrong password for user \"{username}\", IP:{request.remote_addr}, Real-IP:{real_ip}")
       flash('Невірний юзер або пароль!', 'alert alert-danger')
       return redirect("/login/",302)
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>do_login(): general error: {err}")
-    asyncio.run(send_to_telegram(f"do_login(): general error: {err}",f"🚒Provision login error:"))
+    send_to_telegram(f"do_login(): general error: {err}",f"🚒Provision login error:")
     flash(f"Неочікувана помилка при POST запиту на сторінці /login! Дивіться логи!", 'alert alert-danger')
     return redirect("/login/",302)
 
@@ -49,6 +49,6 @@ def show_login_page():
       return render_template("template-login.html")
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>show_login_page(): general error: {err}")
-    asyncio.run(send_to_telegram(f"show_login_page(): general error: {err}",f"🚒Provision error by {current_user.realname}:"))
+    send_to_telegram(f"show_login_page(): general error: {err}",f"🚒Provision error by {current_user.realname}:")
     flash(f"Неочікувана помилка при GET запиту на сторінці /login! Дивіться логи!", 'alert alert-danger')
     return "<html><body>GENERAL ERROR! Can't even render this page!</body></hml>"

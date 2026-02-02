@@ -34,7 +34,7 @@ def doClone():
   """POST request processor: processes a site clone request"""
   try:
     #check if we have all necessary data received
-    if not request.form['domain'] or not request.form['selected_account'] or not request.form['selected_server'] or not request.form['buttonStartClone']:
+    if not request.form.get('domain') or not request.form.get('selected_account') or not request.form.get('selected_server') or not request.form.get('buttonStartClone'):
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       logging.error(f"doClone(): some of the important parameters has not been received!")
       return redirect(f"/clone?source_site={request.form['buttonStartClone']}",302)
@@ -45,7 +45,7 @@ def doClone():
       source_site = request.form.get('buttonStartClone').strip()
       selected_account = request.form.get('selected_account').strip()
       selected_server = request.form.get('selected_server').strip()
-      finalPath = os.path.join(current_app.config["WEB_FOLDER"],domain)
+      finalPath = os.path.join(current_app.config.get("WEB_FOLDER"),domain)
       if os.path.exists(finalPath):
         logging.info(f"---------------------------Starting clone for site {domain} from the site {source_site} by {current_user.realname}----------------------------")
         logging.error(f"Site {domain} already exists! Remove it before cloning!")
@@ -63,8 +63,8 @@ def doClone():
         finishJob("",domain,selected_account,selected_server)
         return redirect("/",302)
       else:
-        logging.error(f"Error cloning of {source_site} as site {domain} - repository of template {request.form['selected_template']} is not found!")
-        flash(f"Помилка клонування {source_site} до сайту {domain} - репозиторій шаблону {request.form['selected_template']} не знайден!",'alert alert-danger')
+        logging.error(f"Error cloning of {source_site} as site {domain} - repository of template {request.form.get('selected_template')} is not found!")
+        flash(f"Помилка клонування {source_site} до сайту {domain} - репозиторій шаблону {request.form.get('selected_template')} не знайден!",'alert alert-danger')
         finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         return redirect(f"/clone?source_site={source_site}",302)
   except Exception as err:

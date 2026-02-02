@@ -28,7 +28,7 @@ def add_cloudflareDomain():
     if 'buttonAddZone' in request.form:
       logging.info(f"-----------------------Starting new domain addition to Cloudflare account {request.form.get('selected_account', '')} by {current_user.realname}")
       #check if we have all necessary data received
-      if not request.form['selected_account'] or not request.form['domain']:
+      if not request.form.get('selected_account') or not request.form.get('domain'):
         flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
         logging.error(f"add_cloudflareDomain(): some of the important parameters has not been received!")
         return redirect(f"/cloudflare_domains/",302)
@@ -50,7 +50,7 @@ def add_cloudflareDomain():
       #getting account ID which is needed for future domain addition
       url_id = "https://api.cloudflare.com/client/v4/accounts"
       result_id = requests.get(url_id, headers=headers).json()
-      if result_id["success"] and result_id["result"]:
+      if result_id.get("success") and result_id.get("result"):
         account_id = result_id["result"][0]["id"]
         logging.info(f"Cloudflare account ID retreived successfully...")
       else:
@@ -97,7 +97,7 @@ def show_existingDomains():
   """POST request processor: shows all existing domains on the selected Cloudflare account"""
   try:
     #check if we have all necessary data received
-    if not request.form['selected_account']:
+    if not request.form.get('selected_account'):
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       logging.error(f"showExistingDomains(): some of the important parameters has not been received!")
       return redirect(f"/cloudflare_domains/",302)
@@ -119,7 +119,7 @@ def show_existingDomains():
     }
     #requesting first page with limit 50 zones per page, then checks how much pages are there at all
     r = requests.get(url, headers=headers).json()
-    if r["success"] == True:
+    if r.get("success") == True:
       #how much pages we have at all
       total_pages = r["result_info"]["total_pages"]
       logging.info(f"total_pages={total_pages}")
@@ -128,10 +128,10 @@ def show_existingDomains():
         url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={pages}"
         logging.info(f"pages={pages}")
         r = requests.get(url, headers=headers).json()
-        for zone in r["result"]:
-          name = zone["name"]
+        for zone in r.get("result"):
+          name = zone.get("name")
           plan_name = zone["plan"]["name"]
-          status = zone["status"]
+          status = zone.get("status")
           if status == "active":
             table_color = "table-success"
           else:
@@ -180,7 +180,7 @@ def del_existingDomain():
     #Handle buttonDelAccount action
     if 'buttonDelAccount' in request.form:
       #check if we have all necessary data received
-      if not request.form['buttonDelAccount'] or not request.form['selected_account']:
+      if not request.form.get('buttonDelAccount') or not request.form.get('selected_account'):
         flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
         logging.error(f"del_existingDomain(): some of the important parameters has not been received!")
         return redirect(f"/cloudflare_domains/",302)
@@ -199,7 +199,7 @@ def del_existingDomain():
       }
       url_zone_id = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
       result_zone_id = requests.get(url_zone_id, headers=headers).json()
-      if result_zone_id["success"] and result_zone_id["result"]:
+      if result_zone_id.get("success") and result_zone_id.get("result"):
         zone_id = result_zone_id["result"][0]["id"]
         logging.info("Zone_id retreived successfully...")
       else:
@@ -208,7 +208,7 @@ def del_existingDomain():
         return redirect(f"/cloudflare_domains/",302)
       url_del_domain = f"https://api.cloudflare.com/client/v4/zones/{zone_id}"
       result_del_domain = requests.delete(url_del_domain, headers=headers).json()
-      if result_del_domain["success"] and result_del_domain["result"]:
+      if result_del_domain.get("success") and result_del_domain.get("result"):
         logging.info(f"Domain {domain} successfully deleted from Cloudflare account {account}!")
         flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
         return redirect(f"/cloudflare_domains/",302)
