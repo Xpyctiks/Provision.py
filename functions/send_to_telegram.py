@@ -7,6 +7,7 @@ def send_to_telegram_func(message: str, subject: str = "Provision", ) -> None:
     chatid = current_app.config.get("TELEGRAM_CHATID","")
     token = current_app.config.get("TELEGRAM_TOKEN","")
     if not chatid or not token:
+      logging.info("!!! Telegram ChatID or/and Token is not set...")
       return
     data = {
       "chat_id": chatid,
@@ -20,4 +21,4 @@ def send_to_telegram_func(message: str, subject: str = "Provision", ) -> None:
     logging.error(f"Error while sending message to Telegram: {err}")
 
 def send_to_telegram(message: str, subject: str = "Provision"):
-  threading.Thread(target=send_to_telegram,args=(message, subject),daemon=True).start()
+  threading.Thread(target=send_to_telegram_func,args=(message, subject),daemon=True).start()
