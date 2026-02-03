@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-document.querySelectorAll('.dropdown-item.Account').forEach(item => {
+document.querySelectorAll('.dropdown-item.account').forEach(item => {
   item.addEventListener('click', function () {
     let value2 = this.getAttribute('data-value');
     document.getElementById('selected_account').value = value2;
@@ -14,7 +14,7 @@ document.querySelectorAll('.dropdown-item.Account').forEach(item => {
   });
 }); 
 
-document.querySelectorAll('.dropdown-item.Server').forEach(item => {
+document.querySelectorAll('.dropdown-item.server').forEach(item => {
   item.addEventListener('click', function () {
     let value2 = this.getAttribute('data-value');
     document.getElementById('selected_server').value = value2;
