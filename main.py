@@ -39,5 +39,4 @@ from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
 if __name__ == "__main__":
-  #show_cli()
-  application.run("192.168.10.150",80,debug=True)
+  show_cli()

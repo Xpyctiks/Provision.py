@@ -15,8 +15,8 @@ def do_login():
     if current_user.is_authenticated:
       logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>POST request: User {current_user.username} IP:{request.remote_addr} is already logged in. Redirecting to the main page.")
       return redirect('/',301)
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
+    password = request.form.get("password")
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
       session.clear()

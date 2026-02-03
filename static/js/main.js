@@ -175,21 +175,23 @@ btn.addEventListener("click", () => {
 });
 
 function applyFilters() {
-  const owner = document.getElementById("ownerFilter").value;
-  const text  = document.getElementById("siteFilter")?.value || "";
-
+  const owner = document.getElementById("ownerFilter").value.toLowerCase();
+  const account = document.getElementById("accountFilter").value.toLowerCase();
+  const text = (document.getElementById("siteFilter")?.value || "").toLowerCase();
   document.querySelectorAll("tbody tr").forEach(row => {
-    const rowOwner = row.dataset.owner || "";
-    const rowText  = row.innerText.toLowerCase();
-
-    const matchOwner = !owner || rowOwner === owner;
-    const matchText  = !text || rowText.includes(text);
-
-    row.style.display = (matchOwner && matchText) ? "" : "none";
+    const rowOwners = (row.dataset.owner || "").toLowerCase().split(/\s+/);
+    const rowAccounts = (row.dataset.account || "").toLowerCase().split(/\s+/);
+    const rowText = row.innerText.toLowerCase();
+    const matchOwner = !owner || rowOwners.includes(owner);
+    const matchAccount = !account || rowAccounts.includes(account);
+    const matchText = !text || rowText.includes(text);
+    row.style.display =
+      (matchOwner && matchAccount && matchText) ? "" : "none";
   });
 }
 
 document.getElementById("ownerFilter").addEventListener("change", applyFilters);
+document.getElementById("accountFilter").addEventListener("change", applyFilters);
 document.getElementById("siteFilter").addEventListener("input", applyFilters);
 
 function clearFilters() {
