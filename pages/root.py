@@ -26,17 +26,13 @@ def index():
       if os.path.isdir(os.path.join(current_app.config.get("WEB_FOLDER"), name))
     ]
     #gathering all list of available users to put them into user filter list
-    logging.info(f"users list: {users_list}")
     ul = User.query.order_by(User.username).all()
     for i, s in enumerate(ul, 1):
       users_list.append(f'<option value="{s.realname}">{s.realname}</option>')
-    logging.info(f"users list2: {users_list}")
     #gathering all list of available Cloudflare accounts to put them into accounts filter list
-    logging.info(f"acc list: {cf_accounts_list}")
     ac = Cloudflare.query.order_by(Cloudflare.account).all()
     for ii, a in enumerate(ac, 1):
       cf_accounts_list.append(f'<option value="{a.account}">{a.account}</option>')
-    logging.info(f"acc list2: {cf_accounts_list}")
     #starting main procedure
     for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
       #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
@@ -69,7 +65,7 @@ def index():
           "id": i,
           "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
           "getSiteOwner": getSiteOwner(s),
-          "site_status": '✅OK',
+          "site_status": '✅Статус сайту OK',
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account

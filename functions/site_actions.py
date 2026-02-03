@@ -86,8 +86,8 @@ def delete_site(sitename: str) -> bool:
         status = 1
     #if we have errors during delete procedure - send an alert
     if status > 0:
-      send_to_telegram(f"Errors while deleting the site. Check logs!",f"🚒Provision site delete error({sitename}):")
       logging.error(f"Root folder {path} is not deleted because some files or folders are still inside.")
+      error_message += f"Root folder {path} is not deleted because some files or folders are still inside!"
     else:
       os.rmdir(path)
       logging.info(f"Root folder {path} deleted successfully!")
