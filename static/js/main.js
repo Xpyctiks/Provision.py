@@ -105,12 +105,13 @@ checkboxes.forEach(chk => {
 });
 
 function checkAll(bx) {
-  var cbs = document.getElementsByTagName('input');
-  for(var i=0; i < cbs.length; i++) {
-  if(cbs[i].type == 'checkbox') {
-      cbs[i].checked = bx.checked;
+  document.querySelectorAll("tbody tr").forEach(row => {
+    if (row.style.display !== "none") {
+      row.querySelectorAll("input[type=checkbox]").forEach(cb => {
+        cb.checked = bx.checked;
+      });
     }
-  }
+  });
 }
 
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
