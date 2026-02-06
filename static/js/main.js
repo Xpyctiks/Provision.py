@@ -18,6 +18,7 @@ document.querySelectorAll(".delete-btn").forEach(btn => {
     const sitesList = selectedSites.join(", ");
     if (!confirm(`Ви дійсно хочете видалити наступні сайти?\n\n${sitesList}`)) {
       e.preventDefault();
+      hideLoading();
     }
   });
 });
@@ -34,6 +35,7 @@ document.querySelectorAll(".gitpull-btn").forEach(btn => {
     const sitesList = selectedSites.join(", ");
     if (!confirm(`Оновити код до актуального на наступних сайтах?\n\n${sitesList}`)) {
       e.preventDefault();
+      hideLoading();
       }
     });
 });

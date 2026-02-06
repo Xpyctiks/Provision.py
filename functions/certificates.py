@@ -127,7 +127,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
       "content": f"{ip}",
       "ttl": 3600,
       "proxied": True,
-      "comment": "Provision auto deploy."
+      "comment": f"Provision auto deploy by {current_app.realname}"
     }
     result_upd_record = requests.put(url_upd_record,json=data,headers=headers)
     if result_upd_record.status_code == 200:
@@ -148,7 +148,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
         "content": f"{ip}",
         "ttl": 3600,
         "proxied": True,
-        "comment": "Provision auto deploy."
+        "comment": f"Provision auto deploy by {current_app.realname}"
       }
       result_upd_record = requests.put(url_upd_record,json=data2,headers=headers)
       if result_upd_record.status_code == 200:
@@ -180,7 +180,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
       "content": f"{ip}",
       "ttl": 3600,
       "proxied": True,
-      "comment": "Provision auto deploy."
+      "comment": f"Provision auto deploy by {current_app.realname}"
     }
     result_add_record = requests.post(url_add_record,json=data,headers=headers)
     if result_add_record.status_code == 200:
@@ -197,7 +197,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
         "content": f"{ip}",
         "ttl": 3600,
         "proxied": True,
-        "comment": "Provision auto deploy."
+        "comment": f"Provision auto deploy by {current_app.realname}"
       }
       result_add_record2 = requests.post(url_add_record,json=data2,headers=headers)
       if result_add_record2.status_code == 200:

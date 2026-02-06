@@ -25,6 +25,7 @@ def load_config(application):
       })
       logging.basicConfig(filename=config.logFile,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
       logging.getLogger('werkzeug').setLevel(logging.WARNING)
+      logging.getLogger("httpx").setLevel(logging.WARNING)
     except Exception as msg:
       print(f"Load-config error: {msg}")
       quit(1)
