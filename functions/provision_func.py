@@ -20,45 +20,43 @@ def setSiteOwner(domain: str) -> bool:
     if users:
       owner = users.id
     else:
-      logging.error(f"setSiteOwner() can not find info in Db about user {current_app.realname}!")
-      send_to_telegram(f"setSiteOwner() can not find info in Db about user {current_app.realname}",f"🚒Provision job error({functions.variables.JOB_ID}):")
+      logging.error(f"setSiteOwner(): can not find info in DB about user {current_app.realname}!")
+      send_to_telegram(f"setSiteOwner(): can not find info in DB about user {current_app.realname}",f"🚒Provision job error({functions.variables.JOB_ID}):")
       return False
-    logging.info(f"Setting site {domain} owner to user {current_user.realname} with ID {owner}")
+    logging.info(f"setSiteOwner(): Setting site {domain} owner to user {current_user.realname} with ID {owner}")
     #check if the current user is already an owner of the given domain
     check = Ownership.query.filter_by(domain=domain).first()
     if check:
       if check.id == owner:
-        logging.info(f"User {current_user.realname} with ID {owner} already is the owner of {domain}!")
+        logging.info(f"setSiteOwner(): User {current_user.realname} with ID {owner} already is the owner of {domain}!")
         return True
     #else set it as the new one
     else:
       #check the global variable if this is cloned site
       if functions.variables.CLONED_FROM != "":
-        logging.info(f"The CLONED_FROM variable is set to {functions.variables.CLONED_FROM}. Setting this value as DB value Cloned")
-        new_owner = Ownership(
-          domain=domain,
-          owner=owner,
-          cloned = functions.variables.CLONED_FROM
-        )
+        logging.info(f"setSiteOwner(): The CLONED_FROM variable is set to {functions.variables.CLONED_FROM}. Setting this value as DB value Cloned")
+        new_owner = Ownership(domain=domain, owner=owner, cloned = functions.variables.CLONED_FROM)
       else:
-        logging.info(f"The CLONED_FROM variable is empty.No records to DB value Cloned")
-        new_owner = Ownership(
-          domain=domain,
-          owner=owner,
-        )
+        logging.info(f"setSiteOwner(): The CLONED_FROM variable is empty.No records to DB value Cloned")
+        new_owner = Ownership(domain=domain, owner=owner)
       db.session.add(new_owner)
       db.session.commit()
-      logging.info(f"User {current_user.realname} with ID {owner} successfully set as the owner of the {domain}")
+      logging.info(f"setSiteOwner(): User {current_user.realname} with ID {owner} successfully set as the owner of the {domain}")
     return True
   except Exception as msg:
-    logging.error(f"Error setting owner {owner} for domain {domain}: {msg}")
+    logging.error(f"setSiteOwner(): Error setting owner {owner} for domain {domain}: {msg}")
     return False
 
-def genJobID() -> None:
+def genJobID() -> bool:
   """Smal function to generate random string as the uniq JOBID"""
-  length = 16
-  characters = string.ascii_letters + string.digits
-  functions.variables.JOB_ID = ''.join(random.choice(characters) for _ in range(length)).lower()
+  try:
+    length = 16
+    characters = string.ascii_letters + string.digits
+    functions.variables.JOB_ID = ''.join(random.choice(characters) for _ in range(length)).lower()
+    return True
+  except Exception as msg:
+    logging.error(f"genJobID(): global error {msg}")
+    return False
 
 def finishJob(file: str = "", domain: str = "", selected_account: str = "", selected_server: str = "", realname: str = "",emerg_shutdown: bool = False) -> bool:
   """The final function. Accepts either filename or domain name as the variable to properly finish all jobs."""
@@ -68,12 +66,14 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       #if this is zip file, not autoprovision, and the file exists - delete it
       if os.path.exists(filename):
         os.remove(filename)
-        logging.info(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
+        logging.info(f"finishJob(): Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
       if functions.variables.JOB_COUNTER == functions.variables.JOB_TOTAL:
         #writing site owner info to the database
-        setSiteOwner(os.path.basename(file)[:-4])
+        if not setSiteOwner(os.path.basename(file)[:-4]):
+          return False
         #writing link of domain and its account to the database
-        link_domain_and_account(os.path.basename(file)[:-4],selected_account)
+        if not link_domain_and_account(os.path.basename(file)[:-4],selected_account):
+          return False
         send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):")
         logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
         #quit only if we use zip files. if web provision - not to interrupt flow
@@ -84,9 +84,11 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
         send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:")
         functions.variables.JOB_COUNTER += 1
         #writing site owner info to the database
-        setSiteOwner(os.path.basename(file)[:-4])
+        if not setSiteOwner(os.path.basename(file)[:-4]):
+          return False
         #writing link of domain and its account to the database
-        link_domain_and_account(os.path.basename(file)[:-4],selected_account)
+        if not link_domain_and_account(os.path.basename(file)[:-4],selected_account):
+          return False
         findZip_1(selected_account,selected_server,realname)
     elif file == "" and domain != "" and emerg_shutdown == False:
       #writing site owner info to the database
@@ -103,7 +105,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       #if this is zip file, not autoprovision, and the file exists - delete it
       if os.path.exists(filename):
         os.remove(filename)
-      logging.error(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
+      logging.error(f"finishJob(): Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
       send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🚒🏁Provision job finish ({functions.variables.JOB_ID}):")
       logging.error(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
       return True
@@ -118,17 +120,23 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
 def setupPHP(file: str) -> bool:
   """Setups PHP config from the template and reloads the daemon"""
   try:
-    logging.info(f"Configuring PHP...")
+    logging.info(f"setupPHP(): Configuring PHP...")
+    php_pool = current_app.config.get("PHP_POOL","")
+    php_path = current_app.config.get("PHPFPM_PATH","")
+    if not php_path or not php_pool:
+      logging.error("setupPHP(): Some important variable to start the function is empty!")
+      send_to_telegram("setupPHP(): Some important variable to start the function is empty!",f"🚒Provision job error({functions.variables.JOB_ID}):")
+      return False
     filename = os.path.basename(file)[:-4]
     config = create_php_config(filename)
-    with open(os.path.join(current_app.config.get("PHP_POOL"),filename)+".conf", 'w',encoding='utf8') as fileC:
+    with open(os.path.join(php_pool,filename)+".conf", 'w',encoding='utf8') as fileC:
       fileC.write(config)
-    logging.info(f"PHP config {os.path.join(current_app.config.get('PHP_POOL'),filename)} created")
-    result = subprocess.run(["sudo",current_app.config.get("PHPFPM_PATH"),"-t"], capture_output=True, text=True)
+    logging.info(f"setupPHP(): PHP config {os.path.join(php_pool,filename)} created")
+    result = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result.stderr):
       #gettings digits of PHP version from the path to the PHP-FPM
-      phpVer = re.search(r"(.*)(\d\.\d)",current_app.config.get("PHPFPM_PATH")).group(2)
-      logging.info(f"PHP config test passed successfully: {result.stderr.strip()}. Reloading PHP, version {phpVer}...")
+      phpVer = re.search(r"(.*)(\d\.\d)", php_path).group(2)
+      logging.info(f"setupPHP(): PHP config test passed successfully: {result.stderr.strip()}. Reloading PHP, version {phpVer}...")
       result = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
       if  result.returncode == 0:
         logging.info(f"setupPHP(): PHP reloaded successfully.")
@@ -137,16 +145,26 @@ def setupPHP(file: str) -> bool:
         logging.error(f"setupPHP(): PHP reload failed!. {result.stderr}")
         return False
     else:
-      logging.error(f"Error while reloading PHP: {result.stdout.strip()} {result.stderr.strip()}")
+      logging.error(f"setupPHP(): Error while reloading PHP: {result.stdout.strip()} {result.stderr.strip()}")
       return False
   except Exception as msg:
-    logging.error(f"Error while configuring PHP. Error: {msg}")
+    logging.error(f"setupPHP(): Error while configuring PHP. Error: {msg}")
     return False
 
 def setupNginx(file: str,has_subdomain: str = "---") -> bool:
   """Setups Nginx config from the template and reloads the daemon"""
   try:
-    logging.info(f"Configuring Nginx...Preparing certificates")
+    logging.info(f"setupNginx(): Configuring Nginx...Preparing certificates")
+    crt_path = current_app.config.get("NGX_CRT_PATH","")
+    www_user = current_app.config.get("WWW_USER","")
+    www_group = current_app.config.get("WWW_GROUP","")
+    web_folder = current_app.config.get("WEB_FOLDER","")
+    path_av = current_app.config.get("NGX_SITES_PATHAV","")
+    path_en = current_app.config.get("NGX_SITES_PATHEN","")
+    if not crt_path or not www_user or not www_group or not web_folder or not path_av or not path_en:
+      logging.error("setupNginx(): Some important variable to start the function is empty!")
+      send_to_telegram("setupNginx(): Some important variable to start the function is empty!",f"🚒Provision job error({functions.variables.JOB_ID}):")
+      return False
     #if we get a TLD - use standart file name
     if has_subdomain == "---":
       filename = os.path.basename(file)[:-4]
@@ -154,44 +172,44 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
     else:
       filename = os.path.basename(file)[:-4]
       crt_filename = has_subdomain
-      logging.info(f"setupNginx():We have a subdomain there...")
+      logging.info(f"setupNginx(): We have a subdomain there...")
     #setting correct rights to our newly created certificates
-    os.chmod(current_app.config.get("NGX_CRT_PATH")+crt_filename+".crt", 0o600)
-    os.chmod(current_app.config.get("NGX_CRT_PATH")+crt_filename+".key", 0o600)
+    os.chmod(crt_path+crt_filename+".crt", 0o600)
+    os.chmod(crt_path+crt_filename+".key", 0o600)
     #preparing folder
-    os.system(f"sudo chown -R {current_app.config.get('WWW_USER')}:{current_app.config.get('WWW_GROUP')} {os.path.join(current_app.config.get('WEB_FOLDER'),filename)}")
-    logging.info(f"Folders and files ownership of {os.path.join(current_app.config.get('WEB_FOLDER'),filename)} changed to {current_app.config.get('WWW_USER')}:{current_app.config.get('WWW_GROUP')}")
+    os.system(f"sudo chown -R {www_user}:{www_group} {os.path.join(web_folder,filename)}")
+    logging.info(f"setupNginx(): Folders and files ownership of {os.path.join(web_folder,filename)} changed to {www_user}:{www_group}")
     #preparing redirects config
     if os.path.exists("/etc/nginx/additional-configs/"):
       redirect_file = os.path.join("/etc/nginx/additional-configs/","301-" + filename + ".conf")
       with open(redirect_file, 'w',encoding='utf8') as fileRedir:
         fileRedir.write("")
-      logging.info(f"File for redirects {redirect_file} created successfully!")
+      logging.info(f"setupNginx(): File for redirects {redirect_file} created successfully!")
     else:
-      logging.error(f"Folder /etc/nginx/additional-configs is not exists!")
+      logging.error(f"setupNginx(): Folder /etc/nginx/additional-configs is not exists!")
       send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({functions.variables.JOB_ID}):")
     #running template config according to our domain or its subdomain for crtificates
     if has_subdomain == "---":
       config = create_nginx_config(filename,"---")
     else:
       config = create_nginx_config(filename,crt_filename)
-    with open(os.path.join(current_app.config.get("NGX_SITES_PATHAV"),filename), 'w',encoding='utf8') as fileC:
+    with open(os.path.join(path_av,filename), 'w',encoding='utf8') as fileC:
       fileC.write(config)
-    logging.info(f"Nginx config {os.path.join(current_app.config.get('NGX_SITES_PATHAV'),filename)} created")
-    if not os.path.exists(os.path.join(current_app.config.get("NGX_SITES_PATHEN"),filename)):
-      os.symlink(os.path.join(current_app.config.get("NGX_SITES_PATHAV"),filename),os.path.join(current_app.config.get("NGX_SITES_PATHEN"),filename))
-    logging.info(f"Nginx config {os.path.join(current_app.config.get('NGX_SITES_PATHEN'),filename)} symlink created")
+    logging.info(f"setupNginx(): Nginx config {os.path.join(path_av,filename)} created")
+    if not os.path.exists(os.path.join(path_en,filename)):
+      os.symlink(os.path.join(path_av,filename),os.path.join(path_en,filename))
+    logging.info(f"setupNginx(): Nginx config {os.path.join(path_en,filename)} symlink created")
     result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
-      logging.info(f"Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
+      logging.info(f"setupNginx(): Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
       result = subprocess.run(["sudo","systemctl","restart","nginx"], text=True, capture_output=True)
       if  re.search(r".*started.*",result.stderr):
-        logging.info(f"Nginx restarted successfully. Result: {result.stderr.strip()}")
+        logging.info(f"setupNginx(): Nginx restarted successfully. Result: {result.stderr.strip()}")
       if not setupPHP(file):
         logging.error("setupNginx(): setupPHP() function returned an error!")
         return False
     else:
-      logging.error(f"Error while restarting Nginx: {result.stderr.strip()}")
+      logging.error(f"setupNginx(): Error while restarting Nginx: {result.stderr.strip()}")
       return False
     return True
   except Exception as msg:

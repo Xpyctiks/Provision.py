@@ -17,13 +17,17 @@ root_bp = Blueprint("root", __name__)
 def index():
   """Main function: generates root page /."""
   try:
+    web_folder = current_app.config.get("WEB_FOLDER","")
+    if web_folder == "":
+      logging.error(f"index(): root page generate function ERROR! - web_folder variable is empty!")
+      return "index(): root page generate function ERROR!", 500
     sites_list = []
     html_data = []
     users_list = []
     cf_accounts_list = []
     sites_list = [
-      name for name in os.listdir(current_app.config.get("WEB_FOLDER"))
-      if os.path.isdir(os.path.join(current_app.config.get("WEB_FOLDER"), name))
+      name for name in os.listdir(web_folder)
+      if os.path.isdir(os.path.join(web_folder, name))
     ]
     #gathering all list of available users to put them into user filter list
     ul = User.query.order_by(User.username).all()
@@ -41,7 +45,7 @@ def index():
       #variable with full path to php pool config of the site
       php_site = os.path.join(current_app.config["PHP_POOL"],s+".conf")
       #check robots.txt for existance and change its button color
-      if os.path.exists(os.path.join(current_app.config.get('WEB_FOLDER'),s,"public","robots.txt")):
+      if os.path.exists(os.path.join(web_folder,s,"public","robots.txt")):
         robots_button = "btn-primary"
       else:
         robots_button = "btn-light"
@@ -63,7 +67,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
+          "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '✅Статус сайту OK',
           "robots_button": robots_button,
@@ -80,7 +84,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
+          "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '🚨Помилка конфігураціх РНР',
           "robots_button": robots_button,
@@ -97,7 +101,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
+          "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": getSiteOwner(s),
           "site_status": '🚨Помилка конфігураціх Nginx',
           "robots_button": robots_button,
@@ -114,7 +118,7 @@ def index():
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
-          "accordeon_path": os.path.join(current_app.config.get("WEB_FOLDER"),s),
+          "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": f"{getSiteOwner(s)}",
           "site_status": '🚧Сайт вимкнено',
           "robots_button": robots_button,
@@ -140,7 +144,7 @@ def index():
     #getting into DB and checking is there any messages for the current user
     messages = Messages.query.filter_by(foruserid=current_user.id).all()
     if len(messages) != 0:
-      logging.info(f"Some messages found for user {current_user.realname} - {len(messages)} of them...")
+      logging.info(f"index(): Some messages found for user {current_user.realname} - {len(messages)} of them...")
       msg = ""
       for i, s in enumerate(messages, 1):
         msg += f"<strong>📫 Массове повідомлення №{i}</strong>\n"
@@ -151,9 +155,9 @@ def index():
           logging.info(f"Message with ID={s.id} deleted from DB as the read one.")
       db.session.commit()
       flash(msg,'alert alert-info')
-      logging.info(f"Flash popup windows is ready for the user {current_user.realname}...")
+      logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
     return render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list)
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")
     send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:")
-    return "root.py ERROR!"
+    return "index(): root page generate function ERROR!", 500

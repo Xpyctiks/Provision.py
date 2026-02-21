@@ -16,7 +16,7 @@ def show_redirects():
         with open(file301, 'w',encoding='utf8') as file3:
           file3.write("")
         flash(f"Новий порожній файл редіректів для {site} був створен автоматично.",'alert alert-info')
-        logging.info(f"Empty redirects config file {file301} for {site} was created.")
+        logging.info(f"show_redirects(): Empty redirects config file {file301} for {site} was created.")
       table = ""
       i = 1
       with open(file301, "r", encoding="utf-8") as f:

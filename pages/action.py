@@ -4,48 +4,48 @@ import os
 from functions.site_actions import *
 
 action_bp = Blueprint("action", __name__)
-@action_bp.route("/action/", methods=['POST'])
+@action_bp.route("/action/", methods=["POST"])
 @login_required
 def do_action():
   """POST request processor: process all requests to /action page."""
   try:
     #sites delete block
-    if (request.form.get('delete') and not request.form.get('selected')):
-      delete_site(request.form.get('delete').strip())
+    if (request.form.get("delete") and not request.form.get("selected")):
+      delete_site(request.form.get("delete","").strip())
       return redirect(f"/",301)
-    elif (request.form.get('delete') and request.form.get('selected')):
+    elif (request.form.get("delete") and request.form.get("selected")):
       array = request.form.getlist("selected")
-      del_selected_sites(request.form.get('delete').strip(),array)
+      del_selected_sites(request.form.get("delete","").strip(),array)
       return redirect(f"/",301)
     #sites actions
-    elif (request.form.get('disable')):
-      disable_site(request.form['disable'].strip())
-    elif (request.form.get('enable')):
-      enable_site(request.form.get('enable').strip())
+    elif (request.form.get("disable")):
+      disable_site(request.form["disable"].strip())
+    elif (request.form.get("enable")):
+      enable_site(request.form.get("enable","").strip())
     #redirects management block
-    elif (request.form.get('del_redir') and not request.form.get('selected')):
-      del_redirect(request.form.get('del_redir').strip(),request.form.get('sitename').strip())
-      return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",302)
-    elif (request.form.get('del_redir') and request.form.get('selected')):
+    elif (request.form.get("del_redir") and not request.form.get("selected")):
+      del_redirect(request.form.get("del_redir","").strip(),request.form.get("sitename","").strip())
+      return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
+    elif (request.form.get("del_redir") and request.form.get("selected")):
       array = request.form.getlist("selected")
-      del_selected_redirects(array,request.form.get('sitename').strip())
-      return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",302)
-    elif (request.form.get('applyChanges')):
-      applyChanges(request.form.get('sitename').strip())
-      return redirect(f"/redirects_manager?site={request.form.get('sitename').strip()}",302)
+      del_selected_redirects(array,request.form.get("sitename","").strip())
+      return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
+    elif (request.form.get("applyChanges")):
+      applyChanges(request.form.get("sitename","").strip())
+      return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
     #Git block
-    elif (request.form.get('gitPull') and not request.form.get('selected')):
-      makePull(request.form['gitPull'].strip())
-    elif (request.form.get('gitPull') and request.form.get('selected')):
+    elif (request.form.get("gitPull") and not request.form.get("selected")):
+      makePull(request.form["gitPull"].strip())
+    elif (request.form.get("gitPull") and request.form.get("selected")):
       pullArray = request.form.getlist("selected")
-      makePull(request.form.get('gitPull').strip(),pullArray)
+      makePull(request.form.get("gitPull","").strip(),pullArray)
     return redirect("/",302)
   except Exception as err:
     logging.error(f"do_action(): general error by {current_user.realname}: {err}")
-    flash(f"Неочікувана помилка при POST запиту на сторінці /action! Дивіться логи!", 'alert alert-danger')
+    flash(f"Неочікувана помилка при POST запиту на сторінці /action! Дивіться логи!", "alert alert-danger")
     return redirect("/",302)
 
-@action_bp.route("/action/showstructure/", methods=['GET'])
+@action_bp.route("/action/showstructure/", methods=["GET"])
 @login_required
 def showstructure():
   """GET request: takes folder name as the parameter and shows what is inside of."""
@@ -56,7 +56,7 @@ def showstructure():
       files = sorted([x for x in os.listdir(os.path.join(path,"public")) if not os.path.isdir(os.path.join(os.path.join(path,"public"), x))])
       items = dirs + files
     except Exception as e:
-      return f"<div class='text-danger'>Ошибка: {e}</div>"
+      return f'<div class="text-danger">Ошибка: {e}</div>'
     html = "<ul>"
     for item in items:
       full = os.path.join(os.path.join(path,"public"), item)
@@ -68,5 +68,5 @@ def showstructure():
     return html
   except Exception as err:
     logging.error(f"showstructure(): general error by {current_user.realname}: {err}")
-    flash(f"Неочікувана помилка при GET запиту на сторінці /action/showstructire/! Дивіться логи!", 'alert alert-danger')
+    flash(f"Неочікувана помилка при GET запиту на сторінці /action/showstructire/! Дивіться логи!", "alert alert-danger")
     return redirect("/",302)

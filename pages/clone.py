@@ -37,19 +37,23 @@ def doClone():
     if not request.form.get('domain') or not request.form.get('selected_account') or not request.form.get('selected_server') or not request.form.get('buttonStartClone'):
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       logging.error(f"doClone(): some of the important parameters has not been received!")
-      return redirect(f"/clone?source_site={request.form['buttonStartClone']}",302)
+      return redirect(f"/clone?source_site={request.form.get('buttonStartClone')}",302)
     #starts main provision actions
     else:
       #cleans up the domain string
-      domain = normalize_domain(request.form.get('domain'))
-      source_site = request.form.get('buttonStartClone').strip()
-      selected_account = request.form.get('selected_account').strip()
-      selected_server = request.form.get('selected_server').strip()
-      web_folder = current_app.config.get("WEB_FOLDER")
-      finalPath = os.path.join(current_app.config.get("WEB_FOLDER"),domain)
+      domain = str(normalize_domain(request.form.get("domain","")))
+      source_site = request.form.get("buttonStartClone","").strip()
+      selected_account = request.form.get("selected_account","").strip()
+      selected_server = request.form.get("selected_server","").strip()
+      web_folder = current_app.config.get("WEB_FOLDER") or ""
+      if not web_folder or not domain:
+        logging.error(f"doClone(): somehow web_folder or domain variable is empty!")
+        flash(f"Помилка! Якась змінна web_folder({web_folder}) чи domain({domain}) прийшла порожньою! Дивіться логи.",'alert alert-danger')
+        return redirect(f"/clone?source_site={request.form.get('buttonStartClone')}",302)
+      finalPath = os.path.join(web_folder,domain)
       if os.path.exists(finalPath):
         logging.info(f"---------------------------Starting clone for site {domain} from the site {source_site} by {current_user.realname}----------------------------")
-        logging.error(f"Site {domain} already exists! Remove it before cloning!")
+        logging.error(f"doClone(): Site {domain} already exists! Remove it before cloning!")
         flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде клонувати!", 'alert alert-danger')
         logging.info(f"--------------------Clone of the site {source_site} as the {domain} by {current_user.realname} finshed with error-----------------------")
         return redirect(f"/clone?source_site={source_site}",302)
@@ -58,16 +62,14 @@ def doClone():
       else:
         its_not_a_subdomain = False
       #starting clone procedure
-      status,message = start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain)
-      if status:
-        logging.info(f"Site {source_site} sucessfully cloned into {domain} site!")
+      if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain):
+        logging.info(f"doClone(): Site {source_site} sucessfully cloned into {domain} site!")
         finishJob("",domain,selected_account,selected_server)
         flash(f"Сайт {source_site} успішно клоновано в сайт {domain}!",'alert alert-success')
         return redirect("/",302)
       else:
-        logging.error(f"Error cloning of {source_site} as site {domain} - repository of template {request.form.get('selected_template')} is not found!")
         finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
-        flash(f"Помилка клонування {source_site} до сайту {domain} - репозиторій шаблону {request.form.get('selected_template')} не знайден!",'alert alert-danger')
+        flash(f"Помилка клонування {source_site} до сайту {domain}! Дивіться логи!",'alert alert-danger')
         return redirect(f"/clone?source_site={source_site}",302)
   except Exception as err:
     logging.error(f"doClone(): POST process error by {current_user.realname}: {err}")

@@ -28,7 +28,7 @@ def dns_validation():
     if res:
       account = res.account
     else:
-      logging.error(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...")
+      logging.error(f"dns_validation(): Account for domain {domain} is not found in DB! Dunno how did you get into this page...")
       send_to_telegram(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...",f"🚒Provision error by {current_user.realname}:")
       flash(f"Аккаунт для домена {domain} не знайден в базі! Як ви взагалі опинилсь на цій сторінці...", 'alert alert-danger')
       return redirect("/",302)
@@ -36,7 +36,7 @@ def dns_validation():
     if tkn:
       token = tkn.token
     else:
-      logging.error(f"Token for account {account} is not found in DB! Strange error...")
+      logging.error(f"dns_validation(): Token for account {account} is not found in DB! Strange error...")
       send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",302)
@@ -75,7 +75,7 @@ def dns_validation():
         })
     return render_template("template-dns_validation.html",html_data=html_data,domain=domain,account=account,admin_panel=is_admin())
   except Exception as err:
-    logging.error(f"Dns_validation page general render error: {err}")
+    logging.error(f"dns_validation(): general render error: {err}")
     flash(f"Неочікувана помилка на сторінці ДНС валідації, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 

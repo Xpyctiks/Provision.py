@@ -14,14 +14,14 @@ def upload_file():
   """POST request processor: getting uploaded zip archive and deploys the site from it."""
   try:
     if 'fileUpload[]' not in request.files:
-      logging.error(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields")
+      logging.error(f"upload_file(): Upload by {current_user.realname}: No <fileUpload> name in the request fields")
       send_to_telegram(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields",f"🚒Provision upload page:")
       flash('Завантаження: Файлу <fileUpload> немає в заголовках запиту', 'alert alert-danger')
       return redirect("/",302)
     #check if we have all necessary data received
     elif not request.form.get('selected_server') or not request.form.get('selected_account') or not request.form.get('buttonSubmit'):
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
-      logging.error(f"upload_file() error: some of important parameters has not been sent!")
+      logging.error(f"upload_file(): error! some of important parameters has not been sent!")
       send_to_telegram(f"upload_file(): some of the important parameters has not been received!",f"🚒Provision upload page:")
       return redirect("/",302)
     #starts main provision actions
@@ -47,10 +47,9 @@ def upload_file():
           file.save(f"{filename}")
           nameList += filename+","
           logging.info(f">File {filename} uploaded and saved.")
-      logging.info(f"All files uploaded to {project_root} successfully!")
+      logging.info(f"upload_file(): All files uploaded to {project_root} successfully!")
       if not start_provision(selected_account,selected_server,current_user.realname):
         finishJob(filename,"",emerg_shutdown=True)
-        logging.error(f"upload_file(): start_provision() master function finished with error!")
         flash(f"Розгортання завершилось з помилками! Дивіться логи!", 'alert alert-danger')
         return redirect("/",302)
       finishJob(filename,"",selected_account,selected_server,current_user.realname)
@@ -58,7 +57,7 @@ def upload_file():
       flash(f"Розгортання успішно завершено!", 'alert alert-success')
       return redirect("/",302)
   except Exception as err:
-    logging.error(f"Upload page general error: {err}")
+    logging.error(f"upload_file(): Upload page general error: {err}")
     flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
@@ -75,6 +74,6 @@ def show_upload_page():
     server_list, first_server = loadServersList()
     return render_template("template-upload.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
   except Exception as err:
-    logging.error(f"Upload page general render error: {err}")
+    logging.error(f"show_upload_page(): Upload page general render error: {err}")
     flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

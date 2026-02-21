@@ -14,14 +14,14 @@ def editRobots():
     content = data["content"]
     robots_file = os.path.join(current_app.config.get('WEB_FOLDER'),domain,"public","robots.txt")
     if robots_file in ('/', '/home', '/root', '/etc', '/var', '/tmp', os.path.expanduser("~")):
-      logging.error(f"editRobots() error by {current_user.realname}: unsafe path found in robots.txt path - {robots_file}")
+      logging.error(f"editRobots(): error by {current_user.realname}: unsafe path found in robots.txt path - {robots_file}")
       send_to_telegram(f"editRobots() error by {current_user.realname}: unsafe path found in robots.txt path!",f"🚒Provision robots edior:")
       return jsonify({"error": "Unsafe path!"})
     with open(robots_file, "w") as f:
       f.write(content)
     return jsonify({"status": "ok"})
   except Exception as msg:
-    logging.error(f"editRobots() general error by {current_user.realname}: {msg}")
+    logging.error(f"editRobots(): general error by {current_user.realname}: {msg}")
     flash(f'Помилка при POST запиті на сторінці /robots! Дивіться логи!','alert alert-danger')
     return redirect("/",302)
 
@@ -36,15 +36,15 @@ def showRobots():
         with open(robots_file) as f:
           return jsonify({"content": f.read()})
       else:
-        logging.info(f"Get robots.txt content by {current_user.realname}: file {robots_file} is not exists.")
+        logging.info(f"showRobots(): Get robots.txt content by {current_user.realname}: file {robots_file} is not exists.")
         return jsonify({"content": "#empty file. Replace with new text content"})
     else:
-      logging.error(f"showRobots() error by {current_user.realname}: domain variable is not recevied.")
+      logging.error(f"showRobots(): error by {current_user.realname}: domain variable is not recevied.")
       send_to_telegram(f"showRobots() error by {current_user.realname}: domain variable is not recevied.",f"🚒Provision robots edior:")
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       return redirect("/",301)
   except Exception as msg:
-    logging.error(f"showRobots() general error by {current_user.realname}: {msg}")
+    logging.error(f"showRobots(): general error by {current_user.realname}: {msg}")
     flash(f'Помилка при POST запиті на сторінці /robots! Дивіться логи!','alert alert-danger')
     send_to_telegram(f"showRobots() general error by {current_user.realname}: {msg}",f"🚒Provision robots edior:")
     return jsonify({"error": str(msg)}), 500

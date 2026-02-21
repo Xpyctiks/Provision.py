@@ -20,7 +20,7 @@ def loadTemplatesList():
       logging.error("loadTemplatesList(): Unknown error selecting default template!")
     return templates_list, first_template
   except Exception as err:
-    logging.error(f"loadTemplatesList() error: {err}")
+    logging.error(f"loadTemplatesList(): global error: {err}")
     return "Error", "Error"
 
 def loadClodflareAccounts():
@@ -42,7 +42,7 @@ def loadClodflareAccounts():
       logging.error("loadClodflareAccounts(): Unknown error selecting default account!")
     return cf_list, first_cf
   except Exception as err:
-    logging.error(f"loadClodflareAccounts() error: {err}")
+    logging.error(f"loadClodflareAccounts(): global error {err}")
     return "Error", "Error"
 
 def loadServersList():
@@ -64,7 +64,7 @@ def loadServersList():
       logging.error("loadServersList(): Unknown error selecting default account!")
     return server_list, first_server
   except Exception as err:
-    logging.error(f"loadServersList() error: {err}")
+    logging.error(f"loadServersList(): global error: {err}")
     return "Error", "Error"
 
 def getSiteOwner(domain: str) -> str:
@@ -77,7 +77,7 @@ def getSiteOwner(domain: str) -> str:
     else:
       return "Шукаю власника 💔"
   except Exception as err:
-    logging.error(f"getSiteOwner(): general error: {err}")
+    logging.error(f"getSiteOwner(): global error: {err}")
     return "ERROR!"
 
 def getSiteCreated(domain: str) -> str:
@@ -95,5 +95,5 @@ def getSiteCreated(domain: str) -> str:
     else:
       return "невідомо🤷🏼‍♂️"
   except Exception as err:
-    logging.error(f"getSiteCreated(): general error: {err}")
+    logging.error(f"getSiteCreated(): global error: {err}")
     return "ERROR!"

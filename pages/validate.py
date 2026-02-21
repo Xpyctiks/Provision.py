@@ -17,8 +17,8 @@ def do_validation():
       return f'{{"message": "🤦 {current_user.realname}, ти хоча би домен введи що б було що перевіряти."}}'
     #taking domain parameter, making it safe
     domain = str(normalize_domain(domain))
-    server = request.form.get("selected_server").strip()
-    account = request.form.get("selected_account").strip()
+    server = request.form.get("selected_server","").strip()
+    account = request.form.get("selected_account","").strip()
     #Check if there is not-a-subdomain parameter set, means this is defenitly not a subdomain but full domain
     if request.form.get('not-a-subdomain') == "1":
       its_not_a_subdomain = True
@@ -27,12 +27,12 @@ def do_validation():
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:
-      logging.error(f"Token for CF account {account} is not found during validation procedure")
+      logging.error(f"do_validation(): Token for CF account {account} is not found during validation procedure")
       return f'{{"message": "Token for CF account {account} is not found during validation procedure"}}'
     token = tkn.token
     srv = Servers.query.filter_by(name=server).first()
     if not srv:
-      logging.error(f"IP of the server {server} is not found during validation procedure")
+      logging.error(f"do_validation(): IP of the server {server} is not found during validation procedure")
       return f'{{"message": "IP of the server {server} is not found during validation procedure"}}'
     ip = srv.ip
     url = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
@@ -45,7 +45,7 @@ def do_validation():
     d = tld(domain)
     #if we have forced parameter this if definetily not a subdomain
     if its_not_a_subdomain:
-      logging.info(f"Validation check: {domain} froced to be the root domain by This-is-not-a-subdomain checkbox.")
+      logging.info(f"do_validation(): Validation check: {domain} froced to be the root domain by This-is-not-a-subdomain checkbox.")
       message += f"Для цієї перевірки ми <b>примусово</b> взяли домен <b>{domain}</b> як цілий кореневий домен:<br><br>"
       params = {
         "name": domain,
@@ -56,10 +56,10 @@ def do_validation():
         "name": f"{d.domain}.{d.suffix}",
         "per_page": 1
       }
-      logging.info(f"Validation check: using domain {d.domain}.{d.suffix} as the root domain for validation of {domain}")
+      logging.info(f"do_validation(): Validation check: using domain {d.domain}.{d.suffix} as the root domain for validation of {domain}")
       message += f"Для цієї перевірки ми взяли домен <b>{d.domain}.{d.suffix}</b> як кореневий домен, а <b>{d.subdomain}</b> як субдомен:<br><br>"
     else:
-      logging.info(f"Validation check: {domain} is the root domain. Validating as is.")
+      logging.info(f"do_validation(): Validation check: {domain} is the root domain. Validating as is.")
       message += f"Для цієї перевірки ми взяли домен <b>{domain}</b> як цілий кореневий домен:<br><br>"
       params = {
         "name": domain,
@@ -101,6 +101,6 @@ def show_validation():
   """GET request: nothing should be in here. Just redirect if somebody hit this page accidently."""
   ip = request.remote_addr
   real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
-  logging.info(f"Strange GET request to /validate page: user {current_user.realname} IP:{ip}, Real-IP:{real_ip}")
+  logging.info(f"show_validation(): Strange GET request to /validate page: user {current_user.realname} IP:{ip}, Real-IP:{real_ip}")
   flash("Ви не повинні потряпляти на сторінку /validate з GET запитом!", "alert alert-warning")
   return redirect("/",302)

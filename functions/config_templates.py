@@ -39,8 +39,8 @@ def create_nginx_config(filename: str,has_subdomain: str = "---") -> str:
   config = f"""server {{
     listen 203.161.35.70:80;
     server_name {filename} www.{filename};
-    access_log /var/log/nginx/access_{filename}.log postdata;
-    error_log /var/log/nginx/error_{filename}.log;
+    access_log /var/log/nginx/access.log postdata;
+    error_log /var/log/nginx/error.log;
 
     location ~ / {{
       return 301 https://{filename};
@@ -52,8 +52,8 @@ server {{
   server_name www.{filename};
   ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
   ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
-  access_log /var/log/nginx/access_{filename}.log postdata;
-  error_log /var/log/nginx/error_{filename}.log;
+  access_log /var/log/nginx/access.log postdata;
+  error_log /var/log/nginx/error.log;
 
   location / {{
     return 301 https://{filename}$request_uri;
@@ -66,8 +66,8 @@ server {{
   ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
   ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
   include mime.types;
-  access_log /var/log/nginx/access_{filename}.log postdata;
-  error_log /var/log/nginx/error_{filename}.log;
+  access_log /var/log/nginx/access.log postdata;
+  error_log /var/log/nginx/error.log;
   root {os.path.join(current_app.config.get("WEB_FOLDER"),filename)}/public;
   charset utf8;
   index index.php index.html index.htm;

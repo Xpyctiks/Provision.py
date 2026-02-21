@@ -15,7 +15,7 @@ def show_cloudflareDomains():
     cf_list, first_cf = loadClodflareAccounts()
     return render_template("template-cloudflare_domains.html",source_site=(request.args.get('source_site') or 'Error').strip(),cf_list=cf_list,first_cf=first_cf,admin_panel=is_admin())
   except Exception as err:
-    logging.error(f"Clone page general render error by {current_user.realname}: {err}")
+    logging.error(f"show_cloudflareDomains(): general render error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка на сторінці колнування, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
@@ -37,11 +37,11 @@ def add_cloudflareDomain():
       #preparing account token by the selected account
       tkn = Cloudflare.query.filter_by(account=account).first()
       if not tkn:
-        logging.error(f"Token for CF account {account} is not found while preparation for new domain addition!")
+        logging.error(f"add_cloudflareDomain(): Token for CF account {account} is not found while preparation for new domain addition!")
         flash(f'Помилка! Чомусь API токен для аккаунту {account} не був знайден в базі!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
       token = tkn.token
-      logging.info(f"Cloudflare token retreived successfully...")
+      logging.info(f"add_cloudflareDomain(): Cloudflare token retreived successfully...")
       headers = {
         "X-Auth-Email": account,
         "X-Auth-Key": token,
@@ -52,9 +52,9 @@ def add_cloudflareDomain():
       result_id = requests.get(url_id, headers=headers).json()
       if result_id.get("success") and result_id.get("result"):
         account_id = result_id["result"][0]["id"]
-        logging.info(f"Cloudflare account ID retreived successfully...")
+        logging.info(f"add_cloudflareDomain(): Cloudflare account ID retreived successfully...")
       else:
-        logging.error(f"Error retreiving Cloudflare account ID!")
+        logging.error(f"add_cloudflareDomain(): Error retreiving Cloudflare account ID!")
         flash(f'Помилка! Чомусь ID аккаунту {account} не був отриман! Далі продовжити не можу!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
       url_add_zone = "https://api.cloudflare.com/client/v4/zones"
@@ -78,16 +78,16 @@ def add_cloudflareDomain():
           <code  id="ns2">{ns[1]}</code>
           <button class="btn btn-outline-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="Скопіювати в буфер" onclick="copyText('ns2')">📋</button>
         </div>"""
-        logging.info(f"New domain {domain} successfully added to Cloudflare account {account}. NS: {ns[0]} and {ns[1]}")
+        logging.info(f"add_cloudflareDomain(): New domain {domain} successfully added to Cloudflare account {account}. NS: {ns[0]} and {ns[1]}")
         flash(message,'alert alert-success')
         return redirect(f"/cloudflare_domains/",302)
       else:
         error_msg = (result_add_domain.get("errors", [{}])[0].get("message", "Unknown error"))
-        logging.error(f"Add new domain {domain} to account {account} error! Result: {result_add_domain}")
+        logging.error(f"add_cloudflareDomain(): Add new domain {domain} to account {account} error! Result: {result_add_domain}")
         flash(f'Якась помилка при додаванні нового домену {domain} до аккаунту {account}: <strong>{error_msg}</strong>!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
   except Exception as err:
-    logging.error(f"add_cloudflareDomain() POST general error by {current_user.realname}: {err}")
+    logging.error(f"add_cloudflareDomain(): POST general error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка на сторінці, дивіться логи!", 'alert alert-danger')
     return redirect(f"/cloudflare_domains/",302)
 
@@ -107,7 +107,7 @@ def show_existingDomains():
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
     if not tkn:
-      logging.error(f"Token for CF account {account} is not found in DB during show domains procedure!")
+      logging.error(f"show_existingDomains(): Token for CF account {account} is not found in DB during show domains procedure!")
       return f'{{"message": "Token for CF account {account} is not found during validation procedure"}}'
     token = tkn.token
     pages = 1
@@ -126,7 +126,6 @@ def show_existingDomains():
       i = 0
       while pages <= total_pages:
         url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={pages}"
-        logging.info(f"pages={pages}")
         r = requests.get(url, headers=headers).json()
         for zone in r.get("result"):
           name = zone.get("name")
@@ -189,7 +188,7 @@ def del_existingDomain():
       #preparing account token by the selected account
       tkn = Cloudflare.query.filter_by(account=account).first()
       if not tkn:
-        logging.error(f"Token for CF account {account} is not found in DB during show domains procedure!")
+        logging.error(f"del_existingDomain(): Token for CF account {account} is not found in DB during show domains procedure!")
         return f'{{"message": "Token for CF account {account} is not found during validation procedure"}}'
       token = tkn.token
       headers = {
@@ -203,17 +202,17 @@ def del_existingDomain():
         zone_id = result_zone_id["result"][0]["id"]
         logging.info("Zone_id retreived successfully...")
       else:
-        logging.error(f"Error retreiving zone_id of the domain!")
+        logging.error(f"del_existingDomain(): Error retreiving zone_id of the domain!")
         flash(f'Помилка! Чомусь ID домену {account} не був отриман! Далі продовжити не можу!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
       url_del_domain = f"https://api.cloudflare.com/client/v4/zones/{zone_id}"
       result_del_domain = requests.delete(url_del_domain, headers=headers).json()
       if result_del_domain.get("success") and result_del_domain.get("result"):
-        logging.info(f"Domain {domain} successfully deleted from Cloudflare account {account}!")
+        logging.info(f"del_existingDomain(): Domain {domain} successfully deleted from Cloudflare account {account}!")
         flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
         return redirect(f"/cloudflare_domains/",302)
       else:
-        logging.error(f"Error deleting domain {domain} from Cloudflare account {account}!")
+        logging.error(f"del_existingDomain(): Error deleting domain {domain} from Cloudflare account {account}!")
         flash(f'Помилка при видаленні домену {domain} з аккаунту {account}!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
   except Exception as err:

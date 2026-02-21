@@ -11,13 +11,13 @@ def showLogs():
   try:
     return render_template("template-logs.html",admin_panel=is_admin())
   except Exception as err:
-    logging.error(f"Logs page showLogs() gereral error: {err}")
+    logging.error(f"showLogs(): gereral error: {err}")
     flash(f"Загальна помилка сторінки логу!",'alert alert-danger')
     return redirect("/",302)
 
 @logs_bp.route("/logs/api/")
 def logs_api():
-  log_file = current_app.config.get("LOG_FILE")
+  log_file = current_app.config.get("LOG_FILE","")
   if not os.path.exists(log_file):
     return jsonify({"error": "Log not found"}), 404
   with open(log_file, "r", encoding="utf-8", errors="replace") as f:
