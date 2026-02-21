@@ -5,6 +5,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from flask import current_app
+from flask_login import current_user
 from db.database import Cloudflare, Servers
 from functions.tld import tld
 
@@ -124,7 +125,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
       "content": f"{ip}",
       "ttl": 3600,
       "proxied": True,
-      "comment": f"Provision auto deploy by {current_app.realname}"
+      "comment": f"Provision auto deploy by {current_user.realname}"
     }
     result_upd_record = requests.put(url_upd_record,json=data,headers=headers).json()
     #check if there is error after the request
@@ -156,7 +157,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
         "content": f"{ip}",
         "ttl": 3600,
         "proxied": True,
-        "comment": f"Provision auto deploy by {current_app.realname}"
+        "comment": f"Provision auto deploy by {current_user.realname}"
       }
       result_upd_record2 = requests.put(url_upd_record,json=data2,headers=headers).json()
       if not result_upd_record2.get("success"):
@@ -191,7 +192,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
       "content": f"{ip}",
       "ttl": 3600,
       "proxied": True,
-      "comment": f"Provision auto deploy by {current_app.realname}"
+      "comment": f"Provision auto deploy by {current_user.realname}"
     }
     result_add_record = requests.post(url_add_record,json=data,headers=headers).json()
     if result_add_record.get("success"):
@@ -211,7 +212,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
         "content": f"{ip}",
         "ttl": 3600,
         "proxied": True,
-        "comment": f"Provision auto deploy by {current_app.realname}"
+        "comment": f"Provision auto deploy by {current_user.realname}"
       }
       result_add_record2 = requests.post(url_add_record,json=data2,headers=headers).json()
       if result_add_record2.get("success"):
