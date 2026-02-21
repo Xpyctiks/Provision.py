@@ -213,3 +213,14 @@ function overlayLoader() {
   const overlayLoader = document.getElementById("overlayLoader");
   overlayLoader.classList.add("d-none");
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  const value = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('x_cache='));
+
+  if (value && value.split('=')[1] === "HIT") {
+    document.getElementById("cacheIcon")
+      .classList.remove("d-none");
+  }
+});

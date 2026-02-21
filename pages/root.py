@@ -1,11 +1,12 @@
 import logging,os,re
-from flask import render_template,Blueprint,current_app,flash
+from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
 from functions.pages_forms import getSiteOwner,getSiteCreated
 from db.database import Domain_account,User,Messages,Cloudflare
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
+from functions.cache_func import page_cache
 
 #allows to sort with natural keys - when after 10 goes 11, not 20
 def natural_key(s):
@@ -16,7 +17,14 @@ root_bp = Blueprint("root", __name__)
 @login_required
 def index():
   """Main function: generates root page /."""
+  CACHE_KEY = f"user:{current_user.realname}"
   try:
+    cached = page_cache.get(CACHE_KEY)
+    if cached:
+        response = make_response(cached)
+        response.headers["X-Cache"] = "HIT"
+        response.set_cookie("x_cache", "HIT")
+        return response
     web_folder = current_app.config.get("WEB_FOLDER","")
     if web_folder == "":
       logging.error(f"index(): root page generate function ERROR! - web_folder variable is empty!")
@@ -156,8 +164,13 @@ def index():
       db.session.commit()
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
-    return render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list)
+    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list))
+    page_cache.set(CACHE_KEY, response, timeout=300)
+    response.headers["X-Cache"] = "MISS"
+    response.set_cookie("x_cache", "MISS")
+    return response
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")
     send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:")
+    page_cache.delete(CACHE_KEY)
     return "index(): root page generate function ERROR!", 500

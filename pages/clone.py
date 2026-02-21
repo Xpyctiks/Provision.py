@@ -2,8 +2,9 @@ from flask import redirect,Blueprint,request,render_template,flash,current_app
 from flask_login import login_required,current_user
 from functions.pages_forms import *
 from functions.clone_func import *
-from functions.site_actions import normalize_domain,is_admin
+from functions.site_actions import normalize_domain,is_admin,clearCache
 from functions.provision_func import finishJob
+
 import os
 
 clone_bp = Blueprint("clone", __name__)
@@ -66,13 +67,16 @@ def doClone():
         logging.info(f"doClone(): Site {source_site} sucessfully cloned into {domain} site!")
         finishJob("",domain,selected_account,selected_server)
         flash(f"Сайт {source_site} успішно клоновано в сайт {domain}!",'alert alert-success')
+        clearCache()
         return redirect("/",302)
       else:
         finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
         flash(f"Помилка клонування {source_site} до сайту {domain}! Дивіться логи!",'alert alert-danger')
+        clearCache()
         return redirect(f"/clone?source_site={source_site}",302)
   except Exception as err:
     logging.error(f"doClone(): POST process error by {current_user.realname}: {err}")
     finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
     flash(f"Загальна помилка обробки POST запиту на сторінці /clone! Дивіться логи!",'alert alert-danger')
+    clearCache()
     return redirect(f"/clone?source_site={request.form.get('buttonStartClone')}",302)

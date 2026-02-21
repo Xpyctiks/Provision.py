@@ -29,3 +29,13 @@ body {
 .accordion-path { 
   background-color: #B5FFF1; 
 }
+
+.cache-icon {
+  animation: glow 1s infinite ease-in-out;
+}
+
+@keyframes glow {
+    0%   { filter: drop-shadow(0 0 0px #4caf50); }
+    50%  { filter: drop-shadow(0 0 8px #4caf50); }
+    100% { filter: drop-shadow(0 0 0px #4caf50); }
+}

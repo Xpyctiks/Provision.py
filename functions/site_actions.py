@@ -6,6 +6,7 @@ from flask_login import current_user
 from db.db import db
 from db.database import *
 from functions.cli_management import del_account,del_owner
+from functions.cache_func import page_cache
 
 def delete_site(sitename: str) -> bool:
   """Site action: full delete selected site. Requires "sitename" as a parameter"""
@@ -534,6 +535,7 @@ def link_domain_and_account(domain: str, account: str) -> bool:
     return False
 
 def is_admin():
+  """Adds Admin panel option to the main menu if user is admin"""
   user = User.query.filter_by(realname=current_user.realname).first()
   if user:
     rights = user.rights
@@ -543,3 +545,14 @@ def is_admin():
       return ""
   else:
     return ""
+
+def clearCache() -> bool:
+  """GET request: clears web page cache"""
+  try:
+    CACHE_KEY = f"user:{current_user.realname}"
+    page_cache.delete(CACHE_KEY)
+    logging.info(f"clearCache(): web cache is cleared by {current_user.realname}")
+    return True
+  except Exception as err:
+    logging.error(f"clearCache(): general error by {current_user.realname}: {err}")
+    return False

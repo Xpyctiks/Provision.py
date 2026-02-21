@@ -4,6 +4,7 @@ from flask import Flask
 from flask_login import LoginManager
 import os
 from datetime import timedelta
+from functions.cache_func import page_cache
 
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
@@ -16,6 +17,8 @@ application.config['SESSION_COOKIE_HTTPONLY'] = True
 application.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 application.config['SESSION_USE_SIGNER'] = True
 application.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
+application.config['CACHE_TYPE'] = 'FileSystemCache'
+application.config['CACHE_DIR'] = './.cache'
 from db.db import db
 from db.database import User
 db.init_app(application)
@@ -30,6 +33,7 @@ login_manager.session_protection = "strong"
 login_manager.init_app(application)
 with application.app_context():
   db.create_all()
+page_cache.init_app(application)
 from functions.cli_management import show_cli
 
 @login_manager.user_loader

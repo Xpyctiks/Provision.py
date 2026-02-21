@@ -1,5 +1,5 @@
 from flask import redirect,Blueprint,request
-from flask_login import login_required
+from flask_login import login_required, current_user
 import os
 from functions.site_actions import *
 
@@ -69,4 +69,19 @@ def showstructure():
   except Exception as err:
     logging.error(f"showstructure(): general error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка при GET запиту на сторінці /action/showstructire/! Дивіться логи!", "alert alert-danger")
+    return redirect("/",302)
+
+@action_bp.route("/action/clear_cache/", methods=["GET"])
+@login_required
+def clrCache():
+  """GET request: clears web page cache"""
+  try:
+    if clearCache():
+      logging.info(f"clrCache(): web cache is cleared by {current_user.realname}")
+    else:
+      flash(f"Помилка при спробі очистки кешу! Дивіться логи!", "alert alert-danger")
+    return redirect("/",302)
+  except Exception as err:
+    logging.error(f"clrCache(): general error by {current_user.realname}: {err}")
+    flash(f"Неочікувана помилка при спробі очистки кешу! Дивіться логи!", "alert alert-danger")
     return redirect("/",302)

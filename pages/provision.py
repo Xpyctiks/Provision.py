@@ -4,7 +4,7 @@ import logging,os
 from db.database import Provision_templates
 from functions.provision_func import start_autoprovision
 from functions.pages_forms import *
-from functions.site_actions import normalize_domain,is_admin
+from functions.site_actions import normalize_domain,is_admin,clearCache
 
 provision_bp = Blueprint("provision", __name__)
 @provision_bp.route("/provision/", methods=['GET'])
@@ -61,10 +61,12 @@ def do_provision():
         if start_autoprovision(domain,request.form.get('selected_account','').strip(),request.form.get('selected_server','').strip(),repo.repository,current_user.realname,its_not_a_subdomain):
           flash(f"Сайт {domain} успішно встановлено!",'alert alert-success')
           logging.info(f"do_provision(): Site {domain} provisioned successfully!")
+          clearCache()
           return redirect("/",302)
         else:
           logging.error(f"do_provision(): Error while site {domain} provision!")
           flash(f"Помилки при запуску сайту {domain}, дивіться логи!",'alert alert-danger')
+          clearCache()
           return redirect("/provision/",302)
       else:
         flash('Помилка! Не можу отримати шлях гіт репозиторію для вибраного шаблону!','alert alert-danger')
@@ -73,4 +75,5 @@ def do_provision():
   except Exception as err:
     logging.error(f"do_provision(): general error by {current_user.realname}: {err}")
     flash('Загальна помилка при обробці POST запиту на сторінці /provision! Дивіться логи!','alert alert-danger')
+    clearCache()
     return redirect("/",302)

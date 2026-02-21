@@ -5,7 +5,7 @@ from functions.send_to_telegram import send_to_telegram
 from werkzeug.utils import secure_filename
 from functions.pages_forms import *
 from functions.provision_func import *
-from functions.site_actions import is_admin
+from functions.site_actions import is_admin,clearCache
 
 upload_bp = Blueprint("upload", __name__)
 @upload_bp.route("/upload/", methods=['POST'])
@@ -51,10 +51,12 @@ def upload_file():
       if not start_provision(selected_account,selected_server,current_user.realname):
         finishJob(filename,"",emerg_shutdown=True)
         flash(f"Розгортання завершилось з помилками! Дивіться логи!", 'alert alert-danger')
+        clearCache()
         return redirect("/",302)
       finishJob(filename,"",selected_account,selected_server,current_user.realname)
       logging.info(f"upload_file(): master function finished successfully!")
       flash(f"Розгортання успішно завершено!", 'alert alert-success')
+      clearCache()
       return redirect("/",302)
   except Exception as err:
     logging.error(f"upload_file(): Upload page general error: {err}")
