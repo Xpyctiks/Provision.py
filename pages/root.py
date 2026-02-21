@@ -165,7 +165,7 @@ def index():
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
     response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list))
-    page_cache.set(CACHE_KEY, response, timeout=300)
+    page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
     response.headers["X-Cache"] = "MISS"
     response.set_cookie("x_cache", "MISS")
     return response

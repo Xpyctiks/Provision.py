@@ -1,5 +1,5 @@
 from flask import redirect,Blueprint,request
-from flask_login import login_required, current_user
+from flask_login import login_required,current_user
 import os
 from functions.site_actions import *
 
@@ -12,16 +12,20 @@ def do_action():
     #sites delete block
     if (request.form.get("delete") and not request.form.get("selected")):
       delete_site(request.form.get("delete","").strip())
-      return redirect(f"/",301)
+      clearCache()
+      return redirect(f"/",302)
     elif (request.form.get("delete") and request.form.get("selected")):
       array = request.form.getlist("selected")
       del_selected_sites(request.form.get("delete","").strip(),array)
-      return redirect(f"/",301)
+      clearCache()
+      return redirect(f"/",302)
     #sites actions
     elif (request.form.get("disable")):
       disable_site(request.form["disable"].strip())
+      clearCache()
     elif (request.form.get("enable")):
       enable_site(request.form.get("enable","").strip())
+      clearCache()
     #redirects management block
     elif (request.form.get("del_redir") and not request.form.get("selected")):
       del_redirect(request.form.get("del_redir","").strip(),request.form.get("sitename","").strip())
