@@ -81,7 +81,7 @@ def clrCache():
   """GET request: clears web page cache"""
   try:
     if clearCache():
-      logging.info(f"clrCache(): web cache is cleared by {current_user.realname}")
+      logging.info(f"clrCache(): web cache is manually cleared by {current_user.realname}")
     else:
       flash(f"Помилка при спробі очистки кешу! Дивіться логи!", "alert alert-danger")
     return redirect("/",302)

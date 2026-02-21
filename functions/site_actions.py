@@ -551,7 +551,6 @@ def clearCache() -> bool:
   try:
     CACHE_KEY = f"user:{current_user.realname}"
     page_cache.delete(CACHE_KEY)
-    logging.info(f"clearCache(): web cache is cleared by {current_user.realname}")
     return True
   except Exception as err:
     logging.error(f"clearCache(): general error by {current_user.realname}: {err}")
