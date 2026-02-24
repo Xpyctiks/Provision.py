@@ -67,27 +67,29 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         #get zone ID for the selected domain
         zone_id = name_to_id.get(domain,"")
         #get current DNS records for the domain
-        url_dns_records = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={orig_domain}"
+        url_dns_records = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={orig_domain}&type=A"
         result_dns_records = requests.get(url_dns_records, headers=headers).json()
         #if we successfully got some data and there is no result with A record
         if result_dns_records.get("success") and len(result_dns_records.get("result")) <= 0:
           logging.info(f"cloudflare_certificate(): No result returned while check current DNS records for {orig_domain}.Looks like there are no A record. Creating the new one...")
-          if create_dns_records(orig_domain,selected_account,token,zone_id,ip):
-            logging.info("cloudflare_certificate(): DNS record setup finished sucessfully!")
+          if create_dns_records(orig_domain,selected_account,token,zone_id,ip,its_not_a_subdomain):
+            logging.info("cloudflare_certificate(): DNS records setup finished sucessfully!")
             return True
           else:
             return False
         #if we successfully got some data and there is the result with some A records in there
         elif result_dns_records.get("success") and len(result_dns_records.get("result")) > 0:
+          logging.info(f"cloudflare_certificate(): Some records found, checking futher...")
           #getting all records of type A
-          records = {item.get("name"): item.get("content") for item in result_dns_records.get("result") if item.get("type") == "A"}
+          records = {item.get("name"): item.get("content") for item in result_dns_records.get("result")}
           if records:
             for name, content in records.items():
               if content == ip:
-                logging.info(f"cloudflare_certificate(): Type A record {content} for {name} is equal to the A record we need for the server {selected_server}:{ip}")
+                logging.info(f"cloudflare_certificate(): Type A record {content} for {name} is equal to the A record we need for the server {selected_server}:{ip}. Skipping...")
+                return True
               else:
                 logging.info(f"cloudflare_certificate(): Type A record {content} for {name} is NOT equal to the A record we need for the server {selected_server}:{ip}. Setting up...")
-                if upd_dns_records(name,selected_account,token,zone_id,ip):
+                if upd_dns_records(name,selected_account,token,zone_id,ip,its_not_a_subdomain):
                   logging.info("cloudflare_certificate(): DNS record setup finished sucessfully!")
                 else:
                   return False
@@ -104,9 +106,11 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
     logging.error(f"cloudflare_certificate(): global error: {msg}")
     return False
 
-def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str) -> bool:
+def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str, its_not_a_subdomain: bool = False) -> bool:
   """Updates DNS records via API to the selected one"""
   try:
+    if its_not_a_subdomain:
+      logging.info(f"upd_dns_records(): Flag Its_not_a_subdomain is set...")
     headers = {
       "X-Auth-Email": selected_account,
       "X-Auth-Key": token,
@@ -138,7 +142,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
     logging.info(f"upd_dns_records(): API request to update DNS record {domain} to {ip} successfully completed.")
     #staring update of www.@ record if the original domain is root domain, means not consists of any subdomain
     d = tld(domain)
-    if not bool(d.subdomain):
+    if not bool(d.subdomain) or its_not_a_subdomain:
       logging.info(f"upd_dns_records(): Updation A record for www.{domain} to IP {ip}")
       url_get_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name=www.{domain}"
       result_get_record = requests.get(url_get_record, headers=headers).json()
@@ -173,11 +177,13 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
     logging.error(f"upd_dns_records() global error: {msg}")
     return False
 
-def create_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str) -> bool:
+def create_dns_records(domain: str, selected_account: str, token: str, zone_id: str, ip: str, its_not_a_subdomain: bool = False) -> bool:
   """Creates new DNS records via Cloudflare API"""
   try:
-    logging.info(f"Setting up new DNS record for domain {domain}, account {selected_account}, zone {zone_id}, ip {ip}")
+    logging.info(f"create_dns_records(): Setting up new DNS record for domain {domain}, account {selected_account}, zone {zone_id}, ip {ip}")
     addr = tld(domain.strip().lower().rstrip("."))
+    if its_not_a_subdomain:
+      logging.info(f"create_dns_records(): Flag Its_not_a_subdomain is set...")
     #here we keep the root domain. Will check it futher and see if there is a subdomain or not
     root_domain = f"{addr.domain}.{addr.suffix}"
     url_add_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
@@ -204,7 +210,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
       logging.error(f"create_dns_records(): Error while API request to create DNS record {domain} with {ip}! {error_list}")
       return False
     #check if we work with root domain - create www record, if subdomain - passthrough
-    if domain == root_domain:
+    if domain == root_domain or its_not_a_subdomain:
       logging.info(f"create_dns_records(): Setting up www.{domain} record...")
       data2 = {
         "type": "A",
@@ -223,6 +229,8 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
           error_list2 += error2.get('message')
         logging.error(f"create_dns_records(): Error while API request to create DNS record www.{domain} with {ip}! {error_list2}")
         return False
+    else:
+      logging.info("create_dns_records(): Skipping creation of www. subdomain because we think this is a subdomain already.")
     return True
   except Exception as msg:
     logging.error(f"create_dns_records(): global error: {msg}")
