@@ -35,8 +35,7 @@ with application.app_context():
 #get name of the parent directory for the whole project
 current_file = pathlib.Path(__file__)
 directory = current_file.resolve().parent
-project_root = directory.parent
-application.config['CACHE_DIR'] = os.path.join(project_root,".cache")
+application.config['CACHE_DIR'] = os.path.join(directory,".cache")
 page_cache.init_app(application)
 from functions.cli_management import show_cli
 
