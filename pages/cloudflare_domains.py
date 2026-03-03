@@ -122,7 +122,6 @@ def show_existingDomains():
     if r.get("success") == True:
       #how much pages we have at all
       total_pages = r["result_info"]["total_pages"]
-      logging.info(f"total_pages={total_pages}")
       i = 0
       while pages <= total_pages:
         url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={pages}"
@@ -200,7 +199,7 @@ def del_existingDomain():
       result_zone_id = requests.get(url_zone_id, headers=headers).json()
       if result_zone_id.get("success") and result_zone_id.get("result"):
         zone_id = result_zone_id["result"][0]["id"]
-        logging.info("Zone_id retreived successfully...")
+        logging.info("del_existingDomain(): Zone_id retreived successfully...")
       else:
         logging.error(f"del_existingDomain(): Error retreiving zone_id of the domain!")
         flash(f'Помилка! Чомусь ID домену {account} не був отриман! Далі продовжити не можу!','alert alert-danger')

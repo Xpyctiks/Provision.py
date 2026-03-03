@@ -415,8 +415,10 @@ def makePull(domain: str, pullArray: list = []) -> bool:
   """Root page: makes git pull to update the site code. Can receive single domain name or a list of."""
   try:
     web_folder = current_app.config.get("WEB_FOLDER","")
-    if not web_folder:
-      logging.error(f"makePull(): web_folder variable is empty!")
+    www_user = current_app.config.get("WWW_USER","")
+    www_group = current_app.config.get("WWW_GROUP","")
+    if not web_folder or not www_group or not www_user:
+      logging.error(f"makePull(): web_folder/www_user/www_group variable is empty!")
       return False
     #When a single site pull
     if len(pullArray) == 0:
@@ -432,6 +434,9 @@ def makePull(domain: str, pullArray: list = []) -> bool:
           logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
           return False
         else:
+          #setting correct rights again after pull to all files and folders
+          os.system(f"sudo chown -R {www_user}:{www_group} {path}")
+          logging.info(f"makePull(): Rights after pull set again to {www_user}:{www_group} inside {path}")
           #after pull is completed do migration db tasks
           if os.path.exists("bin/"):
             result3 = subprocess.run(["php", "bin/migrate.php"], capture_output=True, text=True)
@@ -473,6 +478,9 @@ def makePull(domain: str, pullArray: list = []) -> bool:
           else:
             message += f"[✅] Код {curr_domain} успішно оновлено!\n"
             logging.info(f"Git pull for {curr_domain} done successfully!")
+            #setting correct rights again after pull to all files and folders
+            os.system(f"sudo chown -R {www_user}:{www_group} {path}")
+            logging.info(f"makePull(): Rights after pull set again to {www_user}:{www_group} inside {path}")
             #after pull is completed do migration db tasks
             if os.path.exists("bin/"):
               result3 = subprocess.run(["php", "bin/migrate.php"], capture_output=True, text=True)
