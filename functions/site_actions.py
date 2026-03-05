@@ -470,6 +470,10 @@ def makePull(domain: str, pullArray: list = []) -> bool:
         if os.path.exists(path):
           os.chdir(path)
           logging.info(f"Successfully got into {path}")
+          result_pre = subprocess.run(["sudo","git","stash"], capture_output=True, text=True)
+          if result_pre.returncode != 0:
+            logging.error(f"Git stash for {domain} returned error: {result.stderr}")
+            message += f"[❌] Помилка stash перед оновленням коду для {curr_domain}\n"
           result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
           if result.returncode != 0:
             logging.error(f"Git pull for {domain} returned error: {result.stderr}")
