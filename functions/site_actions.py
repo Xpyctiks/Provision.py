@@ -427,6 +427,12 @@ def makePull(domain: str, pullArray: list = []) -> bool:
       if os.path.exists(path):
         os.chdir(path)
         logging.info(f"Successfully got into {path}")
+        result_pre = subprocess.run(["sudo","git","stash"], capture_output=True, text=True)
+        if result_pre.returncode != 0:
+          logging.error(f"makePull(): Git stash for {domain} returned error: {result.stderr}")
+          message += f"[❌] Помилка stash перед оновленням коду для {curr_domain}\n"
+        else:
+          logging.info(f"makePull(): Git stash done...")
         result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
         if result.returncode != 0:
           logging.error(f"Git pull for {domain} returned error: {result.stderr}")
@@ -469,19 +475,21 @@ def makePull(domain: str, pullArray: list = []) -> bool:
         path = os.path.join(web_folder,curr_domain)
         if os.path.exists(path):
           os.chdir(path)
-          logging.info(f"Successfully got into {path}")
+          logging.info(f"makePull(): Successfully got into {path}")
           result_pre = subprocess.run(["sudo","git","stash"], capture_output=True, text=True)
           if result_pre.returncode != 0:
-            logging.error(f"Git stash for {domain} returned error: {result.stderr}")
+            logging.error(f"makePull(): Git stash for {domain} returned error: {result.stderr}")
             message += f"[❌] Помилка stash перед оновленням коду для {curr_domain}\n"
+          else:
+            logging.info(f"makePull(): Git stash done...")
           result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
           if result.returncode != 0:
-            logging.error(f"Git pull for {domain} returned error: {result.stderr}")
+            logging.error(f"makePull(): Git pull for {domain} returned error: {result.stderr}")
             send_to_telegram(f"Git pull error for site {curr_domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:")
             message += f"[❌] Помилка оновлення коду для {curr_domain}\n"
           else:
             message += f"[✅] Код {curr_domain} успішно оновлено!\n"
-            logging.info(f"Git pull for {curr_domain} done successfully!")
+            logging.info(f"makePull(): Git pull for {curr_domain} done successfully!")
             #setting correct rights again after pull to all files and folders
             os.system(f"sudo chown -R {www_user}:{www_group} {path}")
             logging.info(f"makePull(): Rights after pull set again to {www_user}:{www_group} inside {path}")
@@ -489,18 +497,18 @@ def makePull(domain: str, pullArray: list = []) -> bool:
             if os.path.exists("bin/"):
               result3 = subprocess.run(["php", "bin/migrate.php"], capture_output=True, text=True)
               if  result3.returncode == 0:
-                logging.info(f"DB migration for {curr_domain} done successfully!")
+                logging.info(f"makePull(): DB migration for {curr_domain} done successfully!")
               else:
-                logging.error(f"DB migration error: {result3.stderr}")
+                logging.error(f"makePull(): DB migration error: {result3.stderr}")
                 send_to_telegram(f"DB migration for {curr_domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:")
             else:
-              logging.error(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}")
+              logging.error(f"makePull(): DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}")
               send_to_telegram(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:")
       flash(message,'alert alert-info')
       logging.info(f"-----------------------Bunch git pull by {current_user.realname} is done!-----------------")
       return True
   except Exception as msg:
-    logging.error(f"Makepull() Global Error:", "{msg}")
+    logging.error(f"Makepull(): global Error: {msg}")
     logging.info(f"-----------------------Single git pull for {domain} by {current_user.realname} finished---------------------------")
     return False
 
