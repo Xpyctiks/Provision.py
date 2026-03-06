@@ -120,6 +120,9 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
 def setupPHP(file: str) -> bool:
   """Setups PHP config from the template and reloads the daemon"""
   try:
+    ######################The whole function is bypassed######################
+    return True
+    ##########################################################################
     logging.info(f"setupPHP(): Configuring PHP...")
     php_pool = current_app.config.get("PHP_POOL","")
     php_path = current_app.config.get("PHPFPM_PATH","")

@@ -39,12 +39,7 @@ def create_nginx_config(filename: str,has_subdomain: str = "---") -> str:
   config = f"""server {{
     listen 203.161.35.70:80;
     server_name {filename} www.{filename};
-    access_log /var/log/nginx/access.log postdata;
-    error_log /var/log/nginx/error.log;
-
-    location ~ / {{
-      return 301 https://{filename};
-    }}
+    return 301 https://{filename};
 }}
 
 server {{
@@ -52,12 +47,7 @@ server {{
   server_name www.{filename};
   ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
   ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
-  access_log /var/log/nginx/access.log postdata;
-  error_log /var/log/nginx/error.log;
-
-  location / {{
-    return 301 https://{filename}$request_uri;
-  }}
+  return 301 https://{filename}$request_uri;
 }}
 
 server {{
@@ -65,7 +55,6 @@ server {{
   server_name {filename};
   ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
   ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
-  include mime.types;
   access_log /var/log/nginx/access.log postdata;
   error_log /var/log/nginx/error.log;
   root {os.path.join(current_app.config.get("WEB_FOLDER"),filename)}/public;
@@ -88,7 +77,7 @@ server {{
     try_files $uri $uri/ /index.php?$args;
     location ~* ^/admin/.+\.php$ {{
       include snippets/fastcgi-php.conf;
-      fastcgi_pass unix:/var/run/php/{filename}.sock;
+      fastcgi_pass unix:/var/run/php/php.sock;
     }}
   }}
 
@@ -113,7 +102,7 @@ server {{
     add_header X-XSS-Protection "1; mode=block";
     add_header X-Content-Type-Options nosniff;
     add_header X-Frame-Options SAMEORIGIN;
-    fastcgi_pass unix:/var/run/php/{filename}.sock;
+    fastcgi_pass unix:/var/run/php/php.sock;
   }}
 }}"""
   return config
