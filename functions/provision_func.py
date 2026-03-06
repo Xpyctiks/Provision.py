@@ -1,6 +1,6 @@
 
 import os,subprocess,shutil,glob,zipfile,random,string,re,logging
-from functions.config_templates import create_nginx_config, create_php_config
+from functions.config_templates import create_nginx_config
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
 from flask import current_app,flash

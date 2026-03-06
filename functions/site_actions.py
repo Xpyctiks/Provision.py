@@ -1,7 +1,7 @@
 import logging,os,subprocess,re,shutil,idna
 from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
-from functions.config_templates import create_nginx_config, create_php_config
+from functions.config_templates import create_nginx_config
 from flask_login import current_user
 from db.db import db
 from db.database import *
