@@ -50,8 +50,6 @@ def index():
       #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
       #variable with full path to nginx sites-enabled symlink to the site
       ngx_site = os.path.join(current_app.config["NGX_SITES_PATHEN"],s)
-      #variable with full path to php pool config of the site
-      php_site = os.path.join(current_app.config["PHP_POOL"],s+".conf")
       #check robots.txt for existance and change its button color
       if os.path.exists(os.path.join(web_folder,s,"public","robots.txt")):
         robots_button = "btn-primary"
@@ -66,7 +64,7 @@ def index():
         dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="validation" value="{s}" onclick="showLoading()" style="margin-top: 5px;" title="Керування CNAME записами для валідації домену для пошукових систем.">📮DNS валідація</a>'
         cf_account = acc.account
       #If everything is ok, main view:
-      if os.path.islink(ngx_site) and os.path.isfile(php_site):
+      if os.path.islink(ngx_site):
         html_data.append({
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-success">{i}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
@@ -82,42 +80,7 @@ def index():
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account
         })
-      #if nginx is ok but php is not
-      elif os.path.islink(ngx_site) and not os.path.isfile(php_site):
-        html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-danger">{i}</th>',
-          "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
-          "site_name": s,
-          "table_type2": '<td class="table-danger">',
-          "count_redirects": count_redirects(s),
-          "getSiteCreated": getSiteCreated(s),
-          "id": i,
-          "accordeon_path": os.path.join(web_folder,s),
-          "getSiteOwner": getSiteOwner(s),
-          "site_status": '🚨Помилка конфігураціх РНР',
-          "robots_button": robots_button,
-          "dns_validation": dnsValidation_button,
-          "cf_account": cf_account
-        })
-      #if php is ok but nginx is not
-      elif not os.path.islink(ngx_site) and os.path.isfile(php_site):
-        html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-danger">{i}</th>',
-          "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
-          "site_name": s,
-          "table_type2": '<td class="table-danger">',
-          "count_redirects": count_redirects(s),
-          "getSiteCreated": getSiteCreated(s),
-          "id": i,
-          "accordeon_path": os.path.join(web_folder,s),
-          "getSiteOwner": getSiteOwner(s),
-          "site_status": '🚨Помилка конфігураціх Nginx',
-          "robots_button": robots_button,
-          "dns_validation": dnsValidation_button,
-          "cf_account": cf_account
-        })
-      #if really disabled
-      elif not os.path.islink(ngx_site) and not os.path.isfile(php_site):
+      elif not os.path.islink(ngx_site):
         html_data.append({
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-warning">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
@@ -132,22 +95,6 @@ def index():
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account
-        })
-      else:
-        html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-danger">{i}</th>',
-          "button_2": '',
-          "site_name": 'ЗАГАЛЬНА',
-          "table_type2": '<td class="table-danger">',
-          "count_redirects": '',
-          "getSiteCreated": '',
-          "id": i,
-          "accordeon_path": 'ПОМИЛКА',
-          "getSiteOwner": 'СИСТЕМИ',
-          "site_status": 'Важливі файли або папки не існують',
-          "robots_button": '',
-          "dns_validation": '',
-          "cf_account": ''
         })
     #getting into DB and checking is there any messages for the current user
     messages = Messages.query.filter_by(foruserid=current_user.id).all()
