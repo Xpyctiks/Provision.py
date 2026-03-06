@@ -70,6 +70,8 @@ server {{
   }}
 
   location ~ \.php$ {{
+    include snippets/cache.conf;
+    fastcgi_cache PHP;
     include snippets/fastcgi-php.conf;
     add_header X-XSS-Protection "1; mode=block";
     add_header X-Content-Type-Options nosniff;
