@@ -22,7 +22,7 @@ def show_redirects():
       with open(file301, "r", encoding="utf-8") as f:
         content = f.read()
       pattern = re.compile(
-        r'location\s*=\s*(?P<path>/[^\s{]+)\s*{[^}]*?return\s+(?P<type>301)\s+(?P<target>https?://[^\s;]+);',
+        r'location\s*(?P<type>.)\s*(?P<path>/[^\s{]+)\s*{[^}]*?return\s+(?P<type2>301)\s+(?P<target>https?://[^\s;]+);',
         re.DOTALL
       )
       for match in pattern.finditer(content):

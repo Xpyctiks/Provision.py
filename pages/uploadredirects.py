@@ -1,6 +1,6 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
-import logging,os
+import logging,os,re
 from werkzeug.utils import secure_filename
 from functions.site_actions import normalize_domain,is_admin
 
@@ -13,16 +13,22 @@ def uploadredir_file():
     logging.info(f"-----------------------Adding new redirects for {request.form.get('sitename').strip()} by {current_user.realname}-----------------")
     sitename = request.form.get("sitename", "")
     sitename = str(normalize_domain(sitename))
+    redirectFrom = request.form.get("RedirectFromField","").strip()
+    redirectTo = request.form.get("RedirectToField","").strip()
     #name of the redirect config file
     file301 = os.path.join("/etc/nginx/additional-configs","301-" + sitename + ".conf")
     logging.info(f"uploadredir_file(): Redirect config file: {file301}")
     #if this is submitted form and fileUpload[] exists in the request
-    if request.form.get('addnewSubmit') and 'fileUpload' in request.files and not request.form.get('RedirectFromField') and not request.form.get('RedirectToField'):
+    if request.form.get('addnewSubmit') and 'fileUpload' in request.files and not redirectFrom and not redirectTo:
       #get the list of files. saving them to the current folder. Redirect to /
-      if request.form.get('templateField') == "strict":
+      if request.form.get("templateField","") == "strict":
         type = "="
-      else:
+      elif request.form.get("templateField","") == "catch_all":
         type = "~"
+      else:
+        logging.error(f"uploadredir_file(): templateField is empty or contains something strange")
+        flash("Помилка! Дивіться логи!",'alert alert-danger')
+        return redirect(f"/redirects_manager?site={sitename}",301)
       logging.info(f"CSV file with redirects uploaded. Type of redirects: {type}")
       redirectsCount = 0
       file = request.files["fileUpload"]
@@ -33,10 +39,16 @@ def uploadredir_file():
       with open(filename, "r", encoding="utf-8") as redirectsFile:
         for line in redirectsFile:
           redirFrom, redirTo = line.strip().split(",")
-          template = f"""location {type} {redirFrom} {{
-  return 301 https://{sitename}{redirTo};
+          if re.match("https:",redirTo):
+            template = f"""location {type} {redirFrom} {{
+  return 301 {redirTo};
 }}
 """
+          else:
+            template = f"""location {type} {redirFrom} {{
+  return 301 https://{sitename}{redirTo};
+}}
+"""            
           totalData += template
           redirectsCount = redirectsCount + 1
       #now write down all redirects to the file
@@ -54,17 +66,29 @@ def uploadredir_file():
       logging.info(f"-----------------------New redirects added successfully for {sitename}-----------------")
       return redirect(f"/redirects_manager?site={sitename}",301)
     #if this is submitted form and single redirect lines exist there
-    elif request.form.get('addnewSubmit') and request.form.get('RedirectFromField') and request.form.get('RedirectToField') and request.form.get('templateField'):
+    elif request.form.get("addnewSubmit","") and redirectFrom and redirectTo and request.form.get("templateField",""):
       logging.info(f"-----------------------Adding new single redirect for {sitename} by {current_user.realname}-----------------")
       logging.info(f"uploadredir_file(): Redirect config file: {file301}")
-      if request.form.get('templateField') == "strict":
+      if request.form.get("templateField","") == "strict":
         type = "="
-      else:
+      elif request.form.get("templateField","") == "catch_all":
         type = "~"
+      else:
+        logging.error(f"uploadredir_file(): templateField is empty or contains something strange")
+        flash("Помилка! Дивіться логи!",'alert alert-danger')
+        return redirect(f"/redirects_manager?site={sitename}",301)
       logging.info(f"uploadredir_file(): Type of redirect: {type}")
-      logging.info(f"uploadredir_file(): Redirect: From: {sitename} to {request.form.get('RedirectToField').strip()}")
-      template = f"""location {type} {request.form.get('RedirectFromField').strip()} {{
-  return 301 https://{sitename}{request.form.get('RedirectToField').strip()};
+      logging.info(f"uploadredir_file(): Redirect: From: {sitename} to {redirectTo}")
+      if re.match("https:",redirectTo):
+        logging.info(f"uploadredir_file(): Redirect filed To: contains full FQDN address")
+        template = f"""location {type} {redirectFrom} {{
+  return 301 {redirectTo};
+}}
+"""
+      else:
+        logging.info(f"uploadredir_file(): Redirect filed To: contains relative path for the source domain")
+        template = f"""location {type} {redirectFrom} {{
+  return 301 https://{sitename}{redirectTo};
 }}
 """
       with open(file301, "a", encoding="utf-8") as f:

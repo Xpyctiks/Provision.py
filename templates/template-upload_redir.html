@@ -64,21 +64,23 @@
           <p>Хочемо зробити редірект з <font color=blue>https://site.com</font><font color=red>/news/latest/</font> на <font color=blue>https://site.com</font><font color=orange>/hottest/latest/</font>:</p>
           <p><strong>Створіть новій текстовий файл, наприклад some_file.csv. Додайте строку в файл:</strong></p>
           <p><strong>/news/latest/,/hottest/latest/</strong></p>
-          <p>один редірект на кожну строку. Сам домен в шляху "звідки редірект" не потрібно вказувати.Тільки вже в "редірект куди".</p>
+          <p>якщо к межах одного домену. Або</p>
+          <p><strong>/news/latest/,https://newdomain.com/newpath/latest/</strong></p>
+          <p>якщо редірект а інший домен. Один редірект на кожну строку. Сам домен в шляху "звідки редірект" не потрібно вказувати.Тільки вже в "редірект куди".</p>
           <input type="file" class="form-control form-control-sm w-100" name="fileUpload" id="fileUpload">
           <p class="card-text">або додайте один редірект прям ось тут:</p>
           <div class="row g-2">
             <div class="col-12 col-md-4">
-              <span class="input-group-text" id="RedirectFromField">Редірект з: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{sitename|safe}}</span>
+              <span class="input-group-text" id="RedirectFromField">Звідки: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{sitename|safe}}</span>
             </div>
             <div class="col-12 col-md-8">
               <input type="text" class="form-control w-100" placeholder="/page/subpage/oldpage/" name="RedirectFromField">
             </div>
             <div class="col-12 col-md-4">
-              <span class="input-group-text" id="RedirectToField" >Редірект куди: {{sitename|safe}}</span>
+              <span class="input-group-text" id="RedirectToField" >Куди:</span>
             </div>
             <div class="col-12 col-md-8">
-              <input type="text" class="form-control w-100" placeholder="/page/newpage/" name="RedirectToField">
+              <input type="text" class="form-control w-100" name="RedirectToField">
             </div>
           </div>
           <p class="card-text">Якщо був обран файл, то цей файл і буде завантажений.Текстові поля вище будут ігноруватися.<br>Якщо файл не обран,то дані із текстових полів вище будуть заватажені.</p>
@@ -86,7 +88,7 @@
           <span class="badge rounded-pill bg-info text-dark">Оберіть тип редіректу:</span>
             <select class="form-select form-select-sm w-100" name="templateField">
               <option value="strict">= Точний (точна вказана сторінка,ніякі інші)</option>
-              <option value="catch all">~ Всі схожі (редірект всього,що починається з заданої строки і далі не важливо що)</option>
+              <option value="catch_all">~ Всі схожі (редірект всього,що починається з заданої строки і далі не важливо що)</option>
             </select>
             </div>
             <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
