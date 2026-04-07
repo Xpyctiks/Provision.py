@@ -1,6 +1,8 @@
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
-import os,logging,re
+import os
+import logging
+import re
 from functions.site_actions import is_admin
 
 redirects_bp = Blueprint("redirects_manager", __name__)
@@ -22,7 +24,7 @@ def show_redirects():
       with open(file301, "r", encoding="utf-8") as f:
         content = f.read()
       pattern = re.compile(
-        r'location\s*(?P<type>.)\s*(?P<path>/[^\s{]+)\s*{[^}]*?return\s+(?P<type2>301)\s+(?P<target>https?://[^\s;]+);',
+        r'location\s+(?P<modifier>=|~\*|~|~\^)?\s*(?P<path>\S+)\s*\{[^}]*?return\s+(?P<code>\d{3})\s+(?P<target>[^;]+);',
         re.DOTALL
       )
       for match in pattern.finditer(content):
@@ -31,7 +33,7 @@ def show_redirects():
         <td class="table-success">{match.group("path")}</td>
         <td class="table-success"><input type="checkbox" name="selected" value="{match.group("path")}"></td>
         <td class="table-success">{match.group("target")}</td>
-        <td class="table-success">{match.group("type")}</td>
+        <td class="table-success">{match.group("modifier")}</td>
         <td class="table-success">
           <button class="btn btn-danger" type="submit" name="del_redir" value="{match.group("path")}">Видалити</button>
           <input type="hidden" name="sitename" value="{site}">

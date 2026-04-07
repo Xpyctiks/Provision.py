@@ -1,6 +1,8 @@
+import json
+import requests
+import logging
 from flask import Blueprint,request,flash,redirect
 from flask_login import login_required,current_user
-import json,requests,logging
 from db.database import Cloudflare, Servers
 from functions.site_actions import normalize_domain
 from functions.tld import tld

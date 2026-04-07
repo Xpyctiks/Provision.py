@@ -1,6 +1,7 @@
+import logging
+import os
 from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
-import logging,os
 from db.database import Provision_templates
 from functions.provision_func import start_autoprovision
 from functions.pages_forms import *

@@ -1,4 +1,8 @@
-import os,logging,shutil,subprocess,sqlite3
+import os
+import logging
+import shutil
+import subprocess
+import sqlite3
 from functions.certificates import cloudflare_certificate
 from functions.provision_func import setupNginx
 from functions.site_actions import normalize_domain

@@ -1,8 +1,9 @@
 #!/usr/local/bin/python3
 
+import os
+import pathlib
 from flask import Flask
 from flask_login import LoginManager
-import os,pathlib
 from datetime import timedelta
 from functions.cache_func import page_cache
 

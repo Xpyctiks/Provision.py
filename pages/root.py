@@ -1,4 +1,6 @@
-import logging,os,re
+import logging
+import os
+import re
 from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin

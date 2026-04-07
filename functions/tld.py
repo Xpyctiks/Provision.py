@@ -1,4 +1,6 @@
-import tldextract,os,logging
+import tldextract
+import os
+import logging
 from pathlib import Path
 from functions.send_to_telegram import send_to_telegram
 

@@ -1,7 +1,9 @@
+import logging
+import requests
+import json
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
 from db.database import Cloudflare
-import logging,requests,json
 from functions.site_actions import normalize_domain,is_admin
 from functions.pages_forms import loadClodflareAccounts
 

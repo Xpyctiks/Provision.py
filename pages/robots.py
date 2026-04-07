@@ -1,6 +1,7 @@
+import logging
+import os
 from flask import request,redirect,flash,Blueprint,current_app,jsonify
 from flask_login import current_user, login_required
-import logging,os
 from functions.send_to_telegram import send_to_telegram
 from functions.site_actions import normalize_domain
 

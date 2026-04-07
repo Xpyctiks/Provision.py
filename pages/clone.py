@@ -4,7 +4,6 @@ from functions.pages_forms import *
 from functions.clone_func import *
 from functions.site_actions import normalize_domain,is_admin,clearCache
 from functions.provision_func import finishJob
-
 import os
 
 clone_bp = Blueprint("clone", __name__)

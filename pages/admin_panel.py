@@ -1,6 +1,6 @@
+import logging
 from flask import redirect,Blueprint,request,render_template,flash
 from flask_login import login_required, current_user
-import logging
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *

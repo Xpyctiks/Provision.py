@@ -1,6 +1,8 @@
+import logging
+import os
+import re
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
-import logging,os,re
 from werkzeug.utils import secure_filename
 from functions.site_actions import normalize_domain,is_admin
 

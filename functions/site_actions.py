@@ -1,4 +1,9 @@
-import logging,os,subprocess,re,shutil,idna
+import logging
+import os
+import subprocess
+import re
+import shutil
+import idna
 from flask import current_app,flash,redirect
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config

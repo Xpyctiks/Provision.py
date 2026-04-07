@@ -1,6 +1,7 @@
+import logging
+import os
 from flask import render_template,redirect,Blueprint,current_app,flash,jsonify
 from flask_login import login_required
-import logging,os
 from functions.site_actions import is_admin
 
 logs_bp = Blueprint("logs", __name__)
