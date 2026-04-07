@@ -37,7 +37,7 @@ def index():
     cf_accounts_list = []
     sites_list = [
       name for name in os.listdir(web_folder)
-      if os.path.isdir(os.path.join(web_folder, name) and not name.startswith('.'))
+      if os.path.isdir(os.path.join(web_folder, name)) and not name.startswith('.')
     ]
     #gathering all list of available users to put them into user filter list
     ul = User.query.order_by(User.username).all()
