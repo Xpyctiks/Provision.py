@@ -178,7 +178,7 @@ def handler_cloudflare(form):
   try:
     #processing delete account request
     if "buttonDeleteCloudflare" in form:
-      cloudflare = Cloudflare.query.filter_by(id=int(form.get('buttonDeleteClourflare').strip())).first()
+      cloudflare = Cloudflare.query.filter_by(id=int(form.get('buttonDeleteCloudflare').strip())).first()
       if cloudflare:
         isdefault = cloudflare.isdefault
         db.session.delete(cloudflare)
