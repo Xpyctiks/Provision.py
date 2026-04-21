@@ -103,6 +103,23 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       setSiteOwner(os.path.basename(domain))
       #writing link of domain and its account to the database
       link_domain_and_account(domain,selected_account)
+      #here add two symlinks for two shared folders to media/ folder(HARDCODED)
+      if os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),".media/payments")) and os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")):
+        if not os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/payments")):
+          os.symlink(os.path.join(current_app.config.get("WEB_FOLDER"),".media/payments"),os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/payments"))
+          logging.info(f'Symlink from {os.path.join(current_app.config.get("WEB_FOLDER"),".media/payments")} to {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/payments")} created...')
+        else:
+          logging.info(f'Symlink from {os.path.join(current_app.config.get("WEB_FOLDER"),".media/payments")} to {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/payments")} already exists!')
+      else:
+          logging.info(f'The folder {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")} or {os.path.join(current_app.config.get("WEB_FOLDER"),".media/payments")} is not exists! Skipping creation of symlink...')
+      if os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")) and os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")):
+        if not os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/providers")):
+          os.symlink(os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers"),os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/providers"))
+          logging.info(f'Symlink from {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} to {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/providers")} created...')
+        else:
+          logging.info(f'Symlink from {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} to {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/providers")} already exists!')
+      else:
+        logging.info(f'The folder {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")} or {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} is not exists! Skipping creation of symlink...')
       send_to_telegram(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:")
       logging.info(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
       return True
