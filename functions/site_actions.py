@@ -20,10 +20,10 @@ def delete_site(sitename: str) -> bool:
     logging.info(f"-----------------------Starting single site delete: {sitename} by {current_user.realname}-----------------")
     path_en = current_app.config.get("NGX_SITES_PATHEN","")
     path_av = current_app.config.get("NGX_SITES_PATHAV","")
-    php_pool = current_app.config.get("PHP_POOL","")
-    php_path = current_app.config.get("PHPFPM_PATH","")
+    # php_pool = current_app.config.get("PHP_POOL","")
+    # php_path = current_app.config.get("PHPFPM_PATH","")
     web_folder = current_app.config.get("WEB_FOLDER","")
-    if not path_en or not path_av or not php_pool or not php_path or not web_folder:
+    if not path_en or not path_av  or not web_folder: #or not php_pool or not php_path:
       logging.error(f"delete_site(): Some important variable is empty!")
       return False
     #-------------------------Delete Nginx site config
@@ -52,31 +52,31 @@ def delete_site(sitename: str) -> bool:
     else:
       logging.error(f"delete_site(): Error while Nginx config test: {result1.stderr.strip()}")
       error_message += f"Помилка тестування конфігурації Nginx: {result1.stderr.strip()}\n"
-    #------------------------Delete in php pool.d/
-    php = os.path.join(php_pool,sitename+".conf")
-    php_dis = os.path.join(php_pool,sitename+".conf.disabled")
-    if os.path.isfile(php):
-      os.unlink(php)
-      logging.info(f"delete_site(): PHP config {php} deleted successfully")
-    elif os.path.isfile(php_dis):
-      os.unlink(php_dis)
-      logging.info(f"delete_site(): PHP config {php_dis} deleted successfully")
-    else:
-      logging.info(f"delete_site(): PHP config {php} already deleted")
-    result2 = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
-    if  re.search(r".*test is successful.*",result2.stderr):
-    #gettings digits of PHP version from the path to the PHP-FPM
-      phpVer = re.search(r"(.*)(\d\.\d)",php_path).group(2)
-      logging.info(f"delete_site(): PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
-      result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
-      if  result3.returncode == 0:
-        logging.info(f"delete_site(): PHP reloaded successfully.")
-      else:
-        logging.error(f"delete_site(): PHP reload failed!. {result3.stderr}")
-        error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}\n"
-    else:
-      logging.error(f"delete_site(): Error while PHP config. test: {result2.stderr.strip()}")
-      error_message += f"Помилка тестування конфігурації PHP: {result2.stderr.strip()}\n"
+    # #------------------------Delete in php pool.d/
+    # php = os.path.join(php_pool,sitename+".conf")
+    # php_dis = os.path.join(php_pool,sitename+".conf.disabled")
+    # if os.path.isfile(php):
+    #   os.unlink(php)
+    #   logging.info(f"delete_site(): PHP config {php} deleted successfully")
+    # elif os.path.isfile(php_dis):
+    #   os.unlink(php_dis)
+    #   logging.info(f"delete_site(): PHP config {php_dis} deleted successfully")
+    # else:
+    #   logging.info(f"delete_site(): PHP config {php} already deleted")
+    # result2 = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
+    # if  re.search(r".*test is successful.*",result2.stderr):
+    # #gettings digits of PHP version from the path to the PHP-FPM
+    #   phpVer = re.search(r"(.*)(\d\.\d)",php_path).group(2)
+    #   logging.info(f"delete_site(): PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
+    #   result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+    #   if  result3.returncode == 0:
+    #     logging.info(f"delete_site(): PHP reloaded successfully.")
+    #   else:
+    #     logging.error(f"delete_site(): PHP reload failed!. {result3.stderr}")
+    #     error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}\n"
+    # else:
+    #   logging.error(f"delete_site(): Error while PHP config. test: {result2.stderr.strip()}")
+    #   error_message += f"Помилка тестування конфігурації PHP: {result2.stderr.strip()}\n"
     #--------------Delete of the site folder
     path = os.path.join(web_folder,sitename)
     if not os.path.isdir(path):
@@ -148,10 +148,10 @@ def disable_site(sitename: str) -> bool:
   error_message = ""
   try:
     logging.info(f"-----------------------Starting site disable: {sitename} by {current_user.realname}-----------------")
-    php_pool = current_app.config.get("PHP_POOL","")
+    # php_pool = current_app.config.get("PHP_POOL","")
     php_path = current_app.config.get("PHPFPM_PATH","")
     path_en = current_app.config.get("NGX_SITES_PATHEN","")
-    if not php_pool or not php_path or not path_en:
+    if not php_path or not path_en: # or not php_pool:
       logging.error(f"disable_site(): Some important variable is empty!")
       return False
     #disable Nginx site
@@ -173,27 +173,27 @@ def disable_site(sitename: str) -> bool:
     else:
       logging.error(f"disable_site(): Nginx site disable error - symlink {ngx} is not exist")
       error_message += f"Помилка при перезавантаженні веб сервера Nginx"
-    #php disable
-    php = os.path.join(php_pool,sitename+".conf")
-    if os.path.isfile(php) or os.path.islink(php):
-      os.rename(php,php+".disabled")
-      result2 = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
-      if  re.search(r".*test is successful.*",result2.stderr):
-      #gettings digits of PHP version from the path to the PHP-FPM
-        phpVer = re.search(r"(.*)(\d\.\d)",php_path).group(2)
-        logging.info(f"disable_site(): PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
-        result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
-        if  result3.returncode == 0:
-          logging.info(f"disable_site(): PHP reloaded successfully.")
-        else:
-          logging.error(f"disable_site(): PHP reload failed!. {result3.stderr}")
-          error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
-      else:
-        logging.error(f"disable_site(): Error while test PHP config: {result2.stderr.strip()}")
-        error_message += f"Помилка при тестуванні конфігурації PHP: {result2.stderr.strip()}"
-    else:
-      logging.error(f"disable_site(): PHP site conf. disable error - symlink {php} is not exist")
-      error_message += f"Помилка при перезавантаженні PHP"
+    # #php disable
+    # php = os.path.join(php_pool,sitename+".conf")
+    # if os.path.isfile(php) or os.path.islink(php):
+    #   os.rename(php,php+".disabled")
+    #   result2 = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
+    #   if  re.search(r".*test is successful.*",result2.stderr):
+    #   #gettings digits of PHP version from the path to the PHP-FPM
+    #     phpVer = re.search(r"(.*)(\d\.\d)",php_path).group(2)
+    #     logging.info(f"disable_site(): PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
+    #     result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+    #     if  result3.returncode == 0:
+    #       logging.info(f"disable_site(): PHP reloaded successfully.")
+    #     else:
+    #       logging.error(f"disable_site(): PHP reload failed!. {result3.stderr}")
+    #       error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
+    #   else:
+    #     logging.error(f"disable_site(): Error while test PHP config: {result2.stderr.strip()}")
+    #     error_message += f"Помилка при тестуванні конфігурації PHP: {result2.stderr.strip()}"
+    # else:
+    #   logging.error(f"disable_site(): PHP site conf. disable error - symlink {php} is not exist")
+    #   error_message += f"Помилка при перезавантаженні PHP"
     logging.info(f"-----------------------Site disable of {sitename} is finished-----------------")
     if len(error_message) > 0:
       flash(error_message, 'alert alert-danger')
@@ -213,16 +213,16 @@ def enable_site(sitename: str) -> bool:
     #enable Nginx site
     path_en = current_app.config.get("NGX_SITES_PATHEN","")
     path_av = current_app.config.get("NGX_SITES_PATHAV","")
-    php_pool = current_app.config.get("PHP_POOL","")
-    php_path = current_app.config.get("PHPFPM_PATH","")
+    # php_pool = current_app.config.get("PHP_POOL","")
+    # php_path = current_app.config.get("PHPFPM_PATH","")
     web_folder = current_app.config.get("WEB_FOLDER","")
-    if not path_en or not path_av or not php_pool or not php_path or not web_folder:
+    if not path_en or not path_av or not web_folder: #or not php_pool or not php_path :
       logging.error(f"enable_site(): Some important variable is empty!")
       return False
     ngx_en = os.path.join(path_en,sitename)
     ngx_av = os.path.join(path_av,sitename)
-    php_cnf = os.path.join(php_pool,sitename+".conf")
-    php_cnf_dis = os.path.join(php_pool,sitename+".conf.disabled")
+    # php_cnf = os.path.join(php_pool,sitename+".conf")
+    # php_cnf_dis = os.path.join(php_pool,sitename+".conf.disabled")
     #First of all, check does the important folders exist
     if not os.path.exists(path_en):
       logging.error(f"enable_site(): root folder {path_en} does not exists!")
@@ -230,9 +230,9 @@ def enable_site(sitename: str) -> bool:
     elif not os.path.exists(path_av):
       logging.error(f"enable_site(): root folder {path_av} does not exists!")
       error_message += f"Важлива папка {path_av} не існує! не можу продовжувати..."
-    elif not os.path.exists(php_pool):
-      logging.error(f"enable_site(): root folder {php_pool} does not exists!")
-      error_message += f"Важлива папка {php_pool} не існує! не можу продовжувати..."
+    # elif not os.path.exists(php_pool):
+    #   logging.error(f"enable_site(): root folder {php_pool} does not exists!")
+    #   error_message += f"Важлива папка {php_pool} не існує! не можу продовжувати..."
     if error_message != "":
       flash(error_message, 'alert alert-danger')
       return False
@@ -251,18 +251,18 @@ def enable_site(sitename: str) -> bool:
     #exists everywhere
     elif os.path.islink(ngx_en) and os.path.isfile(ngx_av):
       logging.info(f"enable_site(): Symlink {ngx_av} -> {ngx_en} already exists. Skipping this step.")
-    #--------------------check if there is no active php config
-    if not os.path.exists(php_cnf) and not os.path.exists(php_cnf_dis):
-      config = create_php_config(sitename)
-      with open(php_cnf, 'w',encoding='utf8') as fileC:
-        fileC.write(config)
-      logging.info(f"enable_site(): PHP config {os.path.join(php_pool,sitename)} recreated because it wasn't exist")
-    #site.com.conf.disabled exists and site.com.conf is not
-    if not os.path.isfile(php_cnf) and os.path.isfile(php_cnf_dis):
-      os.rename(php_cnf_dis,php_cnf)
-      logging.info(f"enable_site(): Php config renamed from {php_cnf_dis} -> {php_cnf}.")
-    elif os.path.isfile(php_cnf) and not os.path.isfile(php_cnf_dis):
-      logging.info(f"enable_site(): Php config already exists and is active. Skipping this step.")
+    # #--------------------check if there is no active php config
+    # if not os.path.exists(php_cnf) and not os.path.exists(php_cnf_dis):
+    #   config = create_php_config(sitename)
+    #   with open(php_cnf, 'w',encoding='utf8') as fileC:
+    #     fileC.write(config)
+    #   logging.info(f"enable_site(): PHP config {os.path.join(php_pool,sitename)} recreated because it wasn't exist")
+    # #site.com.conf.disabled exists and site.com.conf is not
+    # if not os.path.isfile(php_cnf) and os.path.isfile(php_cnf_dis):
+    #   os.rename(php_cnf_dis,php_cnf)
+    #   logging.info(f"enable_site(): Php config renamed from {php_cnf_dis} -> {php_cnf}.")
+    # elif os.path.isfile(php_cnf) and not os.path.isfile(php_cnf_dis):
+    #   logging.info(f"enable_site(): Php config already exists and is active. Skipping this step.")
     #start of checks - nginx
     result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
@@ -275,21 +275,21 @@ def enable_site(sitename: str) -> bool:
     else:
       logging.error(f"enable_site(): Error while Nginx config. test: {result1.stderr.strip()}")
       error_message += f"Помилка при тестуванні конфігурації веб сервера Nginx: {result1.stderr.strip()}"
-    #start of checks - php
-    result2 = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
-    if  re.search(r".*test is successful.*",result2.stderr):
-    #gettings digits of PHP version from the path to the PHP-FPM
-      phpVer = re.search(r"(.*)(\d\.\d)",php_path).group(2)
-      logging.info(f"enable_site(): PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
-      result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
-      if  result3.returncode == 0:
-        logging.info(f"enable_site(): PHP reloaded successfully.")
-      else:
-        logging.error(f"enable_site(): PHP reload failed!. {result3.stderr}")
-        error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
-    else:
-      logging.error(f"Error testing configuration of PHP: {result2.stderr.strip()}")
-      error_message += f"Помилка тесту конфігурації PHP: {result2.stderr.strip()}"
+    # #start of checks - php
+    # result2 = subprocess.run(["sudo", php_path, "-t"], capture_output=True, text=True)
+    # if  re.search(r".*test is successful.*",result2.stderr):
+    # #gettings digits of PHP version from the path to the PHP-FPM
+    #   phpVer = re.search(r"(.*)(\d\.\d)",php_path).group(2)
+    #   logging.info(f"enable_site(): PHP config test passed successfully: {result2.stderr.strip()}. Reloading PHP, version {phpVer}...")
+    #   result3 = subprocess.run(["sudo","systemctl", "reload", f"php{phpVer}-fpm"], capture_output=True, text=True)
+    #   if  result3.returncode == 0:
+    #     logging.info(f"enable_site(): PHP reloaded successfully.")
+    #   else:
+    #     logging.error(f"enable_site(): PHP reload failed!. {result3.stderr}")
+    #     error_message += f"Помилка при перезавантаженні PHP: {result2.stderr.strip()}"
+    # else:
+    #   logging.error(f"Error testing configuration of PHP: {result2.stderr.strip()}")
+    #   error_message += f"Помилка тесту конфігурації PHP: {result2.stderr.strip()}"
     logging.info(f"-----------------------Site enable of {sitename} is finished-----------------")
     if len(error_message) > 0:
       flash(error_message, 'alert alert-danger')
@@ -422,6 +422,7 @@ def makePull(domain: str, pullArray: list = []) -> bool:
     web_folder = current_app.config.get("WEB_FOLDER","")
     www_user = current_app.config.get("WWW_USER","")
     www_group = current_app.config.get("WWW_GROUP","")
+    message = ""
     if not web_folder or not www_group or not www_user:
       logging.error(f"makePull(): web_folder/www_user/www_group variable is empty!")
       return False
@@ -434,8 +435,8 @@ def makePull(domain: str, pullArray: list = []) -> bool:
         logging.info(f"Successfully got into {path}")
         result_pre = subprocess.run(["sudo","git","stash"], capture_output=True, text=True)
         if result_pre.returncode != 0:
-          logging.error(f"makePull(): Git stash for {domain} returned error: {result.stderr}")
-          message += f"[❌] Помилка stash перед оновленням коду для {curr_domain}\n"
+          logging.error(f"makePull(): Git stash for {domain} returned error: {result_pre.stderr}")
+          message += f"[❌] Помилка stash перед оновленням коду для {domain}\n"
         else:
           logging.info(f"makePull(): Git stash done...")
         result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
