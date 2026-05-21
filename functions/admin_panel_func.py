@@ -202,6 +202,12 @@ def handler_cloudflare(form):
         logging.error(f"Admin {current_user.realname}>Some of important parameters for Cloudflare account add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення аккаунту Cloudflare не були отримані сервером!','alert alert-warning')
         return
+      #check if this address already exists in DB
+      account = Cloudflare.query.filter_by(account=name).first()
+      if account:
+        logging.error(f"Admin {current_user.realname}>Account {name} already exists in DB!")
+        flash(f'Аккаунт {name} вже існує!','alert alert-warning')
+        return
       #validating token before adding to DB
       url = f"https://api.cloudflare.com/client/v4/zones"
       headers = {
@@ -211,8 +217,8 @@ def handler_cloudflare(form):
       }
       result = requests.get(url, headers=headers).json()
       if result.get("success") != True:
-        logging.error(f"Cloudflare account add error - token is not valid!")
-        flash(f'Помилка Cloudflare аккаунта {name} - токен не валідний!','alert alert-success')
+        logging.error(f"Admin {current_user.realname}>Cloudflare account add error - token is not valid!")
+        flash(f'Помилка Cloudflare аккаунта {name} - токен не валідний!','alert alert-danger')
         return
       data = {"account": name, "token": token}
       new_account = Cloudflare(**data)
