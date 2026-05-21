@@ -1,6 +1,7 @@
 from flask import flash
 from flask_login import current_user
 import logging
+import requests
 from db.database import *
 from werkzeug.security import generate_password_hash
 from functions.rights_required import rights_required
@@ -200,6 +201,18 @@ def handler_cloudflare(form):
       if not name or not token:
         logging.error(f"Admin {current_user.realname}>Some of important parameters for Cloudflare account add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення аккаунту Cloudflare не були отримані сервером!','alert alert-warning')
+        return
+      #validating token before adding to DB
+      url = f"https://api.cloudflare.com/client/v4/zones"
+      headers = {
+        "X-Auth-Email": name,
+        "X-Auth-Key": token,
+        "Content-Type": "application/json"
+      }
+      result = requests.get(url, headers=headers).json()
+      if result.get("success") != True:
+        logging.error(f"Cloudflare account add error - token is not valid!")
+        flash(f'Помилка Cloudflare аккаунта {name} - токен не валідний!','alert alert-success')
         return
       data = {"account": name, "token": token}
       new_account = Cloudflare(**data)

@@ -177,3 +177,10 @@ def show_owners_cmd():
 @with_app_context
 def show_accounts_cmd():
   show_accounts()
+
+# VERSION
+@show_cli.command("version")
+def show_version():
+  """Show application version"""
+  from main import VERSION
+  click.echo(VERSION)
