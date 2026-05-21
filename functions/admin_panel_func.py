@@ -206,7 +206,7 @@ def handler_cloudflare(form):
       account = Cloudflare.query.filter_by(account=name).first()
       if account:
         logging.error(f"Admin {current_user.realname}>Account {name} already exists in DB!")
-        flash(f'Аккаунт {name} вже існує!','alert alert-warning')
+        flash(f'Аккаунт {name} вже існує!','alert alert-danger')
         return
       #validating token before adding to DB
       url = f"https://api.cloudflare.com/client/v4/zones"
