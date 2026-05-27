@@ -4,7 +4,7 @@ import re
 from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
-from functions.pages_forms import getSiteOwner,getSiteCreated
+from functions.pages_forms import getSiteOwner,getSiteCreated,load_cf_active_zones
 from db.database import Domain_account,User,Messages,Cloudflare
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
@@ -47,6 +47,8 @@ def index():
     ac = Cloudflare.query.order_by(Cloudflare.account).all()
     for ii, a in enumerate(ac, 1):
       cf_accounts_list.append(f'<option value="{a.account}">{a.account}</option>')
+    #load all zones from all Cloudflare accounts once before the loop
+    cf_zones = load_cf_active_zones()
     #starting main procedure
     for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
       #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
@@ -66,6 +68,13 @@ def index():
         dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="validation" value="{s}" onclick="showLoading()" style="margin-top: 5px;" title="Керування CNAME записами для валідації домену для пошукових систем.">📮DNS валідація</a>'
         cf_account = acc.account
       #If everything is ok, main view:
+      #build Cloudflare status suffix for site_status field
+      if s not in cf_zones:
+        cf_status_html = '<br>❌Домен відсутній у Cloudflare'
+      elif cf_zones[s] != "active":
+        cf_status_html = f'<br>⚠️CF статус: {cf_zones[s]}'
+      else:
+        cf_status_html = ''
       if os.path.islink(ngx_site):
         html_data.append({
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-success">{i}</th>',
@@ -77,7 +86,7 @@ def index():
           "id": i,
           "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": getSiteOwner(s),
-          "site_status": '✅Статус сайту OK',
+          "site_status": f'✅Статус сайту OK{cf_status_html}',
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account
@@ -93,7 +102,7 @@ def index():
           "id": i,
           "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": f"{getSiteOwner(s)}",
-          "site_status": '🚧Сайт вимкнено',
+          "site_status": f'🚧Сайт вимкнено{cf_status_html}',
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account
