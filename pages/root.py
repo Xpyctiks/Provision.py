@@ -70,10 +70,10 @@ def index():
       #If everything is ok, main view:
       #build Cloudflare status suffix for site_status field
       if s not in cf_zones:
-        cf_status_html = '<br>❌Домен відсутній у Cloudflare'
+        cf_status_html = '❌Домен відсутній у Cloudflare'
         table_class = "table-warning"
       elif cf_zones[s] != "active":
-        cf_status_html = f'<br>⚠️CF статус: {cf_zones[s]}'
+        cf_status_html = f'⚠️CF статус: {cf_zones[s]}'
         table_class = "table-warning"
       else:
         cf_status_html = '✅Статус сайту OK'
@@ -83,7 +83,7 @@ def index():
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="{table_class}">{i}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
           "site_name": s,
-          "table_type2": '<td class="table-success">',
+          "table_type2": f'<td class="{table_class}">',
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
@@ -99,7 +99,7 @@ def index():
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-warning">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
-          "table_type2": '<td class="table-warning">',
+          "table_type2": f'<td class="{table_class}">',
           "count_redirects": count_redirects(s),
           "getSiteCreated": getSiteCreated(s),
           "id": i,
