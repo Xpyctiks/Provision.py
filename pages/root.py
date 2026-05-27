@@ -71,10 +71,10 @@ def index():
       #build Cloudflare status suffix for site_status field
       if s not in cf_zones:
         cf_status_html = '❌Домен відсутній у Cloudflare'
-        table_class = "table-warning"
+        table_class = "table-danger"
       elif cf_zones[s] != "active":
         cf_status_html = f'⚠️CF статус: {cf_zones[s]}'
-        table_class = "table-warning"
+        table_class = "table-danger"
       else:
         cf_status_html = '✅Статус сайту OK'
         table_class = "table-success"
