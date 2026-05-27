@@ -46,12 +46,20 @@ server {{
   }}
 
   location /admin/ {{
+    set $no_cache 1;
     auth_basic "Prove you are who you are";
     auth_basic_user_file {os.path.join(current_app.config.get("NGX_PATH"),".htpasswd")};
+    add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+    add_header Pragma "no-cache" always;
     try_files $uri $uri/ /index.php?$args;
     location ~* ^/admin/.+\.php$ {{
       include snippets/fastcgi-php.conf;
       fastcgi_pass unix:/var/run/php/php.sock;
+      fastcgi_cache off;
+      fastcgi_no_cache 1;
+      fastcgi_cache_bypass 1;
+      add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+      add_header Pragma "no-cache" always;
     }}
   }}
 
@@ -74,8 +82,8 @@ server {{
     fastcgi_cache PHP;
     fastcgi_cache_valid 200 10m;
     fastcgi_cache_valid 404 1m;
-    fastcgi_cache_bypass $cookie_session $cookie_PHPSESSID;
-    fastcgi_no_cache     $cookie_session $cookie_PHPSESSID;
+    fastcgi_cache_bypass $no_cache $cookie_session $cookie_PHPSESSID;
+    fastcgi_no_cache     $no_cache $cookie_session $cookie_PHPSESSID;
     add_header X-Cache-Status $upstream_cache_status;
   }}
 }}"""
