@@ -11,7 +11,7 @@ def create_nginx_config(filename: str,has_subdomain: str = "---") -> str:
   config = f"""server {{
     listen 203.161.35.70:80;
     server_name {filename} www.{filename};
-    return 301 https://{filename};
+    return 301 https://{filename}$request_uri;
 }}
 
 server {{
@@ -33,17 +33,19 @@ server {{
   charset utf8;
   index index.php index.html index.htm;
   include additional-configs/301-{filename}.conf;
-  
-  if ($request_method !~ ^(GET|POST|HEAD)$ ) {{
-    return 403 "Forbidden!";
+  add_header X-Content-Type-Options nosniff always;
+  add_header X-Frame-Options SAMEORIGIN always;
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+  if ($request_method !~ ^(GET|POST|HEAD)$) {{
+    return 405;
   }}
 
-  location ~ /\..*/ {{
+  location ~ /\. {{
     deny all;
   }}
 
   location /admin/ {{
-    root {os.path.join(current_app.config.get("WEB_FOLDER"),filename)}/public;
     auth_basic "Prove you are who you are";
     auth_basic_user_file {os.path.join(current_app.config.get("NGX_PATH"),".htpasswd")};
     try_files $uri $uri/ /index.php?$args;
@@ -54,15 +56,12 @@ server {{
   }}
 
   location ~* ^/(?:robots.txt) {{
-    allow all;
-    root {os.path.join(current_app.config.get("WEB_FOLDER"),filename)}/public;
     try_files $uri $uri/ /index.php?$args;
   }}
 
-  location ~* ".+\.(?:svg|svgz|eot|otf|webmanifest|woff|woff2|ttf|rss|css|swf|js|atom|jpe?g|gif|png|ico|html)$" {{
-    allow all;
-    root {os.path.join(current_app.config.get("WEB_FOLDER"),filename)}/public;
-    try_files $uri $uri/;
+  location ~* "\.(svg|svgz|eot|otf|webmanifest|woff|woff2|ttf|rss|css|swf|js|atom|jpe?g|gif|png|ico|html)$" {{
+    add_header Cache-Control "public, max-age=2592000, immutable" always;
+    try_files $uri =404;
   }}
 
   location / {{
@@ -70,13 +69,14 @@ server {{
   }}
 
   location ~ \.php$ {{
-    #include snippets/cache.conf;
-    #fastcgi_cache PHP;
     include snippets/fastcgi-php.conf;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header X-Content-Type-Options nosniff;
-    add_header X-Frame-Options SAMEORIGIN;
     fastcgi_pass unix:/var/run/php/php.sock;
+    fastcgi_cache PHP;
+    fastcgi_cache_valid 200 10m;
+    fastcgi_cache_valid 404 1m;
+    fastcgi_cache_bypass $cookie_session $cookie_PHPSESSID;
+    fastcgi_no_cache     $cookie_session $cookie_PHPSESSID;
+    add_header X-Cache-Status $upstream_cache_status;
   }}
 }}"""
   return config
