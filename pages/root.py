@@ -71,13 +71,16 @@ def index():
       #build Cloudflare status suffix for site_status field
       if s not in cf_zones:
         cf_status_html = '<br>❌Домен відсутній у Cloudflare'
+        table_class = "table-warning"
       elif cf_zones[s] != "active":
         cf_status_html = f'<br>⚠️CF статус: {cf_zones[s]}'
+        table_class = "table-warning"
       else:
-        cf_status_html = ''
+        cf_status_html = '✅Статус сайту OK'
+        table_class = "table-success"
       if os.path.islink(ngx_site):
         html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-success">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="{table_class}">{i}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
           "site_name": s,
           "table_type2": '<td class="table-success">',
@@ -86,7 +89,7 @@ def index():
           "id": i,
           "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": getSiteOwner(s),
-          "site_status": f'✅Статус сайту OK{cf_status_html}',
+          "site_status": cf_status_html,
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account
