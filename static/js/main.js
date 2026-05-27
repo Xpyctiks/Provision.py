@@ -121,6 +121,8 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
     return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
+let errorsOnly = false;
+
 let domain = null;
 function openEditor(domain) {
   fetch(`/robots/?domain=${encodeURIComponent(domain)}`)
@@ -188,8 +190,9 @@ function applyFilters() {
     const matchOwner = !owner || rowOwners.includes(owner);
     const matchAccount = !account || rowAccounts.includes(account);
     const matchText = !text || rowText.includes(text);
+    const matchErrors = !errorsOnly || row.dataset.cfError === "1";
     row.style.display =
-      (matchOwner && matchAccount && matchText) ? "" : "none";
+      (matchOwner && matchAccount && matchText && matchErrors) ? "" : "none";
   });
 }
 
@@ -200,8 +203,25 @@ document.getElementById("siteFilter").addEventListener("input", applyFilters);
 function clearFilters() {
   const siteFilter  = document.getElementById("siteFilter");
   if (siteFilter) siteFilter.value = "";
+  if (errorsOnly) {
+    errorsOnly = false;
+    const cfErrorIcon = document.getElementById("cfErrorIcon");
+    if (cfErrorIcon) cfErrorIcon.style.opacity = "1";
+  }
   applyFilters();
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  const cfErrorIcon = document.getElementById("cfErrorIcon");
+  if (cfErrorIcon) {
+    cfErrorIcon.addEventListener("click", function () {
+      errorsOnly = !errorsOnly;
+      cfErrorIcon.style.opacity = errorsOnly ? "0.5" : "1";
+      cfErrorIcon.title = errorsOnly ? "Показати всі сайти (скинути фільтр)" : "Є проблеми з Cloudflare у деяких сайтів!";
+      applyFilters();
+    });
+  }
+});
 
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") {

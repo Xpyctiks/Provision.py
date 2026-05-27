@@ -49,6 +49,7 @@ def index():
       cf_accounts_list.append(f'<option value="{a.account}">{a.account}</option>')
     #load all zones from all Cloudflare accounts once before the loop
     cf_zones = load_cf_active_zones()
+    has_cf_errors = False
     #starting main procedure
     for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
       #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
@@ -78,9 +79,12 @@ def index():
       else:
         cf_status_html = '✅Статус сайту OK'
         table_class = "table-success"
+      if cf_status_html != '✅Статус сайту OK':
+        has_cf_errors = True
+      cf_error_attr = ' data-cf-error="1"' if cf_status_html != '✅Статус сайту OK' else ''
       if os.path.islink(ngx_site):
         html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="{table_class}">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
@@ -96,7 +100,7 @@ def index():
         })
       elif not os.path.islink(ngx_site):
         html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}">\n<th scope="row" class="table-warning">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="table-warning">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
@@ -125,7 +129,7 @@ def index():
       db.session.commit()
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
-    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list))
+    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors))
     page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
     response.headers["X-Cache"] = "MISS"
     response.set_cookie("x_cache", "MISS")
