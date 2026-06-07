@@ -7,7 +7,7 @@ from flask_login import LoginManager
 from datetime import timedelta
 from functions.cache_func import page_cache
 
-VERSION = "2.5.1"
+VERSION = "2.6.0"
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 application = Flask(__name__)
@@ -48,5 +48,4 @@ from pages import blueprint as routes_blueprint
 application.register_blueprint(routes_blueprint)
 
 if __name__ == "__main__":
-#  show_cli()
-  application.run("192.168.10.150",80,debug=True)
+  show_cli()
