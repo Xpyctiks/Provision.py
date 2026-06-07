@@ -1,4 +1,6 @@
 import os
+import json
+from html import escape
 from flask import redirect,Blueprint,request
 from flask_login import login_required,current_user
 from functions.site_actions import *
@@ -48,6 +50,36 @@ def do_action():
     logging.error(f"do_action(): general error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка при POST запиту на сторінці /action! Дивіться логи!", "alert alert-danger")
     return redirect("/",302)
+
+@action_bp.route("/action/show/hrefhistory", methods=["GET"])
+@login_required
+def showHrefHistory():
+  """GET request: takes a domain as the parameter, reads its clones-history.json from the site's root folder and returns HTML for the accordion with the history of Href changes."""
+  try:
+    domain = str(normalize_domain(request.args.get("domain","")))
+    history_path = os.path.join(current_app.config.get("WEB_FOLDER",""),domain,"clones-history.json")
+    if not os.path.exists(history_path):
+      return '<div class="text-muted">Файл clones-history.json для цього сайту не знайдено.</div>'
+    with open(history_path,"r",encoding="utf-8") as f:
+      history = json.load(f)
+    if not history:
+      return '<div class="text-muted">Файл clones-history.json порожній.</div>'
+    badges = {"current": "bg-success", "deleted": "bg-danger"}
+    html = ""
+    for entry in history:
+      html += '<div class="border rounded p-2 mb-2">'
+      for key,value in entry.items():
+        if key == "status":
+          html += f'<div><b>{escape(key)}:</b> <span class="badge rounded-pill {badges.get(value,"bg-secondary")}">{escape(str(value))}</span></div>'
+        elif key == "href":
+          html += f'<div><b>{escape(key)}:</b> <a href="{escape(value)}" target="_blank">{escape(value)}</a></div>'
+        else:
+          html += f'<div><b>{escape(key)}:</b> {escape(str(value))}</div>'
+      html += '</div>'
+    return html
+  except Exception as err:
+    logging.error(f"showHrefHistory(): general error by {current_user.realname}: {err}")
+    return f'<div class="text-danger">Помилка при завантаженні історії Href: {escape(str(err))}</div>'
 
 @action_bp.route("/action/clear_cache/", methods=["GET"])
 @login_required

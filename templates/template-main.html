@@ -114,8 +114,8 @@
       <div class="accordion" id="folderAccordion{{site.id|safe}}">
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingOne{{site.id|safe}}">
-            <button class="accordion-button collapsed accordion-path" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne{{site.id|safe}}" aria-expanded="false" aria-controls="collapseOne{{site.id|safe}}" data-path="{{site.accordeon_path|safe}}">
-              + Дивитись історию змін: {{site.accordeon_path|safe}}
+            <button class="accordion-button collapsed accordion-path" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne{{site.id|safe}}" aria-expanded="false" aria-controls="collapseOne{{site.id|safe}}" data-path="{{site.site_name|safe}}">
+              + Дивитись історию змін Href для домену
             </button>
           </h2>
           <div id="collapseOne{{site.id|safe}}" class="accordion-collapse collapse" aria-labelledby="headingOne{{site.id|safe}}" data-bs-parent="#folderAccordion{{site.id|safe}}">
@@ -128,16 +128,16 @@
           <div class="flex-fill">
             <div class="input-group">
               <span class="input-group-text">Slug=</span>
-              <input type="text" id="siteSlug" class="form-control">
+              <input type="text" id="siteSlug{{site.id|safe}}" class="form-control siteSlug" placeholder="{{site.site_slug|safe}}">
             </div>
           </div>
           <div class="flex-fill">
             <div class="input-group">
               <span class="input-group-text">Hreflang=</span>
-              <input type="text" id="siteHreflang" class="form-control">
+              <input type="text" id="siteHreflang{{site.id|safe}}" class="form-control siteHreflang" placeholder="{{site.site_hreflang|safe}}">
             </div>
           </div>
-          <input type="button" id="buttonSetHref" name="buttonSetHref" value="OK✅" class="btn btn-outline-secondary" style="width: 65px;">
+          <input type="button" id="buttonSetHref{{site.id|safe}}" name="buttonSetHref" value="OK✅" class="btn btn-outline-secondary buttonSetHref" data-site="{{site.site_name|safe}}" data-slug-id="siteSlug{{site.id|safe}}" data-hreflang-id="siteHreflang{{site.id|safe}}" style="width: 65px;">
         </div>
       </div>
       </td>

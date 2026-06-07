@@ -4,7 +4,7 @@ import re
 from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
-from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,load_cf_active_zones
+from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,getSiteHrefHistory,load_cf_active_zones
 from db.database import Domain_account,User,Messages,Cloudflare
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
@@ -84,6 +84,8 @@ def index():
       cf_error_attr = ' data-cf-error="1"' if cf_status_html != '✅Статус сайту OK' else ''
       #read locale value from the site's own DB (seo_metas.extra_fileds, e.g. {"locale": "fr"}) to use as html_lang
       html_lang = getSiteLocale(s, web_folder)
+      #read the current clone's slug/hreflang from the site's clones-history.json to use as input placeholders
+      current_clone = getSiteHrefHistory(s, web_folder)
       if os.path.islink(ngx_site):
         html_data.append({
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}</th>',
@@ -99,7 +101,9 @@ def index():
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account,
-          "html_lang": html_lang
+          "html_lang": html_lang,
+          "site_slug": current_clone["slug"],
+          "site_hreflang": current_clone["hreflang"]
         })
       elif not os.path.islink(ngx_site):
         if table_class == "table-success":
@@ -118,7 +122,9 @@ def index():
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
           "cf_account": cf_account,
-          "html_lang": html_lang
+          "html_lang": html_lang,
+          "site_slug": current_clone["slug"],
+          "site_hreflang": current_clone["hreflang"]
         })
     #getting into DB and checking is there any messages for the current user
     messages = Messages.query.filter_by(foruserid=current_user.id).all()

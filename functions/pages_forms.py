@@ -132,6 +132,22 @@ def getSiteCreated(domain: str) -> str:
     logging.error(f"getSiteCreated(): global error: {err}")
     return "ERROR!"
 
+def getSiteHrefHistory(domain: str, web_folder: str) -> dict:
+  """While parsing the root page, this function reads the site's clones-history.json and returns slug/hreflang of the entry"""
+  try:
+    history_path = os.path.join(web_folder, domain, "clones-history.json")
+    if not os.path.exists(history_path):
+      return {"slug": "🤕", "hreflang": "🤕"}
+    with open(history_path, "r", encoding="utf-8") as f:
+      history = json.load(f)
+    for entry in history:
+      if entry.get("status") == "current":
+        return {"slug": entry.get("slug", "🤕"), "hreflang": entry.get("hreflang", "🤕")}
+    return {"slug": "🤕", "hreflang": "🤕"}
+  except Exception as err:
+    logging.error(f"getSiteCurrentClone(): global error for domain {domain}: {err}")
+    return {"slug": "🚨", "hreflang": "🚨"}
+
 def getSiteLocale(domain: str, web_folder: str) -> str:
   """While parsing the root page, this function reads the site's database and returns its Lang tag"""
   try:

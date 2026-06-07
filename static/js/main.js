@@ -45,7 +45,7 @@ document.addEventListener('show.bs.collapse', async function (event) {
   let path = button.dataset.path;
   let body = event.target.querySelector(".accordion-body");
   body.innerHTML = "Завантажую...";
-  let response = await fetch(`/action/showstructure/?showstructure=${encodeURIComponent(path)}`);
+  let response = await fetch(`/action/show/hrefhistory?domain=${encodeURIComponent(path)}`);
   let html = await response.text();
   body.innerHTML = html;
 });
@@ -152,6 +152,41 @@ function saveEditor() {
     }
   });
 }
+
+document.querySelectorAll(".buttonSetHref").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const slugInput = document.getElementById(btn.dataset.slugId);
+    const hreflangInput = document.getElementById(btn.dataset.hreflangId);
+    const slug = slugInput.value.trim();
+    const hreflang = hreflangInput.value.trim();
+
+    slugInput.classList.toggle("is-invalid", slug === "");
+    hreflangInput.classList.toggle("is-invalid", hreflang === "");
+    if (slug === "" || hreflang === "") {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("slug", slug);
+    formData.append("hreflang", hreflang);
+    formData.append("action", "page_clone_home");
+
+    fetch(`https://${btn.dataset.site}/api/`, {
+      method: "POST",
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      alert("Збережено");
+    })
+    .catch(err => {
+      alert("Помилка надсилання запиту");
+      console.error(err);
+    });
+  });
+});
 
 const btn = document.getElementById("scrollTopBtn");
 window.addEventListener("scroll", () => {
