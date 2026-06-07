@@ -4,7 +4,7 @@ import re
 from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
-from functions.pages_forms import getSiteOwner,getSiteCreated,load_cf_active_zones
+from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,load_cf_active_zones
 from db.database import Domain_account,User,Messages,Cloudflare
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
@@ -82,6 +82,8 @@ def index():
       if cf_status_html != '✅Статус сайту OK':
         has_cf_errors = True
       cf_error_attr = ' data-cf-error="1"' if cf_status_html != '✅Статус сайту OK' else ''
+      #read locale value from the site's own DB (seo_metas.extra_fileds, e.g. {"locale": "fr"}) to use as html_lang
+      html_lang = getSiteLocale(s, web_folder)
       if os.path.islink(ngx_site):
         html_data.append({
           "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}</th>',
@@ -96,11 +98,14 @@ def index():
           "site_status": cf_status_html,
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
-          "cf_account": cf_account
+          "cf_account": cf_account,
+          "html_lang": html_lang
         })
       elif not os.path.islink(ngx_site):
+        if table_class == "table-success":
+          table_class = "table-warning"
         html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="table-warning">{i}</th>',
+          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
@@ -109,10 +114,11 @@ def index():
           "id": i,
           "accordeon_path": os.path.join(web_folder,s),
           "getSiteOwner": f"{getSiteOwner(s)}",
-          "site_status": f'🚧Сайт вимкнено{cf_status_html}',
+          "site_status": f'🚧Сайт вимкнено<br>{cf_status_html}',
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
-          "cf_account": cf_account
+          "cf_account": cf_account,
+          "html_lang": html_lang
         })
     #getting into DB and checking is there any messages for the current user
     messages = Messages.query.filter_by(foruserid=current_user.id).all()
@@ -130,9 +136,10 @@ def index():
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
     response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors))
-    page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
-    response.headers["X-Cache"] = "MISS"
-    response.set_cookie("x_cache", "MISS")
+    if not current_app.debug:
+      page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
+      response.headers["X-Cache"] = "MISS"
+      response.set_cookie("x_cache", "MISS")
     return response
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")

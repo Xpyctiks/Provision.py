@@ -50,16 +50,6 @@ document.addEventListener('show.bs.collapse', async function (event) {
   body.innerHTML = html;
 });
 
-document.getElementById("closeAll").addEventListener("click", function () {
-  document.querySelectorAll(".accordion .collapse.show").forEach(el => {
-    let bsCollapse = bootstrap.Collapse.getInstance(el);
-    if (!bsCollapse) {
-      bsCollapse = new bootstrap.Collapse(el, { toggle: false });
-    }
-      bsCollapse.hide();
-  });
-});
-
 function showLoading() {
 const spinner = document.getElementById("spinnerLoading");
   if (spinner) {

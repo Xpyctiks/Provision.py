@@ -66,11 +66,12 @@
     <thead>
       <tr class="table-warning">
         <th scope="col" style="width: 3%">ID</th>
-        <th scope="col" style="width: 16%">Можливі дії:</th>
-        <th scope="col" style="width: 20%">Назва сайту: (Обрати всі:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox">)</th>
-        <th scope="col">Шлях на сервері:&nbsp;<button id="closeAll" class="btn-sm btn-warning">Згорнути всі</button></th>
+        <th scope="col" style="width: 15%">Можливі дії:</th>
+        <th scope="col" style="width: 15%">Назва сайту: (Обрати всі:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox">)</th>
+        <th scope="col" style="width: 2%">Lang:</th>
+        <th scope="col">Додаткова інформація:</th>
         <th scope="col" style="width: 10%">Власник:</th>
-        <th scope="col" style="width: 18%">Аккаунт:</th>
+        <th scope="col" style="width: 15%">Аккаунт:</th>
       </tr>
     </thead>
     <tbody>
@@ -108,12 +109,13 @@
           <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt</button>
         </div>
       </td>
+      {{site.table_type2|safe}} {{site.html_lang|safe}}</td>
       {{site.table_type2|safe}}
       <div class="accordion" id="folderAccordion{{site.id|safe}}">
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingOne{{site.id|safe}}">
             <button class="accordion-button collapsed accordion-path" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne{{site.id|safe}}" aria-expanded="false" aria-controls="collapseOne{{site.id|safe}}" data-path="{{site.accordeon_path|safe}}">
-              + 📁 {{site.accordeon_path|safe}}
+              + Дивитись історию змін: {{site.accordeon_path|safe}}
             </button>
           </h2>
           <div id="collapseOne{{site.id|safe}}" class="accordion-collapse collapse" aria-labelledby="headingOne{{site.id|safe}}" data-bs-parent="#folderAccordion{{site.id|safe}}">
@@ -122,7 +124,23 @@
             </div>
           </div>
         </div>
-      </div></td>
+        <div class="d-flex gap-2 align-items-center">
+          <div class="flex-fill">
+            <div class="input-group">
+              <span class="input-group-text">Slug=</span>
+              <input type="text" id="siteSlug" class="form-control">
+            </div>
+          </div>
+          <div class="flex-fill">
+            <div class="input-group">
+              <span class="input-group-text">Hreflang=</span>
+              <input type="text" id="siteHreflang" class="form-control">
+            </div>
+          </div>
+          <input type="button" id="buttonSetHref" name="buttonSetHref" value="OK✅" class="btn btn-outline-secondary" style="width: 65px;">
+        </div>
+      </div>
+      </td>
       {{site.table_type2|safe}}{{site.getSiteOwner}}<br>{{site.site_status|safe}}</td>
       {{site.table_type2|safe}}{{site.cf_account|safe}}</td>
       </tr>

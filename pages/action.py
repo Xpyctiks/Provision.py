@@ -49,32 +49,6 @@ def do_action():
     flash(f"Неочікувана помилка при POST запиту на сторінці /action! Дивіться логи!", "alert alert-danger")
     return redirect("/",302)
 
-@action_bp.route("/action/showstructure/", methods=["GET"])
-@login_required
-def showstructure():
-  """GET request: takes folder name as the parameter and shows what is inside of."""
-  try:
-    path = request.args.get("showstructure", "/tmp")
-    try:
-      dirs = sorted([x for x in os.listdir(os.path.join(path,"public")) if os.path.isdir(os.path.join(os.path.join(path,"public"), x))])
-      files = sorted([x for x in os.listdir(os.path.join(path,"public")) if not os.path.isdir(os.path.join(os.path.join(path,"public"), x))])
-      items = dirs + files
-    except Exception as e:
-      return f'<div class="text-danger">Ошибка: {e}</div>'
-    html = "<ul>"
-    for item in items:
-      full = os.path.join(os.path.join(path,"public"), item)
-      if os.path.isdir(full):
-        html += f"<li><b>📁</b> {item}</li>"
-      else:
-        html += f"<li>{item}</li>"
-    html += "</ul>"
-    return html
-  except Exception as err:
-    logging.error(f"showstructure(): general error by {current_user.realname}: {err}")
-    flash(f"Неочікувана помилка при GET запиту на сторінці /action/showstructire/! Дивіться логи!", "alert alert-danger")
-    return redirect("/",302)
-
 @action_bp.route("/action/clear_cache/", methods=["GET"])
 @login_required
 def clrCache():

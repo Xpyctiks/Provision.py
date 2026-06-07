@@ -1,4 +1,7 @@
 import logging
+import os
+import sqlite3
+import json
 import requests
 from db.database import *
 
@@ -47,8 +50,7 @@ def loadClodflareAccounts():
     return "Error", "Error"
 
 def load_cf_active_zones() -> dict:
-  """Loads all zones from all Cloudflare accounts in DB.
-  Returns dict {domain_name: zone_status} aggregated across all accounts."""
+  """Loads all zones from all Cloudflare accounts in DB."""
   cf_zones = {}
   try:
     accounts = Cloudflare.query.all()
@@ -129,3 +131,21 @@ def getSiteCreated(domain: str) -> str:
   except Exception as err:
     logging.error(f"getSiteCreated(): global error: {err}")
     return "ERROR!"
+
+def getSiteLocale(domain: str, web_folder: str) -> str:
+  """While parsing the root page, this function reads the site's database and returns its Lang tag"""
+  try:
+    db_path = os.path.join(web_folder, domain, "database", "database.db")
+    if not os.path.exists(db_path):
+      logging.error(f"getSiteLocale(): Error connecting to sqlite DB - no DB found at {db_path}!")
+      return '<span data-bs-toggle="tooltip" data-bs-placement="top" title="Дивно,але бази немає...">🚨</span>'
+    with sqlite3.connect(db_path) as conn:
+      cur = conn.cursor()
+      cur.execute("SELECT extra_fields FROM seo_metas LIMIT 1")
+      row = cur.fetchone()
+    if row and row[0]:
+      return json.loads(row[0]).get("locale", "")
+    return '🤔'
+  except Exception as err:
+    logging.error(f"getSiteLocale(): global error for domain {domain}: {err}")
+    return '<span data-bs-toggle="tooltip" data-bs-placement="top" title="Якась дуже серьозна помилка...">🚨</span>'
