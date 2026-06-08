@@ -153,7 +153,6 @@ def getSiteLocale(domain: str, web_folder: str) -> str:
   try:
     db_path = os.path.join(web_folder, domain, "database", "database.db")
     if not os.path.exists(db_path):
-      logging.error(f"getSiteLocale(): Error connecting to sqlite DB - no DB found at {db_path}!")
       return '<span data-bs-toggle="tooltip" data-bs-placement="top" title="Дивно,але бази немає...">🚨</span>'
     with sqlite3.connect(db_path) as conn:
       cur = conn.cursor()
