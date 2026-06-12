@@ -5,13 +5,13 @@ from functions.cli_func_servers import *
 from functions.cli_func_template import *
 from functions.cli_func_user import *
 from functions.cli_func_settings import *
-from flask import current_app
 import click
 
 def with_app_context(func):
   """Decorator to run command inside Flask app context"""
   def wrapper(*args, **kwargs):
-    with current_app.app_context():
+    from main import application
+    with application.app_context():
       return func(*args, **kwargs)
   return wrapper
 

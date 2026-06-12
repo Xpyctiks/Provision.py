@@ -4,8 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Automatic provision system for a lot of small sites">
-    <title>1000 sites provision system</title>
-    <link rel="icon" href="{{ url_for('static', filename='images/favicon.png') }}" type="image/png"/>
+    <title>The Provision</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
     <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet" crossorigin="anonymous">
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous"></script>
@@ -16,7 +19,7 @@
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
     <div class="container-fluid">
       <div class="d-flex align-items-center me-auto">
-        <a class="navbar-brand" href="/">Система автоматичного розгортання сайтів:</a>
+        <a class="navbar-brand" href="/">Система Provision:</a>
         <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
         <a href="/action/clear_cache/" style="display:inline-block;"><img id="cacheIcon" src="{{ url_for('static', filename='images/cache.png') }}" width="50" height="35" class="cache-icon d-none" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Ця сторінка закешована! Натисніть сюди що б очистити кеш..."></a>
         {% if has_cf_errors %}<span id="cfErrorIcon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Є проблеми з Cloudflare у деяких сайтів!" style="display:inline-block; font-size:1.8rem; line-height:1; cursor:pointer;">⚠️</span>{% endif %}
