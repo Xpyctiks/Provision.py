@@ -152,8 +152,8 @@ def show_existingDomains():
     domains_str = html.escape(", ".join(domain_list), quote=True)
     message = f"""
 <div class="container-fluid px-2">
-  <div class="mb-2">
-    <button type="button" class="btn btn-outline-primary" id="copyAllDomainsBtn" data-domains="{domains_str}" onclick="copyAllDomains()">📋 Скопіювати список доменів</button>
+  <div class="mb-2 d-flex justify-content-center">
+    <button type="button" class="btn btn-outline-primary" id="copyAllDomainsBtn" data-domains="{domains_str}" onclick="copyAllDomains()">📋 Скопіювати список доменів аккаунта {account}</button>
   </div>
   <div class="table-responsive">
     <table class="table table-bordered table-hover">

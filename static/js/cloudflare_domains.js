@@ -40,7 +40,6 @@ window.addEventListener("pageshow", function (event) {
   }
 });
 
-
 document.getElementById("buttonShowZones").addEventListener("click", function () {
   document.getElementById("modalResultBody").innerHTML = `
   <div class="text-center">
@@ -100,19 +99,17 @@ function copyToClipboard(text) {
 function copyAllDomains() {
   const text = document.getElementById("copyAllDomainsBtn").getAttribute("data-domains");
   copyToClipboard(text).then(() => {
-    alert("Скопійовано в буфер обміну1!");
+    alert("✅Скопійовано в буфер обміну!");
   }).catch(err => {
-    console.error("Помилка копіювання:", err);
+    console.error("♨Помилка копіювання:", err);
   });
 }
 
 document.addEventListener("submit", function (e) {
   const btn = e.submitter;
-
   if (btn && btn.classList.contains("delDomain-btn")) {
-    if (!confirm("Видалити цей домен з аккаунту?")) {
+    if (!confirm("⚠Видалити цей домен з аккаунту?")) {
       e.preventDefault();
     }
   }
 });
-
