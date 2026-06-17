@@ -106,8 +106,8 @@ def index():
           eye_button = f'&nbsp;<button class="btn btn-sm btn-outline-secondary eye-btn p-0" type="submit" value="{s}" name="hideSite" form="main_form" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Приховати цей сайт від інших користувачів (бачити його будете тільки ви).">👁️</button>'
       else:
         eye_button = ""
-      #email routing status icon: 📧 if enabled in CloudflareEmailsStatus, 📪 if disabled or no record at all
-      email_icon = '&nbsp;📧' if email_routing_status.get(s, False) else '&nbsp;📪'
+      #email routing status icon
+      email_icon = '&nbsp;<span style="font-size: 1.4em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Email Routing увімкнено на Cloudflare для цього домену">📧</span>' if email_routing_status.get(s, False) else ''
       if os.path.islink(ngx_site):
         html_data.append({
           "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}{email_icon}</th>',

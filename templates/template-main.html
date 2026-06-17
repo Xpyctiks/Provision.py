@@ -98,6 +98,8 @@
             <li><a class="btn btn-info dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="manager" href="/redirects_manager?site={{site.site_name|safe}}" value="{{site.site_name|safe}}" style="margin-top: 5px; width: 236px;" title="Керування 301-ми редіректами для цього сайту.">🚥Редіректи (~{{site.count_redirects|safe}} шт. вже є)</a></li>
             <li><hr class="dropdown-divider"></li>
             <li>{{site.dns_validation|safe}}</li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" href="/cloudflare_email/manage?domain={{site.site_name|safe}}" style="margin-top: 5px;" title="Перегляд та керування Email Routing на Cloudflare для цього домену.">📧Керування Email</a></li>
           </ul>
         <input type="hidden" name="sitename" value="{{site.site_name|safe}}">
         <div>
