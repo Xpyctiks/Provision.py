@@ -75,3 +75,12 @@ class Messages(db.Model):
   foruserid = db.Column(db.Integer, nullable=False)
   text = db.Column(db.Text, nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
+
+class SitesShowRestricions(db.Model):
+  id = db.Column(db.Integer, primary_key=True)
+  domain = db.Column(db.String(256), nullable=False,unique=True)
+  showforuser = db.Column(db.String(500), nullable=False)
+  created = db.Column(db.DateTime, default=datetime.now)
+  createdby = db.Column(db.String(256), nullable=True)
+  updated = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+  updatedby = db.Column(db.String(256), nullable=True)

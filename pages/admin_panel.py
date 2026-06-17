@@ -43,6 +43,9 @@ def catch_admin_panel():
     elif "buttonPublishMessage" in request.form or "buttonClearMessages" in request.form:
       handler_messages(request.form)
       return redirect("/admin_panel/messages/",302)
+    elif "buttonDeleteRestriction" in request.form or "buttonAddRestriction" in request.form or "buttonEditRestriction" in request.form:
+      handler_restrictions(request.form)
+      return redirect("/admin_panel/restrictions/",302)
     else:
       flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
       logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
@@ -506,6 +509,65 @@ def admin_panel_accounts():
     return render_template("template-admin_panel.html",active8="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
+    flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
+    return redirect("/",302)
+
+@admin_panel_bp.route("/admin_panel/restrictions/", methods=['GET'])
+@login_required
+@rights_required(255)
+def admin_panel_restrictions():
+  try:
+    html_data = f"""
+<div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
+  <table class="table table-bordered">
+  <thead>
+  <tr class="table-warning">
+    <th scope="col" style="width: 45px;">ID:</th>
+    <th scope="col" style="width: 150px;">Домен:</th>
+    <th scope="col" style="width: 300px;">Показувати тільки для (логіни через кому):</th>
+    <th scope="col" style="width: 150px;">Створен:</th>
+    <th scope="col" style="width: 150px;">Створив:</th>
+    <th scope="col" style="width: 150px;">Оновлен:</th>
+    <th scope="col" style="width: 150px;">Оновив:</th>
+  </tr>
+  </thead>
+  <tbody>"""
+    restrictions = SitesShowRestricions.query.order_by(SitesShowRestricions.id).all()
+    for i, s in enumerate(restrictions, 1):
+      html_data += f"""
+  <tr class="table-success">
+    <form action="/admin_panel/" method="POST" id="postform" novalidate>
+    <td class="table-success cname-cell" >{s.id}
+    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteRestriction" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити дане обмеження.">❌</button>
+    </td></form>
+    <td class="table-success cname-cell" >{s.domain}</td>
+    <form action="/admin_panel/" method="POST" id="postform" novalidate>
+    <td class="table-success cname-cell" >
+      <input type="text" class="form-control d-inline-block" style="width: 70%;" name="edit-restriction-showforuser" value="{s.showforuser}">
+      <button type="submit" class="btn btn-outline-warning" name="buttonEditRestriction" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зберегти зміни для даного обмеження.">💾</button>
+    </td></form>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
+    <td class="table-success cname-cell" >{s.createdby or ""}</td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.updated,"%d.%m.%Y %H:%M:%S")}</td>
+    <td class="table-success cname-cell" >{s.updatedby or ""}</td>
+  </tr>"""
+    html_data += """
+  </tbody>
+  </table>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
+  <div class="input-group mb-2">
+  <span class="input-group-text">Домен:</span>
+  <input type="text" class="form-control" id="field1" name="new-restriction-domain" value="">
+  <span class="input-group-text">Показувати тільки для (логіни через кому):</span>
+  <input type="text" class="form-control" id="field2" name="new-restriction-showforuser" value="">
+  <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddRestriction" onclick="showLoading()">Додати обмеження</button>
+   </div>
+  </form>
+ </div>
+</div>"""
+    return render_template("template-admin_panel.html",active10="active",data=html_data,admin_panel=is_admin())
+  except Exception as err:
+    logging.error(f"admin_panel_restrictions(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
 

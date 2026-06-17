@@ -5,7 +5,7 @@ from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
 from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,getSiteHrefHistory,load_cf_active_zones
-from db.database import Domain_account,User,Messages,Cloudflare
+from db.database import Domain_account,User,Messages,Cloudflare,SitesShowRestricions
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
 from functions.cache_func import page_cache
@@ -38,6 +38,15 @@ def index():
     sites_list = [
       name for name in os.listdir(web_folder)
       if os.path.isdir(os.path.join(web_folder, name)) and not name.startswith('.')
+    ]
+    #checking SitesShowRestricions table - hide a site from the current user if it has restrictions and the user is not listed in showforuser
+    restrictions = {
+      r.domain: [u.strip() for u in r.showforuser.split(',')]
+      for r in SitesShowRestricions.query.all()
+    }
+    sites_list = [
+      name for name in sites_list
+      if name not in restrictions or current_user.realname in restrictions[name]
     ]
     #gathering all list of available users to put them into user filter list
     ul = User.query.order_by(User.username).all()

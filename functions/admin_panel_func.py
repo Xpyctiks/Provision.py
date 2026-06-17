@@ -468,6 +468,70 @@ def handler_accounts(form):
     return
 
 @rights_required(255)
+def handler_restrictions(form):
+  """Handler for saving/editing/deleting site show restrictions to DB, received from admin panel"""
+  logging.info(f"---------------------------Processing site show restrictions management from admin panel by {current_user.realname}---------------------------")
+  try:
+    #processing delete restriction request
+    if "buttonDeleteRestriction" in form:
+      restriction = SitesShowRestricions.query.filter_by(id=int(form.get('buttonDeleteRestriction').strip())).first()
+      if restriction:
+        db.session.delete(restriction)
+        db.session.commit()
+        logging.info(f"Admin {current_user.realname}>Restriction for domain {restriction.domain} with ID {form.get('buttonDeleteRestriction').strip()} deleted successfully!")
+        flash(f'Обмеження для домену {restriction.domain} з ID {form.get("buttonDeleteRestriction").strip()} успішно видалено!','alert alert-success')
+        return
+      else:
+        logging.error(f"Admin {current_user.realname}>Restriction with ID {form.get('buttonDeleteRestriction').strip()} deletion error - no such restriction!")
+        flash(f'Помилка видалення обмеження з ID {form.get("buttonDeleteRestriction").strip()} - такого не існує!','alert alert-warning')
+        return
+    #processing add restriction request
+    elif "buttonAddRestriction" in form:
+      domain = form.get("new-restriction-domain", "").strip()
+      showforuser = form.get("new-restriction-showforuser", "").strip()
+      if not domain or not showforuser:
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for restriction add procedure has not been received!")
+        flash(f'Один або декілька важливих параметрів для створення обмеження не були отримані сервером!','alert alert-warning')
+        return
+      #check if this domain already exists in DB
+      existing = SitesShowRestricions.query.filter_by(domain=domain).first()
+      if existing:
+        logging.error(f"Admin {current_user.realname}>Restriction for domain {domain} already exists in DB!")
+        flash(f'Обмеження для домену {domain} вже існує! Відредагуйте існуючий запис.','alert alert-danger')
+        return
+      data = {"domain": domain, "showforuser": showforuser, "createdby": current_user.realname, "updatedby": current_user.realname}
+      new_restriction = SitesShowRestricions(**data)
+      db.session.add(new_restriction)
+      db.session.commit()
+      logging.info(f"Admin {current_user.realname}>Restriction for domain {domain} created successfully!")
+      flash(f'Обмеження для домену {domain} успішно створено!','alert alert-success')
+      return
+    #processing edit restriction request
+    elif "buttonEditRestriction" in form:
+      id = int(form.get('buttonEditRestriction').strip())
+      showforuser = form.get("edit-restriction-showforuser", "").strip()
+      if not showforuser:
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for restriction edit procedure has not been received!")
+        flash(f'Один або декілька важливих параметрів для редагування обмеження не були отримані сервером!','alert alert-warning')
+        return
+      restriction = SitesShowRestricions.query.filter_by(id=id).first()
+      if restriction:
+        restriction.showforuser = showforuser
+        restriction.updatedby = current_user.realname
+        db.session.commit()
+        logging.info(f"Admin {current_user.realname}>Restriction for domain {restriction.domain} with ID {id} updated successfully!")
+        flash(f'Обмеження для домену {restriction.domain} успішно оновлено!','alert alert-success')
+        return
+      else:
+        logging.error(f"Admin {current_user.realname}>Restriction with ID {id} edit error - no such restriction!")
+        flash(f'Помилка редагування обмеження з ID {id} - такого не існує!','alert alert-warning')
+        return
+  except Exception as err:
+    logging.error(f"Admin {current_user.realname}>handler_restrictions() global error: {err}")
+    flash('Помилка обробки функцій обмежень показу сайтів!','alert alert-danger')
+    return
+
+@rights_required(255)
 def handler_messages(form):
   """Handler for saving some text message to DB and show it to all current users via flash window"""
   logging.info(f"---------------------------Processing messages from admin panel by {current_user.realname}---------------------------")
