@@ -3,6 +3,7 @@ from .action import action_bp
 from .admin_panel import admin_panel_bp
 from .clone import clone_bp
 from .cloudflare_domains import cloudflare_domains_bp
+from .cloudflare_email import cloudflare_email_bp
 from .dns_validation import dns_validation_bp
 from .login import login_bp
 from .logout import logout_bp
@@ -20,6 +21,7 @@ blueprint.register_blueprint(action_bp)
 blueprint.register_blueprint(admin_panel_bp)
 blueprint.register_blueprint(clone_bp)
 blueprint.register_blueprint(cloudflare_domains_bp)
+blueprint.register_blueprint(cloudflare_email_bp)
 blueprint.register_blueprint(dns_validation_bp)
 blueprint.register_blueprint(login_bp)
 blueprint.register_blueprint(logout_bp)

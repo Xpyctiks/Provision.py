@@ -558,7 +558,7 @@ def admin_panel_restrictions():
   <div class="input-group mb-2">
   <span class="input-group-text">Домен:</span>
   <input type="text" class="form-control" id="field1" name="new-restriction-domain" value="">
-  <span class="input-group-text">Показувати тільки для (логіни через кому):</span>
+  <span class="input-group-text">Показувати тільки для (реальні ім`я через кому):</span>
   <input type="text" class="form-control" id="field2" name="new-restriction-showforuser" value="">
   <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddRestriction" onclick="showLoading()">Додати обмеження</button>
    </div>

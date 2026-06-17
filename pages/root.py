@@ -5,7 +5,7 @@ from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
 from functions.site_actions import count_redirects, is_admin
 from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,getSiteHrefHistory,load_cf_active_zones
-from db.database import Domain_account,User,Messages,Cloudflare,SitesShowRestricions
+from db.database import Domain_account,User,Messages,Cloudflare,SitesShowRestricions,CloudflareEmailsStatus
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
 from functions.cache_func import page_cache
@@ -58,6 +58,8 @@ def index():
       cf_accounts_list.append(f'<option value="{a.account}">{a.account}</option>')
     #load all zones from all Cloudflare accounts once before the loop
     cf_zones = load_cf_active_zones()
+    #checking CloudflareEmailsStatus table - to show the email routing status icon for each site
+    email_routing_status = {r.domain: r.routing_enabled for r in CloudflareEmailsStatus.query.all()}
     has_cf_errors = False
     #starting main procedure
     for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
@@ -104,9 +106,11 @@ def index():
           eye_button = f'&nbsp;<button class="btn btn-sm btn-outline-secondary eye-btn p-0" type="submit" value="{s}" name="hideSite" form="main_form" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Приховати цей сайт від інших користувачів (бачити його будете тільки ви).">👁️</button>'
       else:
         eye_button = ""
+      #email routing status icon: 📧 if enabled in CloudflareEmailsStatus, 📪 if disabled or no record at all
+      email_icon = '&nbsp;📧' if email_routing_status.get(s, False) else '&nbsp;📪'
       if os.path.islink(ngx_site):
         html_data.append({
-          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}</th>',
+          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}{email_icon}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
@@ -127,7 +131,7 @@ def index():
         if table_class == "table-success":
           table_class = "table-warning"
         html_data.append({
-          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}</th>',
+          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}{email_icon}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
