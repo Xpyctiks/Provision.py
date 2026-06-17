@@ -572,6 +572,55 @@ def is_admin():
   else:
     return ""
 
+def hide_site(sitename: str) -> bool:
+  """Site owner hides this site from other users by adding a SitesShowRestricions record limited to himself"""
+  try:
+    owner = Ownership.query.filter_by(domain=sitename).first()
+    if not owner.owner != current_user.id:
+      logging.error(f"hide_site(): User {current_user.realname}, ID:{current_user.id} tried to hide site {sitename} without being its owner!")
+      flash(f"Ви не є власником сайту {sitename}, тому не можете його приховати!","alert alert-warning")
+      return False
+    if not owner:
+      logging.error(f"hide_site(): User or site information is not found in database!")
+      flash(f"Помилка бази - інформация про сайт чи користувача не знайдена!","alert alert-warning")
+      return False
+    existing = SitesShowRestricions.query.filter_by(domain=sitename).first()
+    if existing:
+      return True
+    data = {"domain": sitename, "showforuser": current_user.realname, "createdby": current_user.realname, "updatedby": current_user.realname}
+    new_restriction = SitesShowRestricions(**data)
+    db.session.add(new_restriction)
+    db.session.commit()
+    logging.info(f"hide_site(): Site {sitename} hidden from other users by its owner {current_user.realname}.")
+    return True
+  except Exception as err:
+    logging.error(f"hide_site(): general error by {current_user.realname}: {err}")
+    flash(f"Помилка приховування сайту {sitename}! Дивіться логи.","alert alert-danger")
+    return False
+
+def unhide_site(sitename: str) -> bool:
+  """Site owner unhides this site, removing its SitesShowRestricions record and making it visible to everyone again"""
+  try:
+    owner = Ownership.query.filter_by(domain=sitename).first()
+    if not owner.owner != current_user.id:
+      logging.error(f"hide_site(): User {current_user.realname}, ID:{current_user.id} tried to show site {sitename} without being its owner!")
+      flash(f"Ви не є власником сайту {sitename}, тому не можете його показати!","alert alert-warning")
+      return False
+    if not owner:
+      logging.error(f"hide_site(): User or site information is not found in database!")
+      flash(f"Помилка бази - інформация про сайт чи користувача не знайдена!","alert alert-warning")
+      return False
+    restriction = SitesShowRestricions.query.filter_by(domain=sitename).first()
+    if restriction:
+      db.session.delete(restriction)
+      db.session.commit()
+      logging.info(f"unhide_site(): Site {sitename} unhidden by its owner {current_user.realname}, visible to everyone again.")
+    return True
+  except Exception as err:
+    logging.error(f"unhide_site(): general error by {current_user.realname}: {err}")
+    flash(f"Помилка розкриття сайту {sitename}! Дивіться логи.","alert alert-danger")
+    return False
+
 def clearCache() -> bool:
   """GET request: clears web page cache"""
   try:

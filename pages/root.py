@@ -95,9 +95,18 @@ def index():
       html_lang = getSiteLocale(s, web_folder)
       #read the current clone's slug/hreflang from the site's clones-history.json to use as input placeholders
       current_clone = getSiteHrefHistory(s, web_folder)
+      #site owner's realname; if it matches the current user, show the eye button to let them hide/unhide the site for others
+      site_owner = getSiteOwner(s)
+      if site_owner == current_user.realname:
+        if s in restrictions:
+          eye_button = f'&nbsp;<button class="btn btn-sm btn-outline-secondary eye-btn p-0" type="submit" value="{s}" name="unhideSite" form="main_form" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Сайт прихований від інших користувачів. Натисніть, щоб знову показати його всім.">🙈</button>'
+        else:
+          eye_button = f'&nbsp;<button class="btn btn-sm btn-outline-secondary eye-btn p-0" type="submit" value="{s}" name="hideSite" form="main_form" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Приховати цей сайт від інших користувачів (бачити його будете тільки ви).">👁️</button>'
+      else:
+        eye_button = ""
       if os.path.islink(ngx_site):
         html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}</th>',
+          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}</th>',
           "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
@@ -105,7 +114,7 @@ def index():
           "getSiteCreated": getSiteCreated(s),
           "id": i,
           "accordeon_path": os.path.join(web_folder,s),
-          "getSiteOwner": getSiteOwner(s),
+          "getSiteOwner": site_owner,
           "site_status": cf_status_html,
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,
@@ -118,7 +127,7 @@ def index():
         if table_class == "table-success":
           table_class = "table-warning"
         html_data.append({
-          "table_type": f'<tr data-owner="{getSiteOwner(s)}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}</th>',
+          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}</th>',
           "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
           "site_name": s,
           "table_type2": f'<td class="{table_class}">',
@@ -126,7 +135,7 @@ def index():
           "getSiteCreated": getSiteCreated(s),
           "id": i,
           "accordeon_path": os.path.join(web_folder,s),
-          "getSiteOwner": f"{getSiteOwner(s)}",
+          "getSiteOwner": site_owner,
           "site_status": f'🚧Сайт вимкнено<br>{cf_status_html}',
           "robots_button": robots_button,
           "dns_validation": dnsValidation_button,

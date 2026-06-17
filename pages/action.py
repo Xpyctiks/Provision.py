@@ -28,6 +28,12 @@ def do_action():
     elif (request.form.get("enable")):
       enable_site(request.form.get("enable","").strip())
       clearCache()
+    elif (request.form.get("hideSite")):
+      hide_site(request.form.get("hideSite","").strip())
+      clearCache()
+    elif (request.form.get("unhideSite")):
+      unhide_site(request.form.get("unhideSite","").strip())
+      clearCache()
     #redirects management block
     elif (request.form.get("del_redir") and not request.form.get("selected")):
       del_redirect(request.form.get("del_redir","").strip(),request.form.get("sitename","").strip())
