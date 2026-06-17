@@ -109,6 +109,13 @@ def delete_site(sitename: str) -> bool:
     del_owner(sitename,False)
     #deleting link between domain and its Cloudflare account from the database
     del_account(sitename,False)
+    #deleting any leftover show-restriction / Email Routing records for this domain, so nothing stale remains in DB
+    domain_lower = sitename.lower()
+    SitesShowRestricions.query.filter(db.func.lower(SitesShowRestricions.domain) == domain_lower).delete(synchronize_session=False)
+    CloudflareEmailsStatus.query.filter(db.func.lower(CloudflareEmailsStatus.domain) == domain_lower).delete(synchronize_session=False)
+    CloudflareEmailsRules.query.filter(db.func.lower(CloudflareEmailsRules.domain) == domain_lower).delete(synchronize_session=False)
+    db.session.commit()
+    logging.info(f"delete_site(): Cleared SitesShowRestricions/CloudflareEmailsStatus/CloudflareEmailsRules DB records for domain {sitename}, if any existed.")
     #final check of the results
     if len(error_message) > 0:
       error_message += f"Сайт {sitename} видалено, але з помилками!\n"
