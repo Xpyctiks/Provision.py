@@ -75,10 +75,32 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
     return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
-function copyText(elementId) {
-  const text = document.getElementById(elementId).innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    alert("Скопійовано в буфер обміну!");
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand("copy") ? resolve() : reject(new Error("execCommand('copy') failed"));
+    } catch (err) {
+      reject(err);
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  });
+}
+
+function copyAllDomains() {
+  const text = document.getElementById("copyAllDomainsBtn").getAttribute("data-domains");
+  copyToClipboard(text).then(() => {
+    alert("Скопійовано в буфер обміну1!");
   }).catch(err => {
     console.error("Помилка копіювання:", err);
   });

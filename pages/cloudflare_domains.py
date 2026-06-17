@@ -1,6 +1,7 @@
 import logging
 import requests
 import json
+import html
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import login_required,current_user
 from db.database import Cloudflare
@@ -105,6 +106,7 @@ def show_existingDomains():
       return redirect(f"/cloudflare_domains/",302)
     #preparing table structure
     message_table = ""
+    domain_list = []
     account = request.form.get("selected_account", "")
     #preparing account token by the selected account
     tkn = Cloudflare.query.filter_by(account=account).first()
@@ -130,6 +132,7 @@ def show_existingDomains():
         r = requests.get(url, headers=headers).json()
         for zone in r.get("result"):
           name = zone.get("name")
+          domain_list.append(name)
           plan_name = zone["plan"]["name"]
           status = zone.get("status")
           if status == "active":
@@ -146,8 +149,12 @@ def show_existingDomains():
       </tr>\n"""
           i = i + 1
         pages = pages + 1
+    domains_str = html.escape(", ".join(domain_list), quote=True)
     message = f"""
 <div class="container-fluid px-2">
+  <div class="mb-2">
+    <button type="button" class="btn btn-outline-primary" id="copyAllDomainsBtn" data-domains="{domains_str}" onclick="copyAllDomains()">📋 Скопіювати список доменів</button>
+  </div>
   <div class="table-responsive">
     <table class="table table-bordered table-hover">
       <thead>
