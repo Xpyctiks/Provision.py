@@ -7,7 +7,7 @@ from flask_login import LoginManager
 from datetime import timedelta
 from functions.cache_func import page_cache
 
-VERSION = "2.7.0"
+VERSION = "2.7.1"
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 application = Flask(__name__)

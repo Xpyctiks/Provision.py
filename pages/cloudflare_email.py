@@ -70,7 +70,7 @@ def _get_routing_rules(zone_id: str, headers: dict) -> list:
     page += 1
   return rules
 
-def _get_destination_addresses(account_id: str, headers: dict) -> list:
+def _get_destination_addresses(account_id, headers: dict) -> list:
   """Queries the full list of Email Routing destination addresses available on the Cloudflare account (handles pagination)"""
   addresses = []
   if not account_id:

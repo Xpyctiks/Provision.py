@@ -524,7 +524,7 @@ def admin_panel_restrictions():
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
     <th scope="col" style="width: 150px;">Домен:</th>
-    <th scope="col" style="width: 300px;">Показувати тільки для (логіни через кому):</th>
+    <th scope="col" style="width: 300px;">Показувати тільки для:</th>
     <th scope="col" style="width: 150px;">Створен:</th>
     <th scope="col" style="width: 150px;">Створив:</th>
     <th scope="col" style="width: 150px;">Оновлен:</th>

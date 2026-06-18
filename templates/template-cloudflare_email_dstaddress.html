@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Automatic provision system for a lot of small sites">
+  <title>The Provision</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/provision.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous"></script>
+</head>
+<body>
+<main>
+<div>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center me-auto">
+        <img src="{{ url_for('static', filename='images/favicon.svg') }}" alt="Logo" width="32" height="32">
+        <a class="navbar-brand" href="/">&nbsp;The Provision:</a>
+        <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
+      </div>
+      <div class="dropdown mx-auto">
+        <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+        <ul class="dropdown-menu">
+          <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {{admin_panel|safe}}
+        </ul>
+      </div>
+      <div class="ms-auto d-flex align-items-center">
+        <form class="d-flex" action="/logout" method="POST">
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+</div>
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8 col-xl-8">
+      <div class="card mx-auto mb-3">
+        <div class="card-header">
+          <h4 style="text-align: center;">📧 Адреси призначення Email Routing</h4>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Оберіть аккаунт CloudFlare:</h5>
+          <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false">{{selected_account or "Оберіть аккаунт..."}}</button>
+            <ul class="dropdown-menu" aria-labelledby="Account">
+              {{accounts_list|safe}}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {% if selected_account %}
+      <div class="card mx-auto mb-3">
+        <div class="card-header">
+          <h5 style="text-align: center;">Адреси призначення аккаунту {{selected_account}}:</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr class="table-warning">
+                  <th scope="col" style="width: 5%;">#</th>
+                  <th scope="col" style="width: 45%;">Email</th>
+                  <th scope="col" style="width: 25%;">Статус</th>
+                  <th scope="col" style="width: 25%;">Дії</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{addresses_html|safe}}
+              </tbody>
+            </table>
+          </div>
+          <form action="/cloudflare_email_dstaddresses/" method="POST" id="postform2" class="needs-validation" novalidate>
+            <input type="hidden" name="selected_account" value="{{selected_account}}">
+            <div class="input-group mb-2">
+              <span class="input-group-text">Нова адреса призначення:</span>
+              <input type="email" class="form-control" id="new-address-email" name="new-address-email" placeholder="destination@example.com" required>
+              <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddAddress" onclick="showLoading()">Додати адресу</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="d-grid mt-2 col-12 col-md-4 mx-auto mb-3">
+        <a href="/" class="btn btn-info w-100">⬅На головну</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="myModalLabel">Інформація:</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <ul class=flashes style="margin-top: 33px;" id="message">
+          {% for category, message in messages %}
+          <li class="{{ category }}">{{ message|safe}}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+<script src="{{ url_for('static', filename='js/cloudflare_email_dstaddresses.js') }}"></script>
+</main>
+</body>
+</html>
