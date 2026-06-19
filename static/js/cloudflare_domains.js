@@ -96,6 +96,19 @@ function copyToClipboard(text) {
   });
 }
 
+function copyText(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) {
+    console.warn(`copyText(): element #${elementId} not found!`);
+    return;
+  }
+  copyToClipboard(el.textContent).then(() => {
+    alert("✅Скопійовано в буфер обміну!");
+  }).catch(err => {
+    console.error("♨Помилка копіювання:", err);
+  });
+}
+
 function copyAllDomains() {
   const text = document.getElementById("copyAllDomainsBtn").getAttribute("data-domains");
   copyToClipboard(text).then(() => {
