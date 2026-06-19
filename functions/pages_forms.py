@@ -3,6 +3,7 @@ import os
 import sqlite3
 import json
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from db.database import *
 
 def loadTemplatesList():
@@ -49,32 +50,41 @@ def loadClodflareAccounts():
     logging.error(f"loadClodflareAccounts(): global error {err}")
     return "Error", "Error"
 
+def _load_zones_for_account(acc) -> dict:
+  """Loads all zones for a single Cloudflare account. Helper for load_cf_active_zones(), run in parallel per account."""
+  zones = {}
+  try:
+    headers = {
+      "X-Auth-Email": acc.account,
+      "X-Auth-Key": acc.token,
+      "Content-Type": "application/json"
+    }
+    page = 1
+    while True:
+      url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={page}"
+      r = requests.get(url, headers=headers, timeout=10).json()
+      if not r.get("success"):
+        logging.error(f"load_cf_active_zones(): Failed to load zones for account {acc.account}: {r.get('errors')}")
+        break
+      for zone in r.get("result", []):
+        zones[zone["name"]] = zone["status"]
+      if page >= r["result_info"]["total_pages"]:
+        break
+      page += 1
+  except Exception as err:
+    logging.error(f"load_cf_active_zones(): Error for account {acc.account}: {err}")
+  return zones
+
 def load_cf_active_zones() -> dict:
-  """Loads all zones from all Cloudflare accounts in DB."""
+  """Loads all zones from all Cloudflare accounts in DB, querying every account in parallel."""
   cf_zones = {}
   try:
     accounts = Cloudflare.query.all()
-    for acc in accounts:
-      try:
-        headers = {
-          "X-Auth-Email": acc.account,
-          "X-Auth-Key": acc.token,
-          "Content-Type": "application/json"
-        }
-        page = 1
-        while True:
-          url = f"https://api.cloudflare.com/client/v4/zones?per_page=50&page={page}"
-          r = requests.get(url, headers=headers, timeout=10).json()
-          if not r.get("success"):
-            logging.error(f"load_cf_active_zones(): Failed to load zones for account {acc.account}: {r.get('errors')}")
-            break
-          for zone in r.get("result", []):
-            cf_zones[zone["name"]] = zone["status"]
-          if page >= r["result_info"]["total_pages"]:
-            break
-          page += 1
-      except Exception as err:
-        logging.error(f"load_cf_active_zones(): Error for account {acc.account}: {err}")
+    if not accounts:
+      return cf_zones
+    with ThreadPoolExecutor(max_workers=len(accounts)) as executor:
+      for zones in executor.map(_load_zones_for_account, accounts):
+        cf_zones.update(zones)
   except Exception as err:
     logging.error(f"load_cf_active_zones(): Global error: {err}")
   return cf_zones
