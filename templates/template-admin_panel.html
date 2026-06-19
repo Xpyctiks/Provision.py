@@ -61,7 +61,7 @@
 </ul>
 <br>
 {{data|safe}}
-<script src="{{ url_for('static', filename='js/admin_panel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin_panel.js') }}" defer></script>
 </main>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
