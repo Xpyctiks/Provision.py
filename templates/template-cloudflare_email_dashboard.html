@@ -59,16 +59,23 @@
           <h4 style="text-align: center;">📊 Дашборд Email Routing по всіх доменах</h4>
         </div>
         <div class="card-body">
+          <div class="d-flex justify-content-end mb-3">
+            <select id="accountFilter" class="form-select form-select" style="max-width: 320px;">
+              <option value="">🌏 Усі аккаунти Cloudflare</option>
+              {{cf_accounts_list|safe}}
+            </select>
+          </div>
           <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-bordered table-hover" id="emailDashboardTable">
               <thead>
                 <tr class="table-warning">
                   <th scope="col" style="width: 5%;">#</th>
-                  <th scope="col" style="width: 25%;">Домен:</th>
-                  <th scope="col" style="width: 15%;">Статус Email Routing:</th>
-                  <th scope="col" style="width: 30%;">Правила:</th>
-                  <th scope="col" style="width: 15%;">Оновлено:</th>
-                  <th scope="col" style="width: 10%;">Дії:</th>
+                  <th scope="col" style="width: 20%;" class="sortable" data-sort-type="text">Домен:</th>
+                  <th scope="col" style="width: 15%;" class="sortable" data-sort-type="text">Cloudflare акаунт:</th>
+                  <th scope="col" style="width: 13%;" class="sortable" data-sort-type="text">Статус Email Routing:</th>
+                  <th scope="col" style="width: 27%;">Правила:</th>
+                  <th scope="col" style="width: 12%;" class="sortable" data-sort-type="date">Оновлено:</th>
+                  <th scope="col" style="width: 8%;">Дії:</th>
                 </tr>
               </thead>
               <tbody>

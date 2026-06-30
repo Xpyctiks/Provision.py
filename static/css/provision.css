@@ -13,3 +13,24 @@ body {
     transform: translateX(-50%) !important;
   }
 }
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+th.sortable::after {
+  content: "⇅";
+  opacity: 0.4;
+  margin-left: 6px;
+}
+
+th.sortable.sort-asc::after {
+  content: "▲";
+  opacity: 1;
+}
+
+th.sortable.sort-desc::after {
+  content: "▼";
+  opacity: 1;
+}

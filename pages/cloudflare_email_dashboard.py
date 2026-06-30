@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, render_template, flash, redirect
 from flask_login import login_required, current_user
-from db.database import CloudflareEmailsStatus, CloudflareEmailsRules
+from db.database import CloudflareEmailsStatus, CloudflareEmailsRules, Domain_account, Cloudflare
 from functions.site_actions import is_admin
 
 cloudflare_email_dashboard_bp = Blueprint("cloudflare_email_dashboard", __name__)
@@ -15,12 +15,18 @@ def show_cloudflare_email_dashboard():
     rules_by_domain = {}
     for rule in CloudflareEmailsRules.query.order_by(CloudflareEmailsRules.domain).all():
       rules_by_domain.setdefault(rule.domain, []).append(rule.rule)
+    account_by_domain = {a.domain: a.account for a in Domain_account.query.all()}
+    #gathering all list of available Cloudflare accounts to put them into accounts filter list
+    cf_accounts_list = ""
+    for a in Cloudflare.query.order_by(Cloudflare.account).all():
+      cf_accounts_list += f'<option value="{a.account}">{a.account}</option>'
     if not statuses:
-      rows_html = '<tr><td colspan="5" class="text-center text-muted">Дані відсутні. Зачекайте на синхронізацію Email Routing або відкрийте керування для потрібного домену.</td></tr>'
+      rows_html = '<tr><td colspan="7" class="text-center text-muted">Дані відсутні. Зачекайте на синхронізацію Email Routing або відкрийте керування для потрібного домену.</td></tr>'
     else:
       rows_html = ""
       for i, s in enumerate(statuses, 1):
         domain_rules = rules_by_domain.get(s.domain, [])
+        cf_account = account_by_domain.get(s.domain, "⌛нема інформації")
         if s.routing_enabled:
           status_badge = '<span class="badge bg-success">✅ Увімкнено</span>'
         else:
@@ -35,15 +41,16 @@ def show_cloudflare_email_dashboard():
         if s.updatedby:
           updated_cell += f' ({s.updatedby})'
         rows_html += f"""
-  <tr>
+  <tr data-account="{cf_account}">
     <th scope="row">{i}</th>
     <td><a href="https://{s.domain}" target="_blank">{s.domain}</a></td>
+    <td>{cf_account}</td>
     <td>{status_badge}</td>
     <td>{rules_cell}</td>
     <td>{updated_cell}</td>
     <td><a class="btn btn-sm btn-secondary" href="/cloudflare_email/manage?domain={s.domain}" title="Перегляд та керування Email Routing для цього домену.">⚙Керувати</a></td>
   </tr>"""
-    return render_template("template-cloudflare_email_dashboard.html", rows_html=rows_html, admin_panel=is_admin())
+    return render_template("template-cloudflare_email_dashboard.html", rows_html=rows_html, cf_accounts_list=cf_accounts_list, admin_panel=is_admin())
   except Exception as err:
     logging.error(f"show_cloudflare_email_dashboard(): general error by {current_user.realname}: {err}")
     flash('Неочікувана помилка при завантаженні дашборду Email Routing! Дивіться логи.', 'alert alert-danger')
