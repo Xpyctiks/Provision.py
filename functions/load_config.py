@@ -11,20 +11,20 @@ def load_config(application):
     try:
       config = db.session.get(Settings, 1)
       application.config.update({
-        "TELEGRAM_TOKEN": f"{config.telegramToken}",
-        "TELEGRAM_CHATID": f"{config.telegramChat}",
-        "LOG_FILE": f"{config.logFile}",
-        "WEB_FOLDER": f"{config.webFolder}",
-        "NGX_CRT_PATH": f"{config.nginxCrtPath}",
-        "NGX_SITES_PATHAV": f"{config.nginxSitesPathAv}",
-        "NGX_SITES_PATHEN": f"{config.nginxSitesPathEn}",
-        "NGX_ADD_CONF_DIR": f"{config.nginxAddConfDir}",
-        "NGX_PATH": f"{config.nginxPath}",
-        "WWW_USER": f"{config.wwwUser}",
-        "WWW_GROUP": f"{config.wwwGroup}",
-        "PHP_POOL": f"{config.phpPool}",
-        "PHPFPM_PATH": f"{config.phpFpmPath}",
-        "SECRET_KEY": f"{config.sessionKey}",
+        "TELEGRAM_TOKEN": f"{config.telegramToken or ''}",
+        "TELEGRAM_CHATID": f"{config.telegramChat or ''}",
+        "LOG_FILE": f"{config.logFile or ''}",
+        "WEB_FOLDER": f"{config.webFolder or ''}",
+        "NGX_CRT_PATH": f"{config.nginxCrtPath or ''}",
+        "NGX_SITES_PATHAV": f"{config.nginxSitesPathAv or ''}",
+        "NGX_SITES_PATHEN": f"{config.nginxSitesPathEn or ''}",
+        "NGX_ADD_CONF_DIR": f"{config.nginxAddConfDir or ''}",
+        "NGX_PATH": f"{config.nginxPath or ''}",
+        "WWW_USER": f"{config.wwwUser or ''}",
+        "WWW_GROUP": f"{config.wwwGroup or ''}",
+        "PHP_POOL": f"{config.phpPool or ''}",
+        "PHPFPM_PATH": f"{config.phpFpmPath or ''}",
+        "SECRET_KEY": f"{config.sessionKey or ''}",
         "AUTHELIA_LOGOUT_URL": f"{config.autheliaLogoutUrl or ''}"
       })
       logging.basicConfig(filename=config.logFile,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')

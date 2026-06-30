@@ -18,6 +18,8 @@ def do_logout():
     authelia_logout_url = current_app.config.get("AUTHELIA_LOGOUT_URL", "")
     if authelia_logout_url:
       return redirect(authelia_logout_url, 302)
+    else:
+      logging.error(f"AUTHELIA_LOGOUT_URL (current value:{authelia_logout_url}) is not set!")
     flash("Ви успішно вийшли із системи!", "alert alert-info")
     return redirect("/login/",302)
   except Exception as err:
