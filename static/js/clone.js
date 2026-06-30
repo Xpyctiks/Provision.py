@@ -24,6 +24,12 @@ document.querySelectorAll('.dropdown-item.server').forEach(item => {
 
 document.getElementById("postform").addEventListener("submit", function(event) {
   const input = document.getElementById("domain");
+  const domainsList = document.getElementById("domains_list");
+  const hasBulkList = domainsList.value.trim() !== "";
+  if (hasBulkList) {
+    input.classList.remove("is-invalid");
+    return;
+  }
   const value = input.value.trim();
   if (value === "") {
     input.classList.add("is-invalid");
@@ -33,6 +39,14 @@ document.getElementById("postform").addEventListener("submit", function(event) {
   } else {
     input.classList.remove("is-invalid");
     input.classList.add("is-valid");
+  }
+});
+
+document.getElementById("domains_list").addEventListener("input", function () {
+  const input = document.getElementById("domain");
+  if (this.value.trim() !== "") {
+    input.classList.remove("is-invalid");
+    input.classList.remove("is-valid");
   }
 });
 

@@ -31,25 +31,69 @@ def showClonePage():
 @clone_bp.route("/clone/", methods=['POST'])
 @login_required
 def doClone():
-  """POST request processor: processes a site clone request"""
+  """POST request processor: processes a site clone request - either to a single domain, or, if the bulk domains_list textarea is filled, to every domain listed there"""
+  domain = ""
+  selected_account = ""
+  selected_server = ""
   try:
+    #the bulk domains list (one domain per line) takes priority over the single domain field, if it's not empty
+    domains_list_raw = (request.form.get('domains_list') or '').strip()
     #check if we have all necessary data received
-    if not request.form.get('domain') or not request.form.get('selected_account') or not request.form.get('selected_server') or not request.form.get('buttonStartClone'):
+    if (not request.form.get('domain') and not domains_list_raw) or not request.form.get('selected_account') or not request.form.get('selected_server') or not request.form.get('buttonStartClone'):
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       logging.error(f"doClone(): some of the important parameters has not been received!")
       return redirect(f"/clone?source_site={request.form.get('buttonStartClone')}",302)
-    #starts main provision actions
+    source_site = request.form.get("buttonStartClone","").strip()
+    selected_account = request.form.get("selected_account","").strip()
+    selected_server = request.form.get("selected_server","").strip()
+    web_folder = current_app.config.get("WEB_FOLDER") or ""
+    if not web_folder:
+      logging.error(f"doClone(): somehow web_folder variable is empty!")
+      flash(f"Помилка! Змінна web_folder прийшла порожньою! Дивіться логи.",'alert alert-danger')
+      return redirect(f"/clone?source_site={source_site}",302)
+    its_not_a_subdomain = 'not-a-subdomain' in request.form
+    #------------------------- bulk clone: one new site per domain listed in the textarea -------------------------
+    if domains_list_raw:
+      domains_to_clone = [d.strip() for d in domains_list_raw.splitlines() if d.strip()]
+      succeeded = []
+      failed = []
+      for raw_domain in domains_to_clone:
+        normalized = normalize_domain(raw_domain)
+        if not isinstance(normalized, str):
+          logging.error(f"doClone(): bulk clone - invalid domain format skipped: {raw_domain}")
+          failed.append(f"{raw_domain} (невірний формат домену)")
+          continue
+        domain = normalized
+        finalPath = os.path.join(web_folder,domain)
+        if os.path.exists(finalPath):
+          logging.error(f"doClone(): bulk clone - site {domain} already exists! Skipping...")
+          failed.append(f"{domain} (вже існує)")
+          continue
+        logging.info(f"---------------------------Starting bulk clone for site {domain} from the site {source_site} by {current_user.realname}----------------------------")
+        if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain):
+          logging.info(f"doClone(): bulk clone - site {source_site} sucessfully cloned into {domain} site!")
+          finishJob("",domain,selected_account,selected_server)
+          succeeded.append(domain)
+        else:
+          logging.error(f"doClone(): bulk clone - failed to clone {source_site} into {domain}!")
+          finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
+          failed.append(f"{domain} (помилка клонування)")
+      clearCache()
+      if succeeded:
+        flash(f"Сайт {source_site} успішно клоновано на {len(succeeded)} домен(ів): {', '.join(succeeded)}",'alert alert-success')
+      if failed:
+        flash(f"Не вдалося клонувати на {len(failed)} домен(ів): {', '.join(failed)}",'alert alert-danger')
+      if not succeeded and not failed:
+        flash("Не передано жодного валідного домену для клонування зі списку!",'alert alert-warning')
+      return redirect("/",302)
+    #------------------------- single domain clone -------------------------
     else:
       #cleans up the domain string
       domain = str(normalize_domain(request.form.get("domain","")))
-      source_site = request.form.get("buttonStartClone","").strip()
-      selected_account = request.form.get("selected_account","").strip()
-      selected_server = request.form.get("selected_server","").strip()
-      web_folder = current_app.config.get("WEB_FOLDER") or ""
-      if not web_folder or not domain:
-        logging.error(f"doClone(): somehow web_folder or domain variable is empty!")
-        flash(f"Помилка! Якась змінна web_folder({web_folder}) чи domain({domain}) прийшла порожньою! Дивіться логи.",'alert alert-danger')
-        return redirect(f"/clone?source_site={request.form.get('buttonStartClone')}",302)
+      if not domain:
+        logging.error(f"doClone(): somehow domain variable is empty!")
+        flash(f"Помилка! Змінна domain({domain}) прийшла порожньою! Дивіться логи.",'alert alert-danger')
+        return redirect(f"/clone?source_site={source_site}",302)
       finalPath = os.path.join(web_folder,domain)
       if os.path.exists(finalPath):
         logging.info(f"---------------------------Starting clone for site {domain} from the site {source_site} by {current_user.realname}----------------------------")
@@ -57,10 +101,6 @@ def doClone():
         flash(f"Сайт {domain} вже існує! Спочатку видаліть його і потім можна буде клонувати!", 'alert alert-danger')
         logging.info(f"--------------------Clone of the site {source_site} as the {domain} by {current_user.realname} finshed with error-----------------------")
         return redirect(f"/clone?source_site={source_site}",302)
-      if 'not-a-subdomain' in request.form:
-        its_not_a_subdomain = True
-      else:
-        its_not_a_subdomain = False
       #starting clone procedure
       if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain):
         logging.info(f"doClone(): Site {source_site} sucessfully cloned into {domain} site!")
