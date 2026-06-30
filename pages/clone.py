@@ -55,9 +55,12 @@ def doClone():
     #------------------------- bulk clone: one new site per domain listed in the textarea -------------------------
     if domains_list_raw:
       logging.info(f"doClone(): bulk list of domains has been received from {current_user.realname}: {domains_list_raw} ----------------------------")
+      bulk_sites_total = len(domains_list_raw)
+      logging.info(f"doClone(): bulk list size: {bulk_sites_total}")
       domains_to_clone = [d.strip() for d in domains_list_raw.splitlines() if d.strip()]
       succeeded = []
       failed = []
+      counter = 1
       for raw_domain in domains_to_clone:
         normalized = normalize_domain(raw_domain)
         if not isinstance(normalized, str):
@@ -70,7 +73,7 @@ def doClone():
           logging.error(f"doClone(): bulk clone - site {domain} already exists! Skipping...")
           failed.append(f"{domain} (вже існує)")
           continue
-        logging.info(f"---------------------------Starting bulk clone for site {domain} from the site {source_site} by {current_user.realname}----------------------------")
+        logging.info(f"---------------------------Starting bulk clone for site (#{counter} from total {bulk_sites_total}) {domain} from the site {source_site} by {current_user.realname}----------------------------")
         if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain):
           logging.info(f"doClone(): bulk clone - site {source_site} sucessfully cloned into {domain} site!")
           finishJob("",domain,selected_account,selected_server)
