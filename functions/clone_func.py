@@ -3,6 +3,7 @@ import logging
 import shutil
 import subprocess
 import sqlite3
+import random
 from functions.certificates import cloudflare_certificate
 from functions.provision_func import setupNginx
 from functions.site_actions import normalize_domain
@@ -62,6 +63,12 @@ def start_clone(domain: str, source_site: str, selected_account: str, selected_s
               cur.execute("INSERT INTO settings (grupa, name, value) VALUES ('seo', 'allow_indexing', '0')")
             conn.commit()
             logging.info(f"start_clone(): SQLite3 database of the clonned site {DB_PATH} updated successfully!")
+            #Doing another DB action
+            cur = conn.cursor()
+            n = random.randint(0, 30) 
+            cur.execute(f"UPDATE settings SET value = '{n}' WHERE grupa = 'content' AND name = 'coming_soon_template'")
+            conn.commit()
+            logging.info(f"start_clone(): SQLite3 database key coming_soon_template in {DB_PATH} updated successfully with the value {n}!")
         else:
           logging.error(f"start_clone(): SQLite3 database of the clonned site {DB_PATH} is not exists! Skipping update...")
         return True
