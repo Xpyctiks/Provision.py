@@ -29,6 +29,7 @@ class Settings(db.Model):
   nginxPath = db.Column(db.String(256), nullable=False)
   phpPool = db.Column(db.String(512), nullable=False)
   phpFpmPath = db.Column(db.String(512), nullable=False)
+  autheliaLogoutUrl = db.Column(db.String(512), nullable=True, default="")
 
 class Provision_templates(db.Model):
   id = db.Column(db.Integer, primary_key=True)

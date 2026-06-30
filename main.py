@@ -7,7 +7,7 @@ from flask_login import LoginManager
 from datetime import timedelta
 from functions.cache_func import page_cache
 
-VERSION = "2.7.1"
+VERSION = "2.7.2"
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 application = Flask(__name__)
@@ -32,6 +32,8 @@ login_manager = LoginManager()
 login_manager.login_view = "main.login.do_login"
 login_manager.session_protection = "strong"
 login_manager.init_app(application)
+from functions.authelia_auth import try_authelia_login
+application.before_request(try_authelia_login)
 with application.app_context():
   db.create_all()
 #get name of the parent directory for the whole project

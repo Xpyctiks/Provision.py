@@ -24,7 +24,8 @@ def load_config(application):
         "WWW_GROUP": f"{config.wwwGroup}",
         "PHP_POOL": f"{config.phpPool}",
         "PHPFPM_PATH": f"{config.phpFpmPath}",
-        "SECRET_KEY": f"{config.sessionKey}"
+        "SECRET_KEY": f"{config.sessionKey}",
+        "AUTHELIA_LOGOUT_URL": f"{config.autheliaLogoutUrl or ''}"
       })
       logging.basicConfig(filename=config.logFile,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
       logging.getLogger('werkzeug').setLevel(logging.WARNING)
@@ -54,7 +55,8 @@ def generate_default_config(application,CONFIG_DIR: str,DB_FILE: str):
         nginxAddConfDir = "/etc/nginx/additional-configs",
         nginxPath = "/etc/nginx/",
         phpPool = "/etc/php/8.2/fpm/pool.d/",
-        phpFpmPath = "/usr/sbin/php-fpm8.2"
+        phpFpmPath = "/usr/sbin/php-fpm8.2",
+        autheliaLogoutUrl = ""
         )
       try:
         if not os.path.exists(CONFIG_DIR):
