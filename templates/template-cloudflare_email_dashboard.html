@@ -28,11 +28,15 @@
         <ul class="dropdown-menu">
           <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_dstaddresses/" class="btn btn-secondary">📧Адреси призначення Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
@@ -40,55 +44,42 @@
         </ul>
       </div>
       <div class="ms-auto d-flex align-items-center">
-        <form class="d-flex" action="/logout" method="POST">
+        <form class="d-flex" action="/logout/" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
     </div>
   </nav>
 </div>
-<div class="container">
+<div class="container-fluid px-2">
   <div class="row justify-content-center">
-    <div class="col-12 col-md-10 col-lg-8 col-xl-8">
-      <div class="card mx-auto">
+    <div class="col-12">
+      <div class="card mx-auto mb-3 mt-3">
         <div class="card-header">
-          <h4 style="text-align: center;">Додати новий домен до аккаунту Cloudflare:</h4>
+          <h4 style="text-align: center;">📊 Дашборд Email Routing по всіх доменах</h4>
         </div>
         <div class="card-body">
-          <form action="/cloudflare_domains/" method="POST" id="postform" class="needs-validation" novalidate>
-            <h5 class="card-title">Вкажіть домен який буде додано під аккаунт:</h5>
-            <div class="input-group mb-3">
-              <span class="input-group-text">https://</span>
-              <input type="text" class="form-control" id="domain" name="domain" autofocus required>
-              <div class="invalid-feedback">
-                Вкажіть домен.
-              </div>
-            </div>
-            <div class="mb-3 dropdown">
-              <h5 class="card-title">Оберіть аккаунт CloudFlare на якому цей домен буде розташован:</h5>
-              <div class="row g-2">
-                <div class="col-12 col-md-8">
-                  <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false">{{first_cf|safe}}</button>
-                  <ul class="dropdown-menu" aria-labelledby="Account">
-                    {{cf_list|safe}}
-                  </ul>
-                </div>
-                <div class="col-12 col-md-4">
-                  <button class="btn btn-warning w-100" type="button" id="buttonShowZones" value="ShowZones">Показати вже існуючі</button>
-                </div>
-              <input type="hidden" name="selected_account" id="selected_account" value="{{first_cf|safe}}" required>
-              <div class="invalid-feedback">
-                Оберіть аккаунт CloudFlare.
-              </div>
-            </div>
-            <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
-              <button type="submit" class="btn btn-info w-100" name="buttonAddZone" value="Submit" onclick="showLoading()">Додати новий домен</button>
-            </div>
-          </form>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+              <thead>
+                <tr class="table-warning">
+                  <th scope="col" style="width: 5%;">#</th>
+                  <th scope="col" style="width: 25%;">Домен:</th>
+                  <th scope="col" style="width: 15%;">Статус Email Routing:</th>
+                  <th scope="col" style="width: 30%;">Правила:</th>
+                  <th scope="col" style="width: 15%;">Оновлено:</th>
+                  <th scope="col" style="width: 10%;">Дії:</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{rows_html|safe}}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-  </div>       
+  </div>
 </div>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -105,7 +96,7 @@
           <li class="{{ category }}">{{ message|safe}}</li>
           {% endfor %}
         </ul>
-      </div>    
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Got it</button>
       </div>
@@ -114,23 +105,7 @@
 </div>
 {% endif %}
 {% endwith %}
-<!-- Modal -->
-<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="resultModalLabel">Результат</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modalResultBody">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-      </div>
-    </div>
-  </div>
-</div>
-<script src="{{ url_for('static', filename='js/cloudflare_domains.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/cloudflare_email_dashboard.js') }}" defer></script>
 </main>
 </body>
 </html>
