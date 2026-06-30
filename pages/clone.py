@@ -54,6 +54,7 @@ def doClone():
     its_not_a_subdomain = 'not-a-subdomain' in request.form
     #------------------------- bulk clone: one new site per domain listed in the textarea -------------------------
     if domains_list_raw:
+      logging.info(f"doClone(): bulk list of domains has been received from {current_user.realname}: {domains_list_raw} ----------------------------")
       domains_to_clone = [d.strip() for d in domains_list_raw.splitlines() if d.strip()]
       succeeded = []
       failed = []

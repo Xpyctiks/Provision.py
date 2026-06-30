@@ -230,14 +230,17 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
     result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
       logging.info(f"setupNginx(): Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
-      result = subprocess.run(["sudo","systemctl","restart","nginx"], text=True, capture_output=True)
+      result = subprocess.run(["sudo","nginx","-s","reload"], text=True, capture_output=True)
       if  re.search(r".*started.*",result.stderr):
-        logging.info(f"setupNginx(): Nginx restarted successfully. Result: {result.stderr.strip()}")
+        logging.info(f"setupNginx(): Nginx reloaded successfully. Result: {result.stderr.strip()}")
+      else:
+        logging.error(f"setupNginx(): Error while reloading Nginx: {result.stderr.strip()}")
+        return False
       if not setupPHP(file):
         logging.error("setupNginx(): setupPHP() function returned an error!")
         return False
     else:
-      logging.error(f"setupNginx(): Error while restarting Nginx: {result.stderr.strip()}")
+      logging.error(f"setupNginx(): Error while testing Nginx config: {result.stderr.strip()}")
       return False
     return True
   except Exception as msg:

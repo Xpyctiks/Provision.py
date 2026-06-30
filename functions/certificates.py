@@ -59,7 +59,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         "per_page": 1
       }
     #making request to check the domain's existance on the server
-    result_check_domain_exists = requests.get(url_check_domain_exists, headers=headers, params=params_check_domain_exists).json()
+    result_check_domain_exists = requests.get(url_check_domain_exists, headers=headers, params=params_check_domain_exists, timeout=10).json()
     if result_check_domain_exists.get("success") and result_check_domain_exists.get("result"):
       logging.info(f"cloudflare_certificate(): The selected domain {orig_domain} exists on the account {selected_account}")
       if issue_cert(domain,selected_account,token):
@@ -70,7 +70,7 @@ def cloudflare_certificate(domain: str, selected_account: str, selected_server: 
         zone_id = name_to_id.get(domain,"")
         #get current DNS records for the domain
         url_dns_records = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={orig_domain}&type=A"
-        result_dns_records = requests.get(url_dns_records, headers=headers).json()
+        result_dns_records = requests.get(url_dns_records, headers=headers, timeout=10).json()
         #if we successfully got some data and there is no result with A record
         if result_dns_records.get("success") and len(result_dns_records.get("result")) <= 0:
           logging.info(f"cloudflare_certificate(): No result returned while check current DNS records for {orig_domain}.Looks like there are no A record. Creating the new one...")
@@ -121,7 +121,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
     #staring update of @ record
     logging.info(f"upd_dns_records(): Updating existing DNS record for domain {domain}, account {selected_account}, zone {zone_id} to IP {ip}")
     url_get_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name={domain}"
-    result_get_record = requests.get(url_get_record, headers=headers).json()
+    result_get_record = requests.get(url_get_record, headers=headers, timeout=10).json()
     record_id = result_get_record["result"][0]["id"]
     url_upd_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
     logging.info(f"upd_dns_records(): Updating A record for {domain} with internal ID {record_id} to IP {ip}")
@@ -133,7 +133,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
       "proxied": True,
       "comment": f"Provision auto deploy by {current_user.realname}"
     }
-    result_upd_record = requests.put(url_upd_record,json=data,headers=headers).json()
+    result_upd_record = requests.put(url_upd_record,json=data,headers=headers,timeout=10).json()
     #check if there is error after the request
     if not result_upd_record.get("success"):
       error_list = ""
@@ -147,7 +147,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
     if not bool(d.subdomain) or its_not_a_subdomain:
       logging.info(f"upd_dns_records(): Updation A record for www.{domain} to IP {ip}")
       url_get_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A&name=www.{domain}"
-      result_get_record = requests.get(url_get_record, headers=headers).json()
+      result_get_record = requests.get(url_get_record, headers=headers, timeout=10).json()
       #check if there is error after the request
       if not result_get_record.get("success"):
         error_list = ""
@@ -165,7 +165,7 @@ def upd_dns_records(domain: str, selected_account: str, token: str, zone_id: str
         "proxied": True,
         "comment": f"Provision auto deploy by {current_user.realname}"
       }
-      result_upd_record2 = requests.put(url_upd_record,json=data2,headers=headers).json()
+      result_upd_record2 = requests.put(url_upd_record,json=data2,headers=headers,timeout=10).json()
       if not result_upd_record2.get("success"):
         error_list = ""
         for error in result_upd_record2.get("errors", []):
@@ -202,7 +202,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
       "proxied": True,
       "comment": f"Provision auto deploy by {current_user.realname}"
     }
-    result_add_record = requests.post(url_add_record,json=data,headers=headers).json()
+    result_add_record = requests.post(url_add_record,json=data,headers=headers,timeout=10).json()
     if result_add_record.get("success"):
       logging.info(f"create_dns_records(): API request to create DNS record {domain} with {ip} successfully completed.")
     else:
@@ -222,7 +222,7 @@ def create_dns_records(domain: str, selected_account: str, token: str, zone_id: 
         "proxied": True,
         "comment": f"Provision auto deploy by {current_user.realname}"
       }
-      result_add_record2 = requests.post(url_add_record,json=data2,headers=headers).json()
+      result_add_record2 = requests.post(url_add_record,json=data2,headers=headers,timeout=10).json()
       if result_add_record2.get("success"):
         logging.info(f"create_dns_records(): API request to create DNS record www.{domain} with {ip} successfully completed.")
       else:
@@ -286,7 +286,7 @@ def request_cloudflare_cert(csr_pem,domain: str,email: str, token: str) -> tuple
       "request_type": "origin-rsa",
       "requested_validity": 5475
     }
-    response = requests.post(url, headers=headers, json=data).json()
+    response = requests.post(url, headers=headers, json=data, timeout=20).json()
     if not response.get("success"):
       error_list = ""
       for error in response.get("errors", []):

@@ -144,7 +144,7 @@ python main.py
 
 ### Production with Gunicorn
 
-**1. Create `gunicorn_config.py` in the application directory:**
+**1. Create `gunicorn_config.py` in the application directory** (a copy ready to adjust is included at the repo root - `gunicorn_config.py`):
 
 ```python
 import sys
@@ -155,12 +155,19 @@ venv_path = "/usr/local/"
 sys.path.insert(0, os.path.join(venv_path, "lib/python3.11/site-packages"))
 sys.path.insert(0, "/opt/Provision.py")
 
-bind = "0.0.0.0:8880"
-workers = 1
-timeout = 30
+bind = "127.0.0.1:8880"
+workers = 8
+threads = 8
+worker_class = "gthread"
+timeout = 300
+keepalive = 30
+graceful_timeout = 30
+backlog = 2048
 loglevel = "info"
 wsgi_app = "main:application"
 ```
+
+> **Note:** `functions/variables.py` keeps in-flight job state (`JOB_ID`, `JOB_COUNTER`, `CLONED_FROM`, ...) in plain module-level globals shared by every thread within a worker process. With `worker_class = "gthread"` and `threads > 1`, two clone/provision jobs that happen to land on threads of the *same* worker process at the same time can read/overwrite each other's job state. This hasn't been observed causing problems in practice, but if you start seeing jobs reported with the wrong domain/job ID in logs or Telegram notifications, this is the place to look.
 
 **2. Create a systemd service file `gunicorn-provision.service`:**
 
