@@ -20,7 +20,7 @@
     <div class="container-fluid">
       <div class="d-flex align-items-center me-auto">
         <img src="{{ url_for('static', filename='images/favicon.svg') }}" alt="Logo" width="32" height="32">
-        <a class="navbar-brand" href="/">&nbsp;The Provision:</a>
+        <a class="navbar-brand" href="/">&nbsp;The Provision(вже <span class="badge bg-secondary">{{ html_data|length }}</span> сайтів!):</a>
         <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
         <a href="/action/clear_cache/" style="display:inline-block;"><img id="cacheIcon" src="{{ url_for('static', filename='images/cache.png') }}" width="50" height="35" class="cache-icon d-none" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Ця сторінка закешована! Натисніть сюди що б очистити кеш..."></a>
         {% if has_cf_errors %}<span id="cfErrorIcon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Є проблеми з Cloudflare у деяких сайтів!" style="display:inline-block; font-size:1.8rem; line-height:1; cursor:pointer;">⚠️</span>{% endif %}

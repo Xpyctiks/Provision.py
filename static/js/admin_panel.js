@@ -104,27 +104,10 @@ window.addEventListener("pageshow", function (event) {
 });
 
 function syncSettings() {
-  const map = [
-    ['settings-0', 'value-0'],
-    ['settings-1', 'value-1'],
-    ['settings-2', 'value-2'],
-    ['settings-3', 'value-3'],
-    ['settings-4', 'value-4'],
-    ['settings-5', 'value-5'],
-    ['settings-6', 'value-6'],
-    ['settings-7', 'value-7'],
-    ['settings-8', 'value-8'],
-    ['settings-9', 'value-9'],
-    ['settings-10', 'value-10'],
-    ['settings-11', 'value-11'],
-    ['settings-12', 'value-12'],
-    ['settings-13', 'value-13']
-  ];
-
-  map.forEach(([srcId, targetId]) => {
-    const src = document.getElementById(srcId);
-    const target = document.getElementById(targetId);
-    if (src && target) {
+  document.querySelectorAll("[id^='settings-']").forEach(src => {
+    const i = src.id.split('-')[1];
+    const target = document.getElementById(`value-${i}`);
+    if (target) {
       target.value = src.value;
     }
   });
