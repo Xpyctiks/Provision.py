@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Automatic provision system for a lot of small sites">
+  <title>The Provision</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/provision.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous" defer></script>
+</head>
+<body>
+<main>
+<div>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center me-auto">
+        <img src="{{ url_for('static', filename='images/favicon.svg') }}" alt="Logo" width="32" height="32">
+        <a class="navbar-brand" href="/">&nbsp;The Provision:</a>
+        <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
+      </div>
+      <div class="dropdown mx-auto">
+        <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+        <ul class="dropdown-menu">
+          <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_dstaddresses/" class="btn btn-secondary">📧Адреси призначення Email Routing</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item active" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {{admin_panel|safe}}
+        </ul>
+      </div>
+      <div class="ms-auto d-flex align-items-center">
+        <form class="d-flex" action="/logout/" method="POST">
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<div class="container-fluid px-2">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+
+      <!-- Account selector -->
+      <div class="card mx-auto mb-3 mt-3">
+        <div class="card-header">
+          <h4 style="text-align: center;">📮 Bulk Email Routing — масове створення правил пересилання пошти</h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-6">
+              <label for="accountSelect" class="form-label fw-semibold">1. Оберіть акаунт Cloudflare:</label>
+              <select id="accountSelect" class="form-select">
+                <option value="">— Оберіть акаунт —</option>
+                {{accounts_options|safe}}
+              </select>
+            </div>
+            <div class="col-12 col-md-6 d-flex align-items-end">
+              <div id="accountLoadingMsg" class="text-muted fst-italic" style="display:none;">
+                <span class="spinner-border spinner-border-sm text-warning me-1" role="status"></span>
+                Завантаження зон і адрес...
+              </div>
+              <div id="accountErrorMsg" class="text-danger" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk action form (hidden until account is selected) -->
+      <div id="bulkSection" style="display:none;">
+        <form method="POST" action="/cloudflare_email_bulk/" id="bulkForm">
+          <input type="hidden" name="account" id="selectedAccount">
+
+          <!-- Step 2: destination + login -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <h5 class="mb-0">2. Налаштування правила</h5>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label for="destinationSelect" class="form-label fw-semibold">Адреса призначення (Destination Address):</label>
+                  <select id="destinationSelect" name="destination" class="form-select" required>
+                    <option value="">— Оберіть адресу —</option>
+                  </select>
+                  <div class="form-text">Тільки верифіковані адреси.</div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="loginInput" class="form-label fw-semibold">Логін нового email-адресу:</label>
+                  <div class="input-group">
+                    <input type="text" id="loginInput" name="login" class="form-control" placeholder="info" required autocomplete="off">
+                    <span class="input-group-text">@домен</span>
+                  </div>
+                  <div class="form-text">Буде створено: <strong id="emailPreview" class="text-primary">login@домен</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: domains list -->
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">3. Оберіть домени <span class="badge bg-secondary ms-1" id="domainCountBadge">0</span></h5>
+              <div class="d-flex gap-2">
+                <input type="text" id="domainSearch" class="form-control form-control-sm" placeholder="🔍 Пошук домену..." style="width:220px;">
+                <button type="button" id="selectAllBtn" class="btn btn-sm btn-outline-success">Обрати всі</button>
+                <button type="button" id="deselectAllBtn" class="btn btn-sm btn-outline-secondary">Скасувати</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="domainsContainer" class="row g-1" style="max-height:420px; overflow-y:auto;">
+                <!-- Checkboxes are injected here by JS -->
+              </div>
+              <div id="noDomainsMsg" class="text-muted text-center py-3" style="display:none;">Немає доменів для відображення</div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div id="selectedCountMsg" class="text-muted"></div>
+            <button type="submit" id="submitBtn" class="btn btn-success btn-lg px-5" onclick="showLoading()" disabled>
+              ✅ Застосувати до обраних доменів
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="myModalLabel">Результат операції:</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <ul class=flashes style="margin-top: 33px;" id="message">
+          {% for category, message in messages %}
+          <li class="{{ category }}">{{ message|safe}}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Закрити</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+
+<script src="{{ url_for('static', filename='js/cloudflare_email_bulk.js') }}" defer></script>
+</main>
+</body>
+</html>

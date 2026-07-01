@@ -4,6 +4,7 @@ from .admin_panel import admin_panel_bp
 from .clone import clone_bp
 from .cloudflare_domains import cloudflare_domains_bp
 from .cloudflare_email import cloudflare_email_bp
+from .cloudflare_email_bulk import cloudflare_email_bulk_bp
 from .cloudflare_email_dashboard import cloudflare_email_dashboard_bp
 from .cloudflare_email_dstaddresses import cloudflare_email_dstaddresses_bp
 from .dns_validation import dns_validation_bp
@@ -24,6 +25,7 @@ blueprint.register_blueprint(admin_panel_bp)
 blueprint.register_blueprint(clone_bp)
 blueprint.register_blueprint(cloudflare_domains_bp)
 blueprint.register_blueprint(cloudflare_email_bp)
+blueprint.register_blueprint(cloudflare_email_bulk_bp)
 blueprint.register_blueprint(cloudflare_email_dashboard_bp)
 blueprint.register_blueprint(cloudflare_email_dstaddresses_bp)
 blueprint.register_blueprint(dns_validation_bp)
