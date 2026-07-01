@@ -6,7 +6,6 @@ from db.database import Cloudflare
 from functions.site_actions import is_admin
 
 cloudflare_email_dstaddresses_bp = Blueprint("cloudflare_email_dstaddresses", __name__)
-
 def _get_headers(account: str, token: str) -> dict:
   return {
     "X-Auth-Email": account,

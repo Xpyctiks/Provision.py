@@ -10,8 +10,6 @@ from pages.cloudflare_email import (
 )
 
 cloudflare_email_bulk_bp = Blueprint("cloudflare_email_bulk", __name__)
-
-
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/", methods=['GET'])
 @login_required
 def show_bulk_email_page():
@@ -24,7 +22,6 @@ def show_bulk_email_page():
     accounts_options=accounts_options,
     admin_panel=is_admin()
   )
-
 
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/account_data", methods=['GET'])
 @login_required
@@ -65,7 +62,6 @@ def get_account_data():
     logging.error(f"get_account_data(): Error for account {account_email}: {err}")
     return jsonify({"error": str(err)}), 500
 
-
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/", methods=['POST'])
 @login_required
 def do_bulk_email():
@@ -74,29 +70,31 @@ def do_bulk_email():
   destination   = (request.form.get("destination") or "").strip()
   login         = (request.form.get("login") or "").strip()
   selected_domains = request.form.getlist("domains")
-
+  logging.info(f"do_bulk_email(): New bulk task received from {current_user.realname} - account: {account_email}, destination email: {destination}, login: {login}, domains: {selected_domains}")
   if not account_email or not destination or not login or not selected_domains:
     flash("Не всі обов'язкові поля заповнені!", "alert alert-warning")
     return redirect("/cloudflare_email_bulk/", 302)
-
   acc = Cloudflare.query.filter_by(account=account_email).first()
   if not acc:
     flash("Акаунт Cloudflare не знайдено в базі даних!", "alert alert-danger")
+    logging.error(f"do_bulk_email(): Account {account_email} is not found in DB!")
     return redirect("/cloudflare_email_bulk/", 302)
-
   headers = {
     "X-Auth-Email": acc.account,
     "X-Auth-Key": acc.token,
     "Content-Type": "application/json"
   }
-
   success_count = 0
   error_count   = 0
   results       = []
-
+  total_domains_counter = 0
+  total_domains_counter = len(selected_domains)
+  domains_left_counter = 1
   for domain in selected_domains:
+    logging.info(f"do_bulk_email(): Processing domain #{domains_left_counter} from {total_domains_counter} domains total")
     domain = domain.strip()
     if not domain:
+      domains_left_counter += 1
       continue
     matcher = f"{login}@{domain}"
     try:
@@ -107,9 +105,9 @@ def do_bulk_email():
         logging.error(f"do_bulk_email(): Zone not found for domain {domain} in account {account_email}")
         results.append(f"❌ {domain}: зону не знайдено в акаунті")
         error_count += 1
+        domains_left_counter += 1
         continue
       zone_id = r["result"][0]["id"]
-
       # Enable Email Routing if it is currently off
       routing_enabled = _get_routing_status(zone_id, headers)
       if not routing_enabled:
@@ -124,7 +122,6 @@ def do_bulk_email():
           results.append(f"❌ {domain}: помилка активації Email Routing: {err_msg}")
           error_count += 1
           continue
-
       # Create the forwarding rule  login@domain → destination
       rule_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules"
       rule_data = {
@@ -145,17 +142,15 @@ def do_bulk_email():
         error_count += 1
         _sync_status_to_db(domain, routing_enabled, current_user.realname)
         continue
-
       # Keep DB in sync after successful rule creation
       _sync_status_to_db(domain, routing_enabled, current_user.realname)
       rules = _get_routing_rules(zone_id, headers)
       _sync_rules_to_db(domain, rules)
-
+      domains_left_counter += 1
     except Exception as err:
       logging.error(f"do_bulk_email(): Unexpected error for domain {domain}: {err}")
       results.append(f"❌ {domain}: неочікувана помилка: {err}")
       error_count += 1
-
   results_html = "<br>".join(results)
   if error_count == 0:
     flash(f"Успішно оброблено {success_count} доменів!<br>{results_html}", "alert alert-success")
@@ -163,5 +158,4 @@ def do_bulk_email():
     flash(f"Помилки при обробці всіх {error_count} доменів!<br>{results_html}", "alert alert-danger")
   else:
     flash(f"Оброблено: {success_count} успішно, {error_count} з помилками.<br>{results_html}", "alert alert-warning")
-
   return redirect("/cloudflare_email_bulk/", 302)

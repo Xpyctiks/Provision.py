@@ -5,7 +5,6 @@ from db.database import CloudflareEmailsStatus, CloudflareEmailsRules, Domain_ac
 from functions.site_actions import is_admin
 
 cloudflare_email_dashboard_bp = Blueprint("cloudflare_email_dashboard", __name__)
-
 @cloudflare_email_dashboard_bp.route("/cloudflare_email_dashboard/", methods=['GET'])
 @login_required
 def show_cloudflare_email_dashboard():
