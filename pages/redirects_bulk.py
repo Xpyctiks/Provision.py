@@ -15,10 +15,16 @@ def show_redirects_bulk_page():
   accounts_options = "".join(
     f'<option value="{acc.account}">{acc.account}</option>' for acc in accounts
   )
+  #here we check file marker to make Apply button glow yellow if there is something to apply
+  if os.path.exists("/tmp/provision.marker"):
+    applyButton = "btn-warning"
+  else:
+    applyButton = "btn-outline-warning"
   return render_template(
     "template-redirects_bulk.html",
     accounts_options=accounts_options,
-    admin_panel=is_admin()
+    admin_panel=is_admin(),
+    applyButton=applyButton
   )
 
 @redirects_bulk_bp.route("/redirects_bulk/account_data", methods=['GET'])

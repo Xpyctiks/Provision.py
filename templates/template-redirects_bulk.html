@@ -141,10 +141,17 @@
           <!-- Submit -->
           <div class="d-flex justify-content-between align-items-center mb-4">
             <div id="selectedCountMsg" class="text-muted"></div>
-            <button type="submit" id="submitBtn" class="btn btn-success btn-lg px-5" onclick="showLoading()" disabled>
-              ✅ Застосувати до обраних доменів
-            </button>
+            <div class="d-flex gap-2">
+              <button type="submit" id="submitBtn" class="btn btn-success btn-lg px-5" onclick="showLoading()" disabled>
+                ✅ Створити редіректи для обраних доменів
+              </button>
+            </div>
           </div>
+        </form>
+        <form action="/action/" method="post" class="d-flex justify-content-end mb-4">
+          <button class="btn {{applyButton|safe}} btn-lg px-5" type="submit" name="applyChanges" value="apply" onclick="showLoading()">
+            🚀 Застосувати зміни на веб сервері
+          </button>
         </form>
       </div>
 

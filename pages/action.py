@@ -43,8 +43,11 @@ def do_action():
       del_selected_redirects(array,request.form.get("sitename","").strip())
       return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
     elif (request.form.get("applyChanges")):
-      applyChanges(request.form.get("sitename","").strip())
-      return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
+      sitename = request.form.get("sitename","").strip()
+      applyChanges(sitename)
+      if sitename:
+        return redirect(f"/redirects_manager?site={sitename}",302)
+      return redirect("/redirects_bulk/",302)
     #Git block
     elif (request.form.get("gitPull") and not request.form.get("selected")):
       makePull(request.form["gitPull"].strip())
