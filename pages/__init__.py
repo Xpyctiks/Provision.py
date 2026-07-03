@@ -12,6 +12,8 @@ from .login import login_bp
 from .logout import logout_bp
 from .logs import logs_bp
 from .provision import provision_bp
+from .redirects_bulk import redirects_bulk_bp
+from .redirects_dashboard import redirects_dashboard_bp
 from .redirects_manager import redirects_bp
 from .robots import robots_bp
 from .root import root_bp
@@ -33,6 +35,8 @@ blueprint.register_blueprint(login_bp)
 blueprint.register_blueprint(logout_bp)
 blueprint.register_blueprint(logs_bp)
 blueprint.register_blueprint(provision_bp)
+blueprint.register_blueprint(redirects_bulk_bp)
+blueprint.register_blueprint(redirects_dashboard_bp)
 blueprint.register_blueprint(redirects_bp)
 blueprint.register_blueprint(robots_bp)
 blueprint.register_blueprint(root_bp)

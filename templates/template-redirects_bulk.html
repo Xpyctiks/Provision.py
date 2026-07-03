@@ -40,9 +40,9 @@
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item active" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/redirects_bulk/" class="btn btn-secondary">🔀Bulk редіректи</a></li>
+          <li><a class="dropdown-item active" href="/redirects_bulk/" class="btn btn-secondary">🔀Bulk редіректи</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/redirects_dashboard/" class="btn btn-secondary">📈Дашборд редіректів</a></li>
           <li><hr class="dropdown-divider"></li>
@@ -65,7 +65,7 @@
       <!-- Account selector -->
       <div class="card mx-auto mb-3 mt-3">
         <div class="card-header">
-          <h4 style="text-align: center;">📮 Bulk Email Routing — масове створення правил пересилання пошти</h4>
+          <h4 style="text-align: center;">🔀 Bulk редіректи — масове створення 301 редіректів</h4>
         </div>
         <div class="card-body">
           <div class="row g-3 align-items-end">
@@ -79,7 +79,7 @@
             <div class="col-12 col-md-6 d-flex align-items-end">
               <div id="accountLoadingMsg" class="text-muted fst-italic" style="display:none;">
                 <span class="spinner-border spinner-border-sm text-warning me-1" role="status"></span>
-                Завантаження зон і адрес...
+                Завантаження доменів...
               </div>
               <div id="accountErrorMsg" class="text-danger" style="display:none;"></div>
             </div>
@@ -89,30 +89,32 @@
 
       <!-- Bulk action form (hidden until account is selected) -->
       <div id="bulkSection" style="display:none;">
-        <form method="POST" action="/cloudflare_email_bulk/" id="bulkForm">
+        <form method="POST" action="/redirects_bulk/" id="bulkForm">
           <input type="hidden" name="account" id="selectedAccount">
 
-          <!-- Step 2: destination + login -->
+          <!-- Step 2: redirect rule -->
           <div class="card mb-3">
             <div class="card-header">
-              <h5 class="mb-0">2. Налаштування правила</h5>
+              <h5 class="mb-0">2. Налаштування редіректу</h5>
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-12 col-md-6">
-                  <label for="destinationSelect" class="form-label fw-semibold">Адреса призначення (Destination Address):</label>
-                  <select id="destinationSelect" name="destination" class="form-select" required>
-                    <option value="">— Оберіть адресу —</option>
-                  </select>
-                  <div class="form-text">Тільки верифіковані адреси.</div>
+                <div class="col-12 col-md-5">
+                  <label for="redirectFromInput" class="form-label fw-semibold">Звідки (source URI):</label>
+                  <input type="text" id="redirectFromInput" name="RedirectFromField" class="form-control" placeholder="/page/" required autocomplete="off">
+                  <div class="form-text">Наприклад <code>/page/</code>, або <code>/</code> для кореня домену.</div>
                 </div>
-                <div class="col-12 col-md-6">
-                  <label for="loginInput" class="form-label fw-semibold">Логін нового email-адресу:</label>
-                  <div class="input-group">
-                    <input type="text" id="loginInput" name="login" class="form-control" placeholder="info" required autocomplete="off">
-                    <span class="input-group-text">@домен</span>
-                  </div>
-                  <div class="form-text">Буде створено: <strong id="emailPreview" class="text-primary">login@домен</strong></div>
+                <div class="col-12 col-md-5">
+                  <label for="redirectToInput" class="form-label fw-semibold">Куди (destination URI):</label>
+                  <input type="text" id="redirectToInput" name="RedirectToField" class="form-control" placeholder="/new_page/" required autocomplete="off">
+                  <div class="form-text">Наприклад <code>/new_page/</code>, або <code>/</code> для кореня кожного обраного домену.</div>
+                </div>
+                <div class="col-12 col-md-2">
+                  <label for="templateSelect" class="form-label fw-semibold">Тип:</label>
+                  <select id="templateSelect" name="templateField" class="form-select" required>
+                    <option value="strict">= Точний</option>
+                    <option value="catch_all">~ Всі схожі</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -175,7 +177,7 @@
 {% endif %}
 {% endwith %}
 
-<script src="{{ url_for('static', filename='js/cloudflare_email_bulk.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/redirects_bulk.js') }}" defer></script>
 </main>
 </body>
 </html>

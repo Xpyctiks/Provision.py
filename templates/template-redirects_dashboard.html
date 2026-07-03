@@ -1,18 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Automatic provision system for a lot of small sites">
-    <title>The Provision</title>
-    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
-    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
-    <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
-    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
-    <link href="{{ url_for('static', filename='css/admin_panel.css') }}" rel="stylesheet" crossorigin="anonymous">
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous" defer></script>
-  </head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Automatic provision system for a lot of small sites">
+  <title>The Provision</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/provision.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous" defer></script>
+</head>
 <body>
 <main>
 <div>
@@ -20,7 +20,7 @@
     <div class="container-fluid">
       <div class="d-flex align-items-center me-auto">
         <img src="{{ url_for('static', filename='images/favicon.svg') }}" alt="Logo" width="32" height="32">
-        <a class="navbar-brand" href="/">&nbsp;Панель адміністрування:</a>
+        <a class="navbar-brand" href="/">&nbsp;The Provision:</a>
         <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
       </div>
       <div class="dropdown mx-auto">
@@ -36,13 +36,15 @@
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_dstaddresses/" class="btn btn-secondary">📧Адреси призначення Email Routing</a></li>
+          <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/redirects_bulk/" class="btn btn-secondary">🔀Bulk редіректи</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/redirects_dashboard/" class="btn btn-secondary">📈Дашборд редіректів</a></li>
+          <li><a class="dropdown-item active" href="/redirects_dashboard/" class="btn btn-secondary">📈Дашборд редіректів</a></li>
           <li><hr class="dropdown-divider"></li>
           {{admin_panel|safe}}
         </ul>
@@ -55,38 +57,58 @@
     </div>
   </nav>
 </div>
-<ul class="nav nav-tabs">
-  <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/admin_panel/settings/">Налаштування:</a></li>
-  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/admin_panel/users/">Користувачі:</a></li>
-  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/admin_panel/templates/">Шаблони сайтів:</a></li>
-  <li class="nav-item"><a class="nav-link {{active4|safe}}" href="/admin_panel/cloudflare/">Аккаунти Cloudflare:</a></li>
-  <li class="nav-item"><a class="nav-link {{active5|safe}}" href="/admin_panel/owners/">Власники доменів:</a></li>
-  <li class="nav-item"><a class="nav-link {{active6|safe}}" href="/admin_panel/servers/">Сервери та їх IP:</a></li>
-  <li class="nav-item"><a class="nav-link {{active7|safe}}" href="/admin_panel/links/">Зв'язок домен-аккаунт:</a></li>
-  <li class="nav-item"><a class="nav-link {{active8|safe}}" href="/admin_panel/accounts/">Прив'яка аккаунта CF до власника:</a></li>
-  <li class="nav-item"><a class="nav-link {{active9|safe}}" href="/admin_panel/messages/">Массові повідомлення:</a></li>
-  <li class="nav-item"><a class="nav-link {{active10|safe}}" href="/admin_panel/restrictions/">Обмеження показу сайтів:</a></li>
-</ul>
-<br>
-{{data|safe}}
-<script src="{{ url_for('static', filename='js/admin_panel.js') }}" defer></script>
-</main>
+<div class="container-fluid px-2">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <div class="card mx-auto mb-3 mt-3">
+        <div class="card-header">
+          <h4 style="text-align: center;">📈 Дашборд 301 редіректів по всіх доменах</h4>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-end mb-3">
+            <select id="accountFilter" class="form-select form-select" style="max-width: 320px;">
+              <option value="">🌏 Усі аккаунти Cloudflare</option>
+              {{cf_accounts_list|safe}}
+            </select>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="redirectsDashboardTable">
+              <thead>
+                <tr class="table-warning">
+                  <th scope="col" style="width: 5%;">#</th>
+                  <th scope="col" style="width: 22%;" class="sortable" data-sort-type="text">Домен:</th>
+                  <th scope="col" style="width: 17%;" class="sortable" data-sort-type="text">Cloudflare акаунт:</th>
+                  <th scope="col" style="width: 34%;">Редіректи:</th>
+                  <th scope="col" style="width: 14%;" class="sortable" data-sort-type="date">Оновлено:</th>
+                  <th scope="col" style="width: 8%;">Дії:</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{rows_html|safe}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="myModalLabel">Інформація:</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
-        <ul class=flashes style="margin-top: 33px; white-space: pre-line;" id="message">
+        <ul class=flashes style="margin-top: 33px;" id="message">
           {% for category, message in messages %}
-          <li class="{{ category }}">{{ message|safe }}</li>
+          <li class="{{ category }}">{{ message|safe}}</li>
           {% endfor %}
         </ul>
-      </div>    
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Got it</button>
       </div>
@@ -95,5 +117,7 @@
 </div>
 {% endif %}
 {% endwith %}
+<script src="{{ url_for('static', filename='js/redirects_dashboard.js') }}" defer></script>
+</main>
 </body>
 </html>

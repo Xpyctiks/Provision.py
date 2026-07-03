@@ -308,6 +308,35 @@ def enable_site(sitename: str) -> bool:
     logging.error(f"enable_site(): global error {msg}")
     return False
   
+def sync_redirects_to_db(sitename: str, actor: str = "system") -> None:
+  """Re-parses the 301-<sitename>.conf redirects file and rewrites the RedirectsRules rows for this site in DB, so the redirects dashboard stays fast and in sync"""
+  try:
+    conf_dir = current_app.config.get("NGX_ADD_CONF_DIR","")
+    if not conf_dir:
+      logging.error(f"sync_redirects_to_db(): conf_dir variable is empty!")
+      return
+    file301 = os.path.join(conf_dir,"301-" + sitename + ".conf")
+    RedirectsRules.query.filter_by(domain=sitename).delete()
+    if os.path.exists(file301):
+      with open(file301, "r", encoding="utf-8") as f:
+        content = f.read()
+      pattern = re.compile(
+        r'location\s+(?P<modifier>=|~\*|~|~\^)?\s*(?P<path>\S+)\s*\{[^}]*?return\s+(?P<code>\d{3})\s+(?P<target>[^;]+);',
+        re.DOTALL
+      )
+      for match in pattern.finditer(content):
+        db.session.add(RedirectsRules(
+          domain=sitename,
+          from_path=match.group("path"),
+          to_path=match.group("target").strip(),
+          redirect_type=match.group("modifier") or "",
+          updatedby=actor
+        ))
+    db.session.commit()
+    logging.info(f"sync_redirects_to_db(): Redirects DB cache updated for {sitename}")
+  except Exception as msg:
+    logging.error(f"sync_redirects_to_db(): global error for {sitename}: {msg}")
+
 def del_redirect(location: str,sitename: str, callable: int = 0) -> bool:
   """Redirect-manager page: deletes one redirect,selected by Delete button on it.Don't applies changes immediately. Requires redirect "from location" and "sitename" as a parameter"""
   try:
@@ -340,6 +369,7 @@ def del_redirect(location: str,sitename: str, callable: int = 0) -> bool:
         with open(file301, "w", encoding="utf-8") as f:
           f.write(new_content)
         logging.info(f"del_redirect(): Redirect path {location} of {sitename} was deleted successfully")
+        sync_redirects_to_db(sitename, current_user.realname)
         #if callable=0 that means there is single deletion.Creating a marker file after we have done.
         if callable == 0:
           #here we create a marker file which makes "Apply changes" button to glow yellow

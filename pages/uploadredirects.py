@@ -4,7 +4,7 @@ import re
 from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
-from functions.site_actions import normalize_domain,is_admin
+from functions.site_actions import normalize_domain,is_admin,sync_redirects_to_db
 
 uploadredir_bp = Blueprint("upload_redirects", __name__)
 @uploadredir_bp.route("/upload_redirects/", methods=['POST'])
@@ -59,6 +59,7 @@ def uploadredir_file():
       logging.info(f"uploadredir_file(): New redirects were saved to {file301}")
       os.unlink(filename)
       logging.info(f"uploadredir_file(): Uploaded CSV file {filename} was deleted")
+      sync_redirects_to_db(sitename, current_user.realname)
       #here we create a marker file which makes "Apply changes" button to glow yellow
       if not os.path.exists("/tmp/provision.marker"):
         with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
@@ -95,6 +96,7 @@ def uploadredir_file():
 """
       with open(file301, "a", encoding="utf-8") as f:
         f.write(template)
+      sync_redirects_to_db(sitename, current_user.realname)
       #here we create a marker file which makes "Apply changes" button to glow yellow
       if not os.path.exists("/tmp/provision.marker"):
         with open("/tmp/provision.marker", 'w',encoding='utf8') as file3:
