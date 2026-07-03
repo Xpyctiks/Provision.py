@@ -658,10 +658,13 @@ def unhide_site(sitename: str) -> bool:
     flash(f"Помилка розкриття сайту {sitename}! Дивіться логи.","alert alert-danger")
     return False
 
-def clearCache() -> bool:
+def clearCache(realname: str = "") -> bool:
   """GET request: clears web page cache"""
   try:
-    CACHE_KEY = f"user:{current_user.realname}"
+    if not realname:
+      CACHE_KEY = f"user:{current_user.realname}"
+    else:
+      CACHE_KEY = f"user:{realname}"
     page_cache.delete(CACHE_KEY)
     return True
   except Exception as err:
