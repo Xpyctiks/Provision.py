@@ -3,6 +3,7 @@ from flask import redirect,flash,Blueprint,session,request,current_app
 from flask_login import current_user
 from flask_login import logout_user, login_required, current_user
 from functions.send_to_telegram import send_to_telegram
+from functions.site_actions import clearCache
 
 logout_bp = Blueprint("logout", __name__)
 @logout_bp.route("/logout/", methods=['POST'])
@@ -15,6 +16,7 @@ def do_logout():
     logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {current_user.realname} IP:{ip}, Real-IP:{real_ip} is logging out...")
     logout_user()
     session.clear()
+    clearCache()
     authelia_logout_url = current_app.config.get("AUTHELIA_LOGOUT_URL", "")
     if authelia_logout_url:
       return redirect(authelia_logout_url, 302)
