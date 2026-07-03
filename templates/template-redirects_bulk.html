@@ -57,11 +57,9 @@
     </div>
   </nav>
 </div>
-
 <div class="container-fluid px-2">
   <div class="row justify-content-center">
     <div class="col-12 col-xl-10">
-
       <!-- Account selector -->
       <div class="card mx-auto mb-3 mt-3">
         <div class="card-header">
@@ -86,12 +84,10 @@
           </div>
         </div>
       </div>
-
       <!-- Bulk action form (hidden until account is selected) -->
       <div id="bulkSection" style="display:none;">
         <form method="POST" action="/redirects_bulk/" id="bulkForm">
           <input type="hidden" name="account" id="selectedAccount">
-
           <!-- Step 2: redirect rule -->
           <div class="card mb-3">
             <div class="card-header">
@@ -119,7 +115,6 @@
               </div>
             </div>
           </div>
-
           <!-- Step 3: domains list -->
           <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -137,16 +132,15 @@
               <div id="noDomainsMsg" class="text-muted text-center py-3" style="display:none;">Немає доменів для відображення</div>
             </div>
           </div>
-
           <!-- Submit -->
           <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <div id="selectedCountMsg" class="text-muted"></div>
             <div class="d-flex gap-2 flex-wrap">
               <button type="submit" form="bulkForm" id="submitBtn" class="btn btn-success btn-lg px-5" onclick="showLoading()" disabled>
-                ✅ Створити редіректи для обраних доменів
+                ✅ 1. Створити редіректи для обраних доменів
               </button>
               <button type="submit" form="applyForm" class="btn {{applyButton|safe}} btn-lg px-5" name="applyChanges" value="apply" onclick="showLoading()">
-                🚀 Застосувати зміни на веб сервері
+                🚀 2. Застосувати зміни на веб сервері
               </button>
             </div>
           </div>
@@ -156,7 +150,6 @@
     </div>
   </div>
 </div>
-
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -181,7 +174,6 @@
 </div>
 {% endif %}
 {% endwith %}
-
 <script src="{{ url_for('static', filename='js/redirects_bulk.js') }}" defer></script>
 </main>
 </body>
