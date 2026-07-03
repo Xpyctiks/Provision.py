@@ -14,9 +14,9 @@ def do_logout():
     ip = request.remote_addr
     real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
     logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {current_user.realname} IP:{ip}, Real-IP:{real_ip} is logging out...")
+    clearCache()
     logout_user()
     session.clear()
-    clearCache(current_user.realname)
     authelia_logout_url = current_app.config.get("AUTHELIA_LOGOUT_URL", "")
     if authelia_logout_url:
       return redirect(authelia_logout_url, 302)
