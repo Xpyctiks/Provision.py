@@ -139,22 +139,20 @@
           </div>
 
           <!-- Submit -->
-          <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <div id="selectedCountMsg" class="text-muted"></div>
-            <div class="d-flex gap-2">
-              <button type="submit" id="submitBtn" class="btn btn-success btn-lg px-5" onclick="showLoading()" disabled>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="submit" form="bulkForm" id="submitBtn" class="btn btn-success btn-lg px-5" onclick="showLoading()" disabled>
                 ✅ Створити редіректи для обраних доменів
+              </button>
+              <button type="submit" form="applyForm" class="btn {{applyButton|safe}} btn-lg px-5" name="applyChanges" value="apply" onclick="showLoading()">
+                🚀 Застосувати зміни на веб сервері
               </button>
             </div>
           </div>
         </form>
-        <form action="/action/" method="post" class="d-flex justify-content-end mb-4">
-          <button class="btn {{applyButton|safe}} btn-lg px-5" type="submit" name="applyChanges" value="apply" onclick="showLoading()">
-            🚀 Застосувати зміни на веб сервері
-          </button>
-        </form>
+        <form id="applyForm" action="/action/" method="post"></form>
       </div>
-
     </div>
   </div>
 </div>
