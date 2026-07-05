@@ -11,8 +11,57 @@ document.querySelectorAll('.dropdown-item.account').forEach(item => {
     let value2 = this.getAttribute('data-value');
     document.getElementById('selected_account').value = value2;
     document.getElementById('Account').innerText = value2;
+    const dnsAccount = document.getElementById('dns_account');
+    if (dnsAccount) {
+      dnsAccount.value = value2;
+      loadDnsDomains(value2);
+    }
   });
-}); 
+});
+
+// ── DNS record collapsible container ─────────────────────────────────────────
+
+function loadDnsDomains(account) {
+  const select = document.getElementById('dnsDomainSelect');
+  if (!select) return;
+  if (!account) {
+    select.innerHTML = '<option value="">— Спочатку оберіть аккаунт вище —</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">— Завантаження доменів... —</option>';
+  fetch('/cloudflare_domains/zones/?account=' + encodeURIComponent(account))
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        select.innerHTML = '<option value="">Помилка: ' + data.error + '</option>';
+        return;
+      }
+      if (!data.zones.length) {
+        select.innerHTML = '<option value="">Немає доменів на цьому аккаунті</option>';
+        return;
+      }
+      select.innerHTML = '<option value="">— Оберіть домен —</option>' +
+        data.zones.map(name => `<option value="${name}">${name}</option>`).join('');
+    })
+    .catch(() => {
+      select.innerHTML = '<option value="">Помилка завантаження доменів</option>';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const dnsAccount = document.getElementById('dns_account');
+  if (dnsAccount) {
+    loadDnsDomains(dnsAccount.value);
+  }
+  const recordType = document.getElementById('recordType');
+  if (recordType) {
+    recordType.addEventListener('change', function () {
+      const type = this.value;
+      document.getElementById('priorityWrapper').style.display = (type === 'MX') ? 'block' : 'none';
+      document.getElementById('proxiedWrapper').style.display = (['A', 'AAAA', 'CNAME'].includes(type)) ? 'flex' : 'none';
+    });
+  }
+});
 
 function showLoading() {
   const spinner = document.getElementById("spinnerLoading");

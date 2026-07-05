@@ -93,6 +93,71 @@
           </form>
         </div>
       </div>
+      <div class="card mx-auto mt-3">
+        <div class="card-header p-0">
+          <button class="btn btn-link w-100 text-decoration-none py-3" type="button" data-bs-toggle="collapse" data-bs-target="#dnsRecordCollapse" aria-expanded="false" aria-controls="dnsRecordCollapse">
+            <h4 style="text-align:center;margin:0;">🛠️ Додати DNS запис до існуючого домену</h4>
+          </button>
+        </div>
+        <div class="collapse" id="dnsRecordCollapse">
+          <div class="card-body">
+            <form action="/cloudflare_domains/add_dns_record/" method="POST" id="dnsRecordForm" class="needs-validation" novalidate>
+              <input type="hidden" name="dns_account" id="dns_account" value="{{first_cf|safe}}">
+              <div class="mb-3">
+                <h5 class="card-title">Оберіть домен на обраному вище аккаунті:</h5>
+                <select class="form-select" id="dnsDomainSelect" name="dns_domain" required>
+                  <option value="">— Завантаження доменів... —</option>
+                </select>
+              </div>
+              <div class="row g-3">
+                <div class="col-12 col-md-3">
+                  <label class="form-label fw-semibold">Тип запису:</label>
+                  <select class="form-select" id="recordType" name="record_type" required>
+                    <option value="A">A</option>
+                    <option value="AAAA">AAAA</option>
+                    <option value="CNAME">CNAME</option>
+                    <option value="TXT">TXT</option>
+                    <option value="MX">MX</option>
+                    <option value="NS">NS</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label fw-semibold">Ім'я (name):</label>
+                  <input type="text" class="form-control" name="record_name" id="recordName" placeholder="@ або www" required>
+                </div>
+                <div class="col-12 col-md-5">
+                  <label class="form-label fw-semibold">Значення (content):</label>
+                  <input type="text" class="form-control" name="record_content" id="recordContent" required>
+                </div>
+              </div>
+              <div class="row g-3 mt-1 align-items-center">
+                <div class="col-12 col-md-3">
+                  <label class="form-label fw-semibold">TTL:</label>
+                  <select class="form-select" name="record_ttl">
+                    <option value="1">Auto</option>
+                    <option value="300">5 хв</option>
+                    <option value="3600">1 год</option>
+                    <option value="86400">1 доба</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-3" id="priorityWrapper" style="display:none;">
+                  <label class="form-label fw-semibold">Пріоритет (MX):</label>
+                  <input type="number" class="form-control" name="record_priority" id="recordPriority" value="10">
+                </div>
+                <div class="col-12 col-md-3 d-flex align-items-center" id="proxiedWrapper">
+                  <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" name="record_proxied" id="recordProxied">
+                    <label class="form-check-label" for="recordProxied">Proxied (хмарка)</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <button type="submit" class="btn btn-info w-100" onclick="showLoading()">➕ Додати DNS запис</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>       
 </div>

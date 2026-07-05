@@ -2,11 +2,11 @@ import logging
 import requests
 import json
 import html
-from flask import render_template,request,redirect,flash,Blueprint
+from flask import render_template,request,redirect,flash,Blueprint,jsonify
 from flask_login import login_required,current_user
 from db.database import Cloudflare
 from functions.site_actions import normalize_domain,is_admin
-from functions.pages_forms import loadClodflareAccounts
+from functions.pages_forms import loadClodflareAccounts,_load_zones_for_account
 
 cloudflare_domains_bp = Blueprint("cloudflare_domains", __name__)
 @cloudflare_domains_bp.route("/cloudflare_domains/", methods=['GET'])
@@ -227,3 +227,76 @@ def del_existingDomain():
     logging.error(f"del_existingDomain(): POST process error by {current_user.realname}: {err}")
     flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
     return redirect(f"/cloudflare_domains/",302)
+
+@cloudflare_domains_bp.route("/cloudflare_domains/zones/", methods=['GET'])
+@login_required
+def get_cloudflareZones():
+  """AJAX: returns all domain names for the selected Cloudflare account, used to populate the DNS record form"""
+  account = (request.args.get("account") or "").strip()
+  if not account:
+    return jsonify({"error": "Аккаунт не вказано"}), 400
+  acc = Cloudflare.query.filter_by(account=account).first()
+  if not acc:
+    return jsonify({"error": "Аккаунт не знайдено в базі"}), 404
+  zones = _load_zones_for_account(acc)
+  return jsonify({"zones": sorted(zones.keys())})
+
+@cloudflare_domains_bp.route("/cloudflare_domains/add_dns_record/", methods=['POST'])
+@login_required
+def add_dns_record():
+  """POST request processor: adds a new DNS record to the selected domain on the selected Cloudflare account"""
+  try:
+    account = (request.form.get("dns_account") or "").strip()
+    domain = (request.form.get("dns_domain") or "").strip()
+    record_type = (request.form.get("record_type") or "").strip().upper()
+    record_name = (request.form.get("record_name") or "").strip()
+    record_content = (request.form.get("record_content") or "").strip()
+    ttl = (request.form.get("record_ttl") or "1").strip()
+    priority = (request.form.get("record_priority") or "").strip()
+    proxied = request.form.get("record_proxied") == "on"
+    logging.info(f"-----------------------New DNS record addition requested by {current_user.realname}: account={account}, domain={domain}, type={record_type}, name={record_name}, content={record_content}-----------------")
+    if not account or not domain or not record_type or not record_name or not record_content:
+      flash("Помилка! Не всі обов'язкові поля заповнені для додавання DNS запису!", "alert alert-danger")
+      return redirect("/cloudflare_domains/", 302)
+    tkn = Cloudflare.query.filter_by(account=account).first()
+    if not tkn:
+      logging.error(f"add_dns_record(): Token for CF account {account} is not found in DB!")
+      flash(f"Помилка! API токен для аккаунту {account} не знайдено в базі!", "alert alert-danger")
+      return redirect("/cloudflare_domains/", 302)
+    headers = {
+      "X-Auth-Email": account,
+      "X-Auth-Key": tkn.token,
+      "Content-Type": "application/json"
+    }
+    url_zone_id = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
+    result_zone_id = requests.get(url_zone_id, headers=headers).json()
+    if not (result_zone_id.get("success") and result_zone_id.get("result")):
+      logging.error(f"add_dns_record(): Error retreiving zone_id for domain {domain}!")
+      flash(f"Помилка! Не вдалося отримати ID домену {domain}!", "alert alert-danger")
+      return redirect("/cloudflare_domains/", 302)
+    zone_id = result_zone_id["result"][0]["id"]
+    data = {
+      "type": record_type,
+      "name": record_name,
+      "content": record_content,
+      "ttl": int(ttl) if ttl.isdigit() else 1,
+      "comment": "Provision manual DNS record."
+    }
+    if record_type in ("A", "AAAA", "CNAME"):
+      data["proxied"] = proxied
+    if record_type == "MX":
+      data["priority"] = int(priority) if priority.isdigit() else 10
+    url_add_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
+    result_add_record = requests.post(url_add_record, headers=headers, json=data).json()
+    if result_add_record.get("success"):
+      logging.info(f"add_dns_record(): DNS record {record_type} {record_name} -> {record_content} added successfully for {domain} by {current_user.realname}")
+      flash(f"DNS запис {record_type} {record_name} → {record_content} успішно додано для домену {domain}!", "alert alert-success")
+    else:
+      error_msg = (result_add_record.get("errors", [{}])[0].get("message", "Unknown error"))
+      logging.error(f"add_dns_record(): Error adding DNS record for {domain}: {result_add_record}")
+      flash(f"Помилка при додаванні DNS запису: <strong>{error_msg}</strong>!", "alert alert-danger")
+    return redirect("/cloudflare_domains/", 302)
+  except Exception as err:
+    logging.error(f"add_dns_record(): general error by {current_user.realname}: {err}")
+    flash("Неочікувана помилка при додаванні DNS запису, дивіться логи!", "alert alert-danger")
+    return redirect("/cloudflare_domains/", 302)
