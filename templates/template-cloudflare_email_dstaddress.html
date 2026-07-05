@@ -34,6 +34,8 @@
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
           <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
@@ -55,7 +57,7 @@
 </div>
 <div class="container">
   <div class="row justify-content-center">
-    <div class="col-12 col-md-10 col-lg-8 col-xl-8">
+    <div class="col-12 col-md-12 col-lg-12 col-xl-12" style="margin-top: -40px;">
       <div class="card mx-auto mb-3">
         <div class="card-header">
           <h4 style="text-align: center;">📧 Адреси призначення Email Routing</h4>
@@ -70,7 +72,6 @@
           </div>
         </div>
       </div>
-
       {% if selected_account %}
       <div class="card mx-auto mb-3">
         <div class="card-header">
@@ -103,7 +104,6 @@
         </div>
       </div>
       {% endif %}
-
       <div class="d-grid mt-2 col-12 col-md-4 mx-auto mb-3">
         <a href="/" class="btn btn-info w-100">⬅На головну</a>
       </div>

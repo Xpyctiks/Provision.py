@@ -61,7 +61,177 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('proxiedWrapper').style.display = (['A', 'AAAA', 'CNAME'].includes(type)) ? 'flex' : 'none';
     });
   }
+  const dnsDomainSelect = document.getElementById('dnsDomainSelect');
+  if (dnsDomainSelect) {
+    dnsDomainSelect.addEventListener('change', function () {
+      loadDnsRecords(document.getElementById('dns_account').value, this.value);
+    });
+  }
 });
+
+// ── Existing DNS records list (view / edit / delete) ─────────────────────────
+
+const RECORD_TYPES = ['A', 'AAAA', 'CNAME', 'TXT', 'MX', 'NS'];
+
+function loadDnsRecords(account, domain) {
+  const container = document.getElementById('existingRecordsContainer');
+  if (!container) return;
+  if (!account || !domain) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm" role="status"></div> Завантаження записів...</div>';
+  fetch('/cloudflare_domains/dns_records/?account=' + encodeURIComponent(account) + '&domain=' + encodeURIComponent(domain))
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        container.innerHTML = '<div class="alert alert-danger py-2 mb-0">Помилка: ' + escapeHtml(data.error) + '</div>';
+        return;
+      }
+      renderDnsRecords(data.records);
+    })
+    .catch(err => {
+      container.innerHTML = '<div class="alert alert-danger py-2 mb-0">Помилка завантаження: ' + escapeHtml(String(err)) + '</div>';
+    });
+}
+
+function renderDnsRecords(records) {
+  const container = document.getElementById('existingRecordsContainer');
+  if (!container) return;
+  if (!records.length) {
+    container.innerHTML = '<div class="text-muted text-center py-2">Немає DNS записів для цього домену</div>';
+    return;
+  }
+  let rows = '';
+  records.forEach(rec => {
+    const showProxied = ['A', 'AAAA', 'CNAME'].includes(rec.type);
+    const showPriority = rec.type === 'MX';
+    const typeOptions = RECORD_TYPES.map(t => `<option value="${t}" ${t === rec.type ? 'selected' : ''}>${t}</option>`).join('');
+    const actions = rec.locked
+      ? '<span class="badge bg-secondary" data-bs-toggle="tooltip" title="Системний запис, керується Cloudflare">🔒 Системний</span>'
+      : '<button type="button" class="btn btn-sm btn-success save-record-btn" title="Зберегти">💾</button> ' +
+        '<button type="button" class="btn btn-sm btn-danger delete-record-btn" title="Видалити">❌</button>';
+    rows += `<tr data-record-id="${escapeHtml(rec.id)}">
+      <td><select class="form-select form-select-sm rec-type" ${rec.locked ? 'disabled' : ''}>${typeOptions}</select></td>
+      <td><input type="text" class="form-control form-control-sm rec-name" value="${escapeHtml(rec.name)}" ${rec.locked ? 'disabled' : ''}></td>
+      <td><input type="text" class="form-control form-control-sm rec-content" value="${escapeHtml(rec.content || '')}" ${rec.locked ? 'disabled' : ''}></td>
+      <td>
+        <select class="form-select form-select-sm rec-ttl" ${rec.locked ? 'disabled' : ''}>
+          <option value="1" ${rec.ttl === 1 ? 'selected' : ''}>Auto</option>
+          <option value="300" ${rec.ttl === 300 ? 'selected' : ''}>5 хв</option>
+          <option value="3600" ${rec.ttl === 3600 ? 'selected' : ''}>1 год</option>
+          <option value="86400" ${rec.ttl === 86400 ? 'selected' : ''}>1 доба</option>
+        </select>
+      </td>
+      <td class="text-center"><input type="checkbox" class="form-check-input rec-proxied" ${rec.proxied ? 'checked' : ''} ${rec.locked ? 'disabled' : ''} style="${showProxied ? '' : 'display:none;'}"></td>
+      <td><input type="number" class="form-control form-control-sm rec-priority" value="${rec.priority != null ? rec.priority : ''}" ${rec.locked ? 'disabled' : ''} style="${showPriority ? '' : 'display:none;'}"></td>
+      <td class="text-nowrap">${actions}</td>
+    </tr>`;
+  });
+  container.innerHTML = `<div class="table-responsive"><table class="table table-bordered table-sm align-middle mb-0">
+    <thead><tr>
+      <th style="width:9%">Тип</th>
+      <th style="width:20%">Ім'я</th>
+      <th style="width:23%">Значення</th>
+      <th style="width:9%">TTL</th>
+      <th style="width:8%">Proxied</th>
+      <th style="width:9%">Пріоритет</th>
+      <th style="width:22%">Дії</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+
+  container.querySelectorAll('.rec-type').forEach(sel => {
+    sel.addEventListener('change', function () {
+      const row = this.closest('tr');
+      const type = this.value;
+      row.querySelector('.rec-proxied').style.display = RECORD_TYPES.slice(0, 3).includes(type) ? '' : 'none';
+      row.querySelector('.rec-priority').style.display = (type === 'MX') ? '' : 'none';
+    });
+  });
+
+  container.querySelectorAll('.save-record-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      saveDnsRecord(this.closest('tr'));
+    });
+  });
+
+  container.querySelectorAll('.delete-record-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      deleteDnsRecord(this.closest('tr'));
+    });
+  });
+
+  const tooltips = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltips.map(el => new bootstrap.Tooltip(el));
+}
+
+function saveDnsRecord(row) {
+  const account = document.getElementById('dns_account').value;
+  const domain = document.getElementById('dnsDomainSelect').value;
+  const formData = new FormData();
+  formData.append('dns_account', account);
+  formData.append('dns_domain', domain);
+  formData.append('record_id', row.dataset.recordId);
+  formData.append('record_type', row.querySelector('.rec-type').value);
+  formData.append('record_name', row.querySelector('.rec-name').value);
+  formData.append('record_content', row.querySelector('.rec-content').value);
+  formData.append('record_ttl', row.querySelector('.rec-ttl').value);
+  formData.append('record_priority', row.querySelector('.rec-priority').value);
+  formData.append('record_proxied', row.querySelector('.rec-proxied').checked ? 'true' : 'false');
+
+  const saveBtn = row.querySelector('.save-record-btn');
+  saveBtn.disabled = true;
+  fetch('/cloudflare_domains/dns_records/update/', { method: 'POST', body: formData })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        loadDnsRecords(account, domain);
+      } else {
+        saveBtn.disabled = false;
+        alert('Помилка збереження: ' + (data.error || 'Невідома помилка'));
+      }
+    })
+    .catch(err => {
+      saveBtn.disabled = false;
+      alert('Помилка збереження: ' + err);
+    });
+}
+
+function deleteDnsRecord(row) {
+  if (!confirm('⚠Видалити цей DNS запис?')) return;
+  const account = document.getElementById('dns_account').value;
+  const domain = document.getElementById('dnsDomainSelect').value;
+  const formData = new FormData();
+  formData.append('dns_account', account);
+  formData.append('dns_domain', domain);
+  formData.append('record_id', row.dataset.recordId);
+
+  const delBtn = row.querySelector('.delete-record-btn');
+  delBtn.disabled = true;
+  fetch('/cloudflare_domains/dns_records/delete/', { method: 'POST', body: formData })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        loadDnsRecords(account, domain);
+      } else {
+        delBtn.disabled = false;
+        alert('Помилка видалення: ' + (data.error || 'Невідома помилка'));
+      }
+    })
+    .catch(err => {
+      delBtn.disabled = false;
+      alert('Помилка видалення: ' + err);
+    });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function showLoading() {
   const spinner = document.getElementById("spinnerLoading");

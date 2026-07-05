@@ -57,13 +57,11 @@
     </div>
   </nav>
 </div>
-
 <div class="container-fluid px-2">
   <div class="row justify-content-center">
-    <div class="col-12 col-xl-10">
-
+    <div class="col-12 col-xl-12">
       <!-- Account selector -->
-      <div class="card mx-auto mb-3 mt-3">
+      <div class="card mx-auto mb-3" style="margin-top: -40px;">
         <div class="card-header">
           <h4 style="text-align: center;">📮 Bulk Email Routing — масове створення правил пересилання пошти</h4>
         </div>
@@ -86,12 +84,10 @@
           </div>
         </div>
       </div>
-
       <!-- Bulk action form (hidden until account is selected) -->
       <div id="bulkSection" style="display:none;">
         <form method="POST" action="/cloudflare_email_bulk/" id="bulkForm">
           <input type="hidden" name="account" id="selectedAccount">
-
           <!-- Step 2: destination + login -->
           <div class="card mb-3">
             <div class="card-header">
@@ -117,7 +113,6 @@
               </div>
             </div>
           </div>
-
           <!-- Step 3: domains list -->
           <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -135,7 +130,6 @@
               <div id="noDomainsMsg" class="text-muted text-center py-3" style="display:none;">Немає доменів для відображення</div>
             </div>
           </div>
-
           <!-- Submit -->
           <div class="d-flex justify-content-between align-items-center mb-4">
             <div id="selectedCountMsg" class="text-muted"></div>
@@ -149,7 +143,6 @@
     </div>
   </div>
 </div>
-
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -174,7 +167,6 @@
 </div>
 {% endif %}
 {% endwith %}
-
 <script src="{{ url_for('static', filename='js/cloudflare_email_bulk.js') }}" defer></script>
 </main>
 </body>

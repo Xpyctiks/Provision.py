@@ -241,6 +241,22 @@ def get_cloudflareZones():
   zones = _load_zones_for_account(acc)
   return jsonify({"zones": sorted(zones.keys())})
 
+def _cf_zone_context(account: str, domain: str):
+  """Looks up the API headers and zone_id for the given CF account/domain pair. Returns (headers, zone_id, error) where error is None on success."""
+  tkn = Cloudflare.query.filter_by(account=account).first()
+  if not tkn:
+    return None, None, f"API токен для аккаунту {account} не знайдено в базі!"
+  headers = {
+    "X-Auth-Email": account,
+    "X-Auth-Key": tkn.token,
+    "Content-Type": "application/json"
+  }
+  url_zone_id = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
+  result_zone_id = requests.get(url_zone_id, headers=headers).json()
+  if not (result_zone_id.get("success") and result_zone_id.get("result")):
+    return headers, None, f"Не вдалося отримати ID домену {domain}!"
+  return headers, result_zone_id["result"][0]["id"], None
+
 @cloudflare_domains_bp.route("/cloudflare_domains/add_dns_record/", methods=['POST'])
 @login_required
 def add_dns_record():
@@ -258,23 +274,11 @@ def add_dns_record():
     if not account or not domain or not record_type or not record_name or not record_content:
       flash("Помилка! Не всі обов'язкові поля заповнені для додавання DNS запису!", "alert alert-danger")
       return redirect("/cloudflare_domains/", 302)
-    tkn = Cloudflare.query.filter_by(account=account).first()
-    if not tkn:
-      logging.error(f"add_dns_record(): Token for CF account {account} is not found in DB!")
-      flash(f"Помилка! API токен для аккаунту {account} не знайдено в базі!", "alert alert-danger")
+    headers, zone_id, error = _cf_zone_context(account, domain)
+    if error:
+      logging.error(f"add_dns_record(): {error}")
+      flash(f"Помилка! {error}", "alert alert-danger")
       return redirect("/cloudflare_domains/", 302)
-    headers = {
-      "X-Auth-Email": account,
-      "X-Auth-Key": tkn.token,
-      "Content-Type": "application/json"
-    }
-    url_zone_id = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
-    result_zone_id = requests.get(url_zone_id, headers=headers).json()
-    if not (result_zone_id.get("success") and result_zone_id.get("result")):
-      logging.error(f"add_dns_record(): Error retreiving zone_id for domain {domain}!")
-      flash(f"Помилка! Не вдалося отримати ID домену {domain}!", "alert alert-danger")
-      return redirect("/cloudflare_domains/", 302)
-    zone_id = result_zone_id["result"][0]["id"]
     data = {
       "type": record_type,
       "name": record_name,
@@ -300,3 +304,114 @@ def add_dns_record():
     logging.error(f"add_dns_record(): general error by {current_user.realname}: {err}")
     flash("Неочікувана помилка при додаванні DNS запису, дивіться логи!", "alert alert-danger")
     return redirect("/cloudflare_domains/", 302)
+
+@cloudflare_domains_bp.route("/cloudflare_domains/dns_records/", methods=['GET'])
+@login_required
+def get_dns_records():
+  """AJAX: returns existing DNS records for the selected domain, used to populate the editable records list"""
+  account = (request.args.get("account") or "").strip()
+  domain = (request.args.get("domain") or "").strip()
+  if not account or not domain:
+    return jsonify({"error": "Аккаунт або домен не вказано"}), 400
+  headers, zone_id, error = _cf_zone_context(account, domain)
+  if error:
+    logging.error(f"get_dns_records(): {error}")
+    return jsonify({"error": error}), 400
+  try:
+    records = []
+    page = 1
+    while True:
+      url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?per_page=100&page={page}"
+      r = requests.get(url, headers=headers, timeout=10).json()
+      if not r.get("success"):
+        logging.error(f"get_dns_records(): Failed to load DNS records for {domain}: {r.get('errors')}")
+        return jsonify({"error": "Не вдалося завантажити DNS записи"}), 502
+      for rec in r.get("result", []):
+        records.append({
+          "id": rec.get("id"),
+          "type": rec.get("type"),
+          "name": rec.get("name"),
+          "content": rec.get("content"),
+          "ttl": rec.get("ttl"),
+          "proxied": rec.get("proxied", False),
+          "priority": rec.get("priority"),
+          "locked": rec.get("locked", False)
+        })
+      if page >= r.get("result_info", {}).get("total_pages", 1):
+        break
+      page += 1
+    records.sort(key=lambda x: (x["type"], x["name"]))
+    return jsonify({"records": records})
+  except Exception as err:
+    logging.error(f"get_dns_records(): Error for domain {domain}: {err}")
+    return jsonify({"error": str(err)}), 500
+
+@cloudflare_domains_bp.route("/cloudflare_domains/dns_records/update/", methods=['POST'])
+@login_required
+def update_dns_record():
+  """AJAX: updates an existing DNS record of the selected domain"""
+  try:
+    account = (request.form.get("dns_account") or "").strip()
+    domain = (request.form.get("dns_domain") or "").strip()
+    record_id = (request.form.get("record_id") or "").strip()
+    record_type = (request.form.get("record_type") or "").strip().upper()
+    record_name = (request.form.get("record_name") or "").strip()
+    record_content = (request.form.get("record_content") or "").strip()
+    ttl = (request.form.get("record_ttl") or "1").strip()
+    priority = (request.form.get("record_priority") or "").strip()
+    proxied = request.form.get("record_proxied") == "true"
+    logging.info(f"-----------------------DNS record {record_id} update requested by {current_user.realname}: account={account}, domain={domain}, type={record_type}, name={record_name}, content={record_content}-----------------")
+    if not account or not domain or not record_id or not record_type or not record_name or not record_content:
+      return jsonify({"success": False, "error": "Не всі обов'язкові поля заповнені"}), 400
+    headers, zone_id, error = _cf_zone_context(account, domain)
+    if error:
+      logging.error(f"update_dns_record(): {error}")
+      return jsonify({"success": False, "error": error}), 400
+    data = {
+      "type": record_type,
+      "name": record_name,
+      "content": record_content,
+      "ttl": int(ttl) if ttl.isdigit() else 1
+    }
+    if record_type in ("A", "AAAA", "CNAME"):
+      data["proxied"] = proxied
+    if record_type == "MX":
+      data["priority"] = int(priority) if priority.isdigit() else 10
+    url_upd_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
+    result = requests.put(url_upd_record, headers=headers, json=data).json()
+    if result.get("success"):
+      logging.info(f"update_dns_record(): DNS record {record_id} updated successfully for {domain} by {current_user.realname}")
+      return jsonify({"success": True})
+    error_msg = (result.get("errors", [{}])[0].get("message", "Unknown error"))
+    logging.error(f"update_dns_record(): Error updating DNS record {record_id} for {domain}: {result}")
+    return jsonify({"success": False, "error": error_msg}), 400
+  except Exception as err:
+    logging.error(f"update_dns_record(): general error by {current_user.realname}: {err}")
+    return jsonify({"success": False, "error": str(err)}), 500
+
+@cloudflare_domains_bp.route("/cloudflare_domains/dns_records/delete/", methods=['POST'])
+@login_required
+def delete_dns_record():
+  """AJAX: deletes an existing DNS record of the selected domain"""
+  try:
+    account = (request.form.get("dns_account") or "").strip()
+    domain = (request.form.get("dns_domain") or "").strip()
+    record_id = (request.form.get("record_id") or "").strip()
+    logging.info(f"-----------------------DNS record {record_id} deletion requested by {current_user.realname}: account={account}, domain={domain}-----------------")
+    if not account or not domain or not record_id:
+      return jsonify({"success": False, "error": "Не всі обов'язкові поля заповнені"}), 400
+    headers, zone_id, error = _cf_zone_context(account, domain)
+    if error:
+      logging.error(f"delete_dns_record(): {error}")
+      return jsonify({"success": False, "error": error}), 400
+    url_del_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}"
+    result = requests.delete(url_del_record, headers=headers).json()
+    if result.get("success"):
+      logging.info(f"delete_dns_record(): DNS record {record_id} deleted successfully for {domain} by {current_user.realname}")
+      return jsonify({"success": True})
+    error_msg = (result.get("errors", [{}])[0].get("message", "Unknown error"))
+    logging.error(f"delete_dns_record(): Error deleting DNS record {record_id} for {domain}: {result}")
+    return jsonify({"success": False, "error": error_msg}), 400
+  except Exception as err:
+    logging.error(f"delete_dns_record(): general error by {current_user.realname}: {err}")
+    return jsonify({"success": False, "error": str(err)}), 500
