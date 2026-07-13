@@ -260,26 +260,21 @@ def _cf_zone_context(account: str, domain: str):
 @cloudflare_domains_bp.route("/cloudflare_domains/add_dns_record/", methods=['POST'])
 @login_required
 def add_dns_record():
-  """POST request processor: adds a new DNS record to the selected domain on the selected Cloudflare account"""
+  """POST request processor: adds one DNS record to all selected domains on the selected Cloudflare account"""
   try:
     account = (request.form.get("dns_account") or "").strip()
-    domain = (request.form.get("dns_domain") or "").strip()
+    domains = [d.strip() for d in request.form.getlist("dns_domains") if d.strip()]
     record_type = (request.form.get("record_type") or "").strip().upper()
     record_name = (request.form.get("record_name") or "").strip()
     record_content = (request.form.get("record_content") or "").strip()
     ttl = (request.form.get("record_ttl") or "1").strip()
     priority = (request.form.get("record_priority") or "").strip()
     proxied = request.form.get("record_proxied") == "on"
-    logging.info(f"-----------------------New DNS record addition requested by {current_user.realname}: account={account}, domain={domain}, type={record_type}, name={record_name}, content={record_content}-----------------")
-    if not account or not domain or not record_type or not record_name or not record_content:
+    logging.info(f"-----------------------New DNS record addition requested by {current_user.realname}: account={account}, domains={domains}, type={record_type}, name={record_name}, content={record_content}-----------------")
+    if not account or not domains or not record_type or not record_name or not record_content:
       flash("Помилка! Не всі обов'язкові поля заповнені для додавання DNS запису!", "alert alert-danger")
       return redirect("/cloudflare_domains/", 302)
-    headers, zone_id, error = _cf_zone_context(account, domain)
-    if error:
-      logging.error(f"add_dns_record(): {error}")
-      flash(f"Помилка! {error}", "alert alert-danger")
-      return redirect("/cloudflare_domains/", 302)
-    data = {
+    data_base = {
       "type": record_type,
       "name": record_name,
       "content": record_content,
@@ -287,18 +282,37 @@ def add_dns_record():
       "comment": "Provision manual DNS record."
     }
     if record_type in ("A", "AAAA", "CNAME"):
-      data["proxied"] = proxied
+      data_base["proxied"] = proxied
     if record_type == "MX":
-      data["priority"] = int(priority) if priority.isdigit() else 10
-    url_add_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
-    result_add_record = requests.post(url_add_record, headers=headers, json=data).json()
-    if result_add_record.get("success"):
-      logging.info(f"add_dns_record(): DNS record {record_type} {record_name} -> {record_content} added successfully for {domain} by {current_user.realname}")
-      flash(f"DNS запис {record_type} {record_name} → {record_content} успішно додано для домену {domain}!", "alert alert-success")
+      data_base["priority"] = int(priority) if priority.isdigit() else 10
+    results = []
+    success_count = 0
+    error_count = 0
+    for domain in domains:
+      headers, zone_id, error = _cf_zone_context(account, domain)
+      if error:
+        logging.error(f"add_dns_record(): {domain}: {error}")
+        results.append(f"❌ {domain}: {error}")
+        error_count += 1
+        continue
+      url_add_record = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records"
+      result_add_record = requests.post(url_add_record, headers=headers, json=data_base).json()
+      if result_add_record.get("success"):
+        logging.info(f"add_dns_record(): DNS record {record_type} {record_name} -> {record_content} added successfully for {domain} by {current_user.realname}")
+        results.append(f"✅ {domain}: {record_type} {record_name} → {record_content}")
+        success_count += 1
+      else:
+        error_msg = (result_add_record.get("errors", [{}])[0].get("message", "Unknown error"))
+        logging.error(f"add_dns_record(): Error adding DNS record for {domain}: {result_add_record}")
+        results.append(f"❌ {domain}: {error_msg}")
+        error_count += 1
+    results_html = "<br>".join(results)
+    if error_count == 0:
+      flash(f"DNS запис успішно додано для {success_count} доменів!<br>{results_html}", "alert alert-success")
+    elif success_count == 0:
+      flash(f"Помилки при додаванні DNS запису для всіх {error_count} доменів!<br>{results_html}", "alert alert-danger")
     else:
-      error_msg = (result_add_record.get("errors", [{}])[0].get("message", "Unknown error"))
-      logging.error(f"add_dns_record(): Error adding DNS record for {domain}: {result_add_record}")
-      flash(f"Помилка при додаванні DNS запису: <strong>{error_msg}</strong>!", "alert alert-danger")
+      flash(f"Додано: {success_count} успішно, {error_count} з помилками.<br>{results_html}", "alert alert-warning")
     return redirect("/cloudflare_domains/", 302)
   except Exception as err:
     logging.error(f"add_dns_record(): general error by {current_user.realname}: {err}")

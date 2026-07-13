@@ -106,12 +106,13 @@
             <form action="/cloudflare_domains/add_dns_record/" method="POST" id="dnsRecordForm" class="needs-validation" novalidate>
               <input type="hidden" name="dns_account" id="dns_account" value="{{first_cf|safe}}">
               <div class="mb-4">
-                <h5 class="card-title">Оберіть домен на обраному вище аккаунті:</h5>
-                <select class="form-select" id="dnsDomainSelect" name="dns_domain" required>
+                <h5 class="card-title">Перегляд існуючих записів обраного домену:</h5>
+                <select class="form-select" id="dnsDomainSelect">
                   <option value="">— Завантаження доменів... —</option>
                 </select>
               </div>
               <div class="mb-4" id="existingRecordsContainer"></div>
+              <hr>
               <h5 class="card-title">Додати новий DNS запис:</h5>
               <div class="row g-3">
                 <div class="col-12 col-md-3">
@@ -154,9 +155,28 @@
                     <label class="form-check-label" for="recordProxied">Proxied(через cloudflare)</label>
                   </div>
                 </div>
-                <div class="col-12 col-md-4">
-                  <button type="submit" class="btn btn-info w-100" onclick="showLoading()">➕ Додати DNS запис</button>
+              </div>
+
+              <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">Оберіть домени, на які додати цей запис <span class="badge bg-secondary ms-1" id="dnsDomainCountBadge">0</span></h6>
+                  <div class="d-flex gap-2">
+                    <input type="text" id="dnsDomainSearch" class="form-control form-control-sm" placeholder="🔍 Пошук домену..." style="width:220px;">
+                    <button type="button" id="dnsSelectAllBtn" class="btn btn-sm btn-outline-success">Обрати всі</button>
+                    <button type="button" id="dnsDeselectAllBtn" class="btn btn-sm btn-outline-secondary">Скасувати</button>
+                  </div>
                 </div>
+                <div class="card-body">
+                  <div id="dnsDomainsContainer" class="row g-1" style="max-height:320px; overflow-y:auto;">
+                    <div class="text-muted text-center py-2">Спочатку оберіть аккаунт вище</div>
+                  </div>
+                  <div id="dnsNoDomainsMsg" class="text-muted text-center py-3" style="display:none;">Немає доменів для відображення</div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <div id="dnsSelectedCountMsg" class="text-muted"></div>
+                <button type="submit" id="dnsSubmitBtn" class="btn btn-info btn-lg px-5" onclick="showLoading()" disabled>➕ Додати DNS запис на обрані домени</button>
               </div>
             </form>
           </div>

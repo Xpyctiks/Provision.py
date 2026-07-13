@@ -15,6 +15,7 @@ document.querySelectorAll('.dropdown-item.account').forEach(item => {
     if (dnsAccount) {
       dnsAccount.value = value2;
       loadDnsDomains(value2);
+      loadDnsBulkDomains(value2);
     }
   });
 });
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const dnsAccount = document.getElementById('dns_account');
   if (dnsAccount) {
     loadDnsDomains(dnsAccount.value);
+    loadDnsBulkDomains(dnsAccount.value);
   }
   const recordType = document.getElementById('recordType');
   if (recordType) {
@@ -67,7 +69,119 @@ document.addEventListener('DOMContentLoaded', function () {
       loadDnsRecords(document.getElementById('dns_account').value, this.value);
     });
   }
+
+  const recordName = document.getElementById('recordName');
+  const recordContent = document.getElementById('recordContent');
+  if (recordName) recordName.addEventListener('input', updateDnsSubmitState);
+  if (recordContent) recordContent.addEventListener('input', updateDnsSubmitState);
+
+  const dnsDomainSearch = document.getElementById('dnsDomainSearch');
+  if (dnsDomainSearch) {
+    dnsDomainSearch.addEventListener('input', function () {
+      const q = this.value.toLowerCase().trim();
+      const container = document.getElementById('dnsDomainsContainer');
+      const items = container.querySelectorAll('.dns-domain-item');
+      let visible = 0;
+      items.forEach(function (item) {
+        const match = !q || item.dataset.name.toLowerCase().includes(q);
+        item.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      document.getElementById('dnsNoDomainsMsg').style.display = (items.length && visible === 0) ? 'block' : 'none';
+    });
+  }
+
+  const dnsSelectAllBtn = document.getElementById('dnsSelectAllBtn');
+  if (dnsSelectAllBtn) {
+    dnsSelectAllBtn.addEventListener('click', function () {
+      document.querySelectorAll('#dnsDomainsContainer .dns-domain-item:not([style*="display: none"]) .dns-domain-check').forEach(function (cb) {
+        cb.checked = true;
+      });
+      updateDnsSubmitState();
+    });
+  }
+
+  const dnsDeselectAllBtn = document.getElementById('dnsDeselectAllBtn');
+  if (dnsDeselectAllBtn) {
+    dnsDeselectAllBtn.addEventListener('click', function () {
+      document.querySelectorAll('#dnsDomainsContainer .dns-domain-check').forEach(function (cb) {
+        cb.checked = false;
+      });
+      updateDnsSubmitState();
+    });
+  }
+
+  const dnsDomainsContainer = document.getElementById('dnsDomainsContainer');
+  if (dnsDomainsContainer) {
+    dnsDomainsContainer.addEventListener('change', function (e) {
+      if (e.target.classList.contains('dns-domain-check')) {
+        updateDnsSubmitState();
+      }
+    });
+  }
 });
+
+// ── Bulk domain picker for "add new record" ──────────────────────────────────
+
+function loadDnsBulkDomains(account) {
+  const container = document.getElementById('dnsDomainsContainer');
+  const noDomainsMsg = document.getElementById('dnsNoDomainsMsg');
+  const countBadge = document.getElementById('dnsDomainCountBadge');
+  if (!container) return;
+  noDomainsMsg.style.display = 'none';
+  if (!account) {
+    container.innerHTML = '<div class="text-muted text-center py-2">Спочатку оберіть аккаунт вище</div>';
+    countBadge.textContent = '0';
+    updateDnsSubmitState();
+    return;
+  }
+  container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm" role="status"></div> Завантаження доменів...</div>';
+  fetch('/cloudflare_domains/zones/?account=' + encodeURIComponent(account))
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        container.innerHTML = '<div class="alert alert-danger py-2 mb-0">Помилка: ' + escapeHtml(data.error) + '</div>';
+        countBadge.textContent = '0';
+        updateDnsSubmitState();
+        return;
+      }
+      container.innerHTML = '';
+      if (!data.zones.length) {
+        noDomainsMsg.style.display = 'block';
+      } else {
+        data.zones.forEach(function (name, idx) {
+          const col = document.createElement('div');
+          col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 dns-domain-item';
+          col.dataset.name = name;
+          col.innerHTML =
+            '<div class="form-check">' +
+              '<input class="form-check-input dns-domain-check" type="checkbox" name="dns_domains" value="' + escapeHtml(name) + '" id="dns-zone-' + idx + '">' +
+              '<label class="form-check-label text-truncate d-block" for="dns-zone-' + idx + '" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</label>' +
+            '</div>';
+          container.appendChild(col);
+        });
+      }
+      countBadge.textContent = data.zones.length;
+      document.getElementById('dnsDomainSearch').value = '';
+      updateDnsSubmitState();
+    })
+    .catch(err => {
+      container.innerHTML = '<div class="alert alert-danger py-2 mb-0">Помилка завантаження: ' + escapeHtml(String(err)) + '</div>';
+      countBadge.textContent = '0';
+      updateDnsSubmitState();
+    });
+}
+
+function updateDnsSubmitState() {
+  const submitBtn = document.getElementById('dnsSubmitBtn');
+  const selectedCountMsg = document.getElementById('dnsSelectedCountMsg');
+  if (!submitBtn) return;
+  const hasName = document.getElementById('recordName').value.trim() !== '';
+  const hasContent = document.getElementById('recordContent').value.trim() !== '';
+  const checkedCount = document.querySelectorAll('#dnsDomainsContainer .dns-domain-check:checked').length;
+  submitBtn.disabled = !(hasName && hasContent && checkedCount > 0);
+  selectedCountMsg.textContent = checkedCount > 0 ? 'Обрано доменів: ' + checkedCount : '';
+}
 
 // ── Existing DNS records list (view / edit / delete) ─────────────────────────
 
