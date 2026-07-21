@@ -14,11 +14,35 @@ document.querySelectorAll('.dropdown-item.template').forEach(item => {
   });
 }); 
 
+// ── Cookie helpers (persist page state per browser/user across reloads) ─────
+
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// Restore previously selected Cloudflare account (if any) before the rest of
+// the page wires itself up.
+(function restoreSelectedAccount() {
+  const saved = getCookie('provision_cf_account');
+  if (!saved) return;
+  const item = document.querySelector('.dropdown-item.account[data-value="' + CSS.escape(saved) + '"]');
+  if (!item) return;
+  document.getElementById('selected_account').value = saved;
+  document.getElementById('Account').innerText = saved;
+})();
+
 document.querySelectorAll('.dropdown-item.account').forEach(item => {
   item.addEventListener('click', function () {
     let value2 = this.getAttribute('data-value');
     document.getElementById('selected_account').value = value2;
     document.getElementById('Account').innerText = value2;
+    setCookie('provision_cf_account', value2, 365);
   });
 }); 
 
