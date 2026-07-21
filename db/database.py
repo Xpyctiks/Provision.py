@@ -30,6 +30,7 @@ class Settings(db.Model):
   phpPool = db.Column(db.String(512), nullable=False)
   phpFpmPath = db.Column(db.String(512), nullable=False)
   autheliaLogoutUrl = db.Column(db.String(512), nullable=True, default="")
+  webArchiveApiUrl = db.Column(db.String(512), nullable=True, default="")
 
 class Provision_templates(db.Model):
   id = db.Column(db.Integer, primary_key=True)

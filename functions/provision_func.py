@@ -8,6 +8,7 @@ import random
 import string
 import re
 import logging
+import requests
 from functions.config_templates import create_nginx_config
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
@@ -410,3 +411,57 @@ def start_autoprovision(domain: str, selected_account: str, selected_server: str
   except Exception as msg:
     logging.error(f"start_autoprovision() error: {msg}")
     return False
+
+def check_web_archive(archive_domain: str) -> bool:
+  """Checks if a zip archive for the given domain exists on the Web archive API without downloading it"""
+  try:
+    api_url = current_app.config.get("WEB_ARCHIVE_API_URL","")
+    if not api_url:
+      logging.error("check_web_archive(): WEB_ARCHIVE_API_URL variable is empty!")
+      return False
+    url = f"{api_url.rstrip('/')}/{archive_domain}.zip"
+    logging.info(f"check_web_archive(): Checking if the web archive {url} exists...")
+    result = requests.head(url, allow_redirects=True, timeout=10)
+    if result.status_code >= 400:
+      logging.error(f"check_web_archive(): Web archive {url} check returned error code {result.status_code}!")
+      return False
+    logging.info(f"check_web_archive(): Web archive {url} exists.")
+    return True
+  except Exception as msg:
+    logging.error(f"check_web_archive(): general error while checking archive for domain {archive_domain}: {msg}")
+    return False
+
+def deploy_web_archive(archive_domain: str, target_domain: str) -> bool:
+  """Downloads the zip archive of the given domain from the Web archive API to /tmp and unpacks its content into the target site's public/add folder"""
+  tmp_file = os.path.join("/tmp", f"{archive_domain}.zip")
+  try:
+    api_url = current_app.config.get("WEB_ARCHIVE_API_URL","")
+    web_folder = current_app.config.get("WEB_FOLDER","")
+    if not api_url or not web_folder:
+      logging.error("deploy_web_archive(): WEB_ARCHIVE_API_URL or WEB_FOLDER variable is empty!")
+      return False
+    url = f"{api_url.rstrip('/')}/{archive_domain}.zip"
+    logging.info(f"deploy_web_archive(): Downloading web archive {url} to {tmp_file}...")
+    result = requests.get(url, stream=True, timeout=30)
+    if result.status_code >= 400:
+      logging.error(f"deploy_web_archive(): Web archive {url} download returned error code {result.status_code}!")
+      return False
+    with open(tmp_file, 'wb') as fileZip:
+      for chunk in result.iter_content(chunk_size=8192):
+        fileZip.write(chunk)
+    logging.info(f"deploy_web_archive(): Web archive {url} downloaded successfully to {tmp_file}")
+    destination = os.path.join(web_folder, target_domain, "public", "add")
+    if not os.path.exists(destination):
+      os.makedirs(destination)
+      logging.info(f"deploy_web_archive(): Destination folder {destination} created")
+    with zipfile.ZipFile(tmp_file, 'r') as zip_ref:
+      zip_ref.extractall(destination)
+    logging.info(f"deploy_web_archive(): Web archive {archive_domain} unpacked successfully to {destination}")
+    return True
+  except Exception as msg:
+    logging.error(f"deploy_web_archive(): general error while deploying archive {archive_domain} for domain {target_domain}: {msg}")
+    return False
+  finally:
+    if os.path.exists(tmp_file):
+      os.remove(tmp_file)
+      logging.info(f"deploy_web_archive(): Temporary file {tmp_file} removed")

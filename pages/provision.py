@@ -3,7 +3,7 @@ import os
 from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
 from db.database import Provision_templates
-from functions.provision_func import start_autoprovision
+from functions.provision_func import start_autoprovision,check_web_archive,deploy_web_archive
 from functions.pages_forms import *
 from functions.site_actions import normalize_domain,is_admin,clearCache
 
@@ -42,8 +42,13 @@ def do_provision():
       return redirect("/",302)
     #starts main provision actions
     else:
-      #cleans up the domain string
       domain = str(normalize_domain(request.form.get('domain','').removeprefix("https://").removeprefix("http://").rstrip("/")))
+      web_archive_domain = request.form.get('web_archive_domain','').strip()
+      if web_archive_domain:
+        if not check_web_archive(web_archive_domain):
+          logging.error(f"do_provision(): Web archive for domain {web_archive_domain} does not exist! No further actions were taken.")
+          flash(f"Архіву з доменом {web_archive_domain} не існує у веб архіві! Жодних дій на сервері виконано не було.",'alert alert-danger')
+          return redirect("/provision/",302)
       finalPath = os.path.join(web_folder,domain)
       if os.path.exists(finalPath):
         logging.info(f"---------------------------Starting automatic deploy for site {domain} by {current_user.realname}----------------------------")
@@ -63,6 +68,14 @@ def do_provision():
           flash(f"Сайт {domain} успішно встановлено!",'alert alert-success')
           logging.info(f"do_provision(): Site {domain} provisioned successfully!")
           clearCache()
+          #additional action: if a web archive domain was given, download and unpack it into the newly provisioned site
+          if web_archive_domain:
+            if deploy_web_archive(web_archive_domain,domain):
+              flash(f"Архів {web_archive_domain} успішно розпаковано у public/add сайту {domain}!",'alert alert-success')
+              logging.info(f"do_provision(): Web archive {web_archive_domain} deployed successfully into {domain}/public/add")
+            else:
+              logging.error(f"do_provision(): Error while deploying web archive {web_archive_domain} into {domain}!")
+              flash(f"Сайт {domain} встановлено, але виникла помилка при розпаковці архіву {web_archive_domain}! Дивіться логи!",'alert alert-danger')
           return redirect("/",302)
         else:
           logging.error(f"do_provision(): Error while site {domain} provision!")
