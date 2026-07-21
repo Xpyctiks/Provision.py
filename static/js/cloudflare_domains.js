@@ -6,11 +6,37 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+// ── Cookie helpers (persist page state per browser/user across reloads) ─────
+
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// Restore previously selected Cloudflare account (if any) before the rest of
+// the page wires itself up, so both the top form and the DNS section pick it up.
+(function restoreSelectedAccount() {
+  const saved = getCookie('provision_cf_account');
+  if (!saved) return;
+  const item = document.querySelector('.dropdown-item.account[data-value="' + CSS.escape(saved) + '"]');
+  if (!item) return;
+  document.getElementById('selected_account').value = saved;
+  document.getElementById('Account').innerText = saved;
+  const dnsAccount = document.getElementById('dns_account');
+  if (dnsAccount) dnsAccount.value = saved;
+})();
+
 document.querySelectorAll('.dropdown-item.account').forEach(item => {
   item.addEventListener('click', function () {
     let value2 = this.getAttribute('data-value');
     document.getElementById('selected_account').value = value2;
     document.getElementById('Account').innerText = value2;
+    setCookie('provision_cf_account', value2, 365);
     const dnsAccount = document.getElementById('dns_account');
     if (dnsAccount) {
       dnsAccount.value = value2;
@@ -61,7 +87,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const type = this.value;
       document.getElementById('priorityWrapper').style.display = (type === 'MX') ? 'block' : 'none';
       document.getElementById('proxiedWrapper').style.display = (['A', 'AAAA', 'CNAME'].includes(type)) ? 'flex' : 'none';
+      setCookie('provision_dns_record_type', type, 365);
     });
+    const savedType = getCookie('provision_dns_record_type');
+    if (savedType && [].slice.call(recordType.options).some(o => o.value === savedType)) {
+      recordType.value = savedType;
+    }
+    recordType.dispatchEvent(new Event('change'));
   }
   const dnsDomainSelect = document.getElementById('dnsDomainSelect');
   if (dnsDomainSelect) {
@@ -98,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
         cb.checked = true;
       });
       updateDnsSubmitState();
+      saveSelectedDnsDomains();
     });
   }
 
@@ -108,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
         cb.checked = false;
       });
       updateDnsSubmitState();
+      saveSelectedDnsDomains();
     });
   }
 
@@ -116,10 +150,16 @@ document.addEventListener('DOMContentLoaded', function () {
     dnsDomainsContainer.addEventListener('change', function (e) {
       if (e.target.classList.contains('dns-domain-check')) {
         updateDnsSubmitState();
+        saveSelectedDnsDomains();
       }
     });
   }
 });
+
+function saveSelectedDnsDomains() {
+  const checked = [].slice.call(document.querySelectorAll('#dnsDomainsContainer .dns-domain-check:checked')).map(cb => cb.value);
+  setCookie('provision_dns_domains', JSON.stringify(checked), 365);
+}
 
 // ── Bulk domain picker for "add new record" ──────────────────────────────────
 
@@ -149,13 +189,20 @@ function loadDnsBulkDomains(account) {
       if (!data.zones.length) {
         noDomainsMsg.style.display = 'block';
       } else {
+        let savedDomains = [];
+        try {
+          savedDomains = JSON.parse(getCookie('provision_dns_domains') || '[]');
+        } catch (e) {
+          savedDomains = [];
+        }
         data.zones.forEach(function (name, idx) {
           const col = document.createElement('div');
           col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 dns-domain-item';
           col.dataset.name = name;
+          const checked = savedDomains.includes(name) ? 'checked' : '';
           col.innerHTML =
             '<div class="form-check">' +
-              '<input class="form-check-input dns-domain-check" type="checkbox" name="dns_domains" value="' + escapeHtml(name) + '" id="dns-zone-' + idx + '">' +
+              '<input class="form-check-input dns-domain-check" type="checkbox" name="dns_domains" value="' + escapeHtml(name) + '" id="dns-zone-' + idx + '" ' + checked + '>' +
               '<label class="form-check-label text-truncate d-block" for="dns-zone-' + idx + '" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</label>' +
             '</div>';
           container.appendChild(col);

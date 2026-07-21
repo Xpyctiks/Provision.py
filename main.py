@@ -7,10 +7,10 @@ from flask_login import LoginManager
 from datetime import timedelta
 from functions.cache_func import page_cache
 
-VERSION = "2.7.6"
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 application = Flask(__name__)
+application.config["VERSION"] = "2.7.8"
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800

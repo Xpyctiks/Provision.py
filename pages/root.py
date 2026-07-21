@@ -163,7 +163,7 @@ def index():
       db.session.commit()
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
-    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors))
+    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors,version=current_app.config.get("VERSION","")))
     if not current_app.debug:
       page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
       response.headers["X-Cache"] = "MISS"
