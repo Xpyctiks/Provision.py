@@ -450,7 +450,7 @@ def deploy_web_archive(archive_domain: str, target_domain: str) -> bool:
       for chunk in result.iter_content(chunk_size=8192):
         fileZip.write(chunk)
     logging.info(f"deploy_web_archive(): Web archive {url} downloaded successfully to {tmp_file}")
-    destination = os.path.join(web_folder, target_domain, "public", "add")
+    destination = os.path.join(web_folder, target_domain, "public", "drop")
     if not os.path.exists(destination):
       os.makedirs(destination)
       logging.info(f"deploy_web_archive(): Destination folder {destination} created")
