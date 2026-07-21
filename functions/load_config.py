@@ -6,22 +6,10 @@ from sqlalchemy import inspect, text
 from db.db import db
 from db.database import Settings
 
-def _ensure_web_archive_column():
-  """One-time upgrade helper: adds the webArchiveApiUrl column to an already existing Settings table, so installations that existed before this field was introduced don't need a manual DB migration"""
-  inspector = inspect(db.engine)
-  if not inspector.has_table(Settings.__tablename__):
-    return
-  columns = [col["name"] for col in inspector.get_columns(Settings.__tablename__)]
-  if "webArchiveApiUrl" not in columns:
-    db.session.execute(text(f'ALTER TABLE {Settings.__tablename__} ADD COLUMN webArchiveApiUrl VARCHAR(512) DEFAULT \'\''))
-    db.session.commit()
-    logging.info("load_config(): Database schema upgraded - webArchiveApiUrl column added to Settings table")
-
 def load_config(application):
   """Important function - loads all configuration values from Sqlite3 database when an application starts"""
   with application.app_context():
     try:
-      _ensure_web_archive_column()
       config = db.session.get(Settings, 1)
       application.config.update({
         "TELEGRAM_TOKEN": f"{config.telegramToken or ''}",
