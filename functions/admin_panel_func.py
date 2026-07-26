@@ -4,7 +4,7 @@ import logging
 import requests
 from db.database import *
 from werkzeug.security import generate_password_hash
-from functions.rights_required import rights_required
+from functions.rights_required import rights_required,MAIL_ADMIN_RIGHTS,ADMIN_RIGHTS,USER_RIGHTS
 
 @rights_required(255)
 def handler_settings(form):
@@ -53,26 +53,32 @@ def handler_users(form):
         logging.error(f"Admin {current_user.realname}>Some of important parameters for user add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення користувача не були отримані сервером!','alert alert-warning')
         return
-      if "new-is-admin" in form:
-        rights = 255
+      role = form.get("new-role","user").strip()
+      if role == "admin":
+        rights = ADMIN_RIGHTS
+      elif role == "mailadmin":
+        rights = MAIL_ADMIN_RIGHTS
       else:
-        rights = 1
+        rights = USER_RIGHTS
       data = {"username": username, "realname": realname, "password_hash": generate_password_hash(password), "rights": rights}
       new_user = User(**data)
       db.session.add(new_user)
       db.session.commit()
-      if rights == 1:
-        logging.info(f"Admin {current_user.realname}>User {username} created successfully!")
-        flash(f'Користувач {username} успішно створен!','alert alert-success')
-      else:
+      if rights == ADMIN_RIGHTS:
         logging.info(f"Admin {current_user.realname}>User {username} with admin rights created successfully!")
         flash(f'Користувач {username} з адмін правами успішно створен!','alert alert-success')
+      elif rights == MAIL_ADMIN_RIGHTS:
+        logging.info(f"Admin {current_user.realname}>User {username} with mail-admin rights created successfully!")
+        flash(f'Користувач {username} з правами поштового адміністратора успішно створен!','alert alert-success')
+      else:
+        logging.info(f"Admin {current_user.realname}>User {username} created successfully!")
+        flash(f'Користувач {username} успішно створен!','alert alert-success')
       return
         #process delete user request
     if "buttonMakeAdminUser" in form:
       user = User.query.filter_by(id=form.get('buttonMakeAdminUser').strip()).first()
       if user:
-        new_rights = User(id=int(user.id),rights=255)
+        new_rights = User(id=int(user.id),rights=ADMIN_RIGHTS)
         db.session.merge(new_rights)
         db.session.commit()
         logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonMakeAdminUser').strip()} successfully set as admin!")
@@ -82,10 +88,23 @@ def handler_users(form):
         logging.error(f"Admin {current_user.realname}>User with ID {form.get('buttonMakeAdminUser').strip()} set admin rights error - no such user!")
         flash(f'Помилка додавання адмін прав користувачу з ID {form.get("buttonMakeAdminUser").strip()} - такого не існує!','alert alert-warning')
         return
+    if "buttonSetMailAdminUser" in form:
+      user = User.query.filter_by(id=form.get('buttonSetMailAdminUser').strip()).first()
+      if user:
+        new_rights = User(id=int(user.id),rights=MAIL_ADMIN_RIGHTS)
+        db.session.merge(new_rights)
+        db.session.commit()
+        logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonSetMailAdminUser').strip()} successfully set as mail-admin!")
+        flash(f'Користувач {user.username} з ID {form.get("buttonSetMailAdminUser").strip()} успішно став поштовим адміністратором!','alert alert-success')
+        return
+      else:
+        logging.error(f"Admin {current_user.realname}>User with ID {form.get('buttonSetMailAdminUser').strip()} set mail-admin rights error - no such user!")
+        flash(f'Помилка додавання прав поштового адміністратора користувачу з ID {form.get("buttonSetMailAdminUser").strip()} - такого не існує!','alert alert-warning')
+        return
     if "buttonRemoveAdminUser" in form:
       user = User.query.filter_by(id=form.get('buttonRemoveAdminUser').strip()).first()
       if user:
-        new_rights = User(id=int(user.id),rights=1)
+        new_rights = User(id=int(user.id),rights=USER_RIGHTS)
         db.session.merge(new_rights)
         db.session.commit()
         logging.info(f"Admin {current_user.realname}>User {user.username} with ID {form.get('buttonRemoveAdminUser').strip()} successfully set as the regular user!")

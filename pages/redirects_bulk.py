@@ -6,10 +6,12 @@ from flask import Blueprint, current_app, jsonify, render_template, request, fla
 from flask_login import login_required, current_user
 from db.database import Cloudflare
 from functions.site_actions import is_admin, sync_redirects_to_db
+from functions.rights_required import block_mail_admin
 
 redirects_bulk_bp = Blueprint("redirects_bulk", __name__)
 @redirects_bulk_bp.route("/redirects_bulk/", methods=['GET'])
 @login_required
+@block_mail_admin
 def show_redirects_bulk_page():
   accounts = Cloudflare.query.all()
   accounts_options = "".join(
@@ -29,6 +31,7 @@ def show_redirects_bulk_page():
 
 @redirects_bulk_bp.route("/redirects_bulk/account_data", methods=['GET'])
 @login_required
+@block_mail_admin
 def get_account_domains():
   """AJAX: returns all zones (domains) for the selected Cloudflare account"""
   account_email = (request.args.get("account") or "").strip()
@@ -64,6 +67,7 @@ def get_account_domains():
 
 @redirects_bulk_bp.route("/redirects_bulk/", methods=['POST'])
 @login_required
+@block_mail_admin
 def do_redirects_bulk():
   """POST: bulk-create one 301 redirect rule for all selected domains under the chosen Cloudflare account"""
   account_email = (request.form.get("account") or "").strip()

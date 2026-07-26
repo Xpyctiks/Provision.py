@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *
-from functions.rights_required import rights_required
+from functions.rights_required import rights_required,MAIL_ADMIN_RIGHTS,ADMIN_RIGHTS
 from functions.site_actions import is_admin
 from datetime import datetime
 
@@ -19,7 +19,7 @@ def catch_admin_panel():
     if "buttonSaveSettings" in request.form:
       handler_settings(request.form)
       return redirect("/admin_panel/settings/",302)
-    elif "buttonAddUser" in request.form or "buttonDeleteUser" in request.form or "buttonMakeAdminUser" in request.form or "buttonRemoveAdminUser" in request.form:
+    elif "buttonAddUser" in request.form or "buttonDeleteUser" in request.form or "buttonMakeAdminUser" in request.form or "buttonRemoveAdminUser" in request.form or "buttonSetMailAdminUser" in request.form:
       handler_users(request.form)
       return redirect("/admin_panel/users/",302)
     elif "buttonDeleteTemplate" in request.form or "buttonDefaultTemplate" in request.form or "buttonAddTemplate" in request.form:
@@ -108,7 +108,7 @@ def admin_panel_users():
     <th scope="col" style="width: 45px;">ID:</th>
     <th scope="col" style="width: 150px;">Логін:</th>
     <th scope="col" style="width: 150px;">Ім'я:</th>
-    <th scope="col" style="width: 150px;">Адмін права(якщо 255):</th>
+    <th scope="col" style="width: 220px;">Роль:</th>
     <th scope="col" style="width: 150px;">Створен:</th>
   </tr>
   </thead>
@@ -118,10 +118,18 @@ def admin_panel_users():
       print("No users found in DB!")
       quit()
     for i, s in enumerate(users, 1):
-      if s.rights == 1:
-        button = f'<button type="submit" class="btn btn-outline-warning AdminUser-btn" name="buttonMakeAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даного користувача адміністратором.">👑</button>'
+      make_admin_btn = f'<button type="submit" class="btn btn-outline-warning AdminUser-btn" name="buttonMakeAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даного користувача адміністратором.">👑</button>'
+      make_mailadmin_btn = f'<button type="submit" class="btn btn-outline-warning MailAdminUser-btn" name="buttonSetMailAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даного користувача поштовим адміністратором.">📧</button>'
+      make_regular_btn = f'<button type="submit" class="btn btn-outline-warning AdminUser-btn" name="buttonRemoveAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даного користувача звичайним користувачем.">🚶</button>'
+      if s.rights == ADMIN_RIGHTS:
+        role_label = "Адміністратор"
+        buttons = make_mailadmin_btn + make_regular_btn
+      elif s.rights == MAIL_ADMIN_RIGHTS:
+        role_label = "Поштовий адміністратор"
+        buttons = make_admin_btn + make_regular_btn
       else:
-        button = f'<button type="submit" class="btn btn-outline-warning AdminUser-btn" name="buttonRemoveAdminUser" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Забрати у даного користувача адмін права.">🚶</button>'
+        role_label = "Користувач"
+        buttons = make_admin_btn + make_mailadmin_btn
       html_data += f"""
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
@@ -131,8 +139,8 @@ def admin_panel_users():
     <td class="table-success cname-cell" >{s.username}</td>
     <td class="table-success cname-cell" >{s.realname}</td>
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
-    <td class="table-success cname-cell" >{s.rights}
-    {button}
+    <td class="table-success cname-cell" >{role_label}
+    {buttons}
     </td></form>
     <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
@@ -147,7 +155,12 @@ def admin_panel_users():
   <input type="text" class="form-control" id="new-password" name="new-password" value="">
   <span class="input-group-text">І'мя</span>
   <input type="text" class="form-control" id="new-realname" name="new-realname" value="">
-  <span class="input-group-text">Адмін права&nbsp;<input class="form-check-input" type="checkbox" value="" name="new-is-admin"></span>
+  <span class="input-group-text">Роль:</span>
+  <select class="form-select" id="new-role" name="new-role">
+    <option value="user" selected>Користувач</option>
+    <option value="mailadmin">Поштовий адміністратор</option>
+    <option value="admin">Адміністратор</option>
+  </select>
   <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddUser" onclick="showLoading()">Створити користувача</button>
    </div>
   </form>

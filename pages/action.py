@@ -4,6 +4,7 @@ from html import escape
 from flask import redirect,Blueprint,request
 from flask_login import login_required,current_user
 from functions.site_actions import *
+from functions.rights_required import deny_mail_admin_action
 
 action_bp = Blueprint("action", __name__)
 @action_bp.route("/action/", methods=["POST"])
@@ -13,19 +14,23 @@ def do_action():
   try:
     #sites delete block
     if (request.form.get("delete") and not request.form.get("selected")):
+      if deny_mail_admin_action(): return redirect("/",302)
       delete_site(request.form.get("delete","").strip())
       clearCache()
       return redirect(f"/",302)
     elif (request.form.get("delete") and request.form.get("selected")):
+      if deny_mail_admin_action(): return redirect("/",302)
       array = request.form.getlist("selected")
       del_selected_sites(request.form.get("delete","").strip(),array)
       clearCache()
       return redirect(f"/",302)
     #sites actions
     elif (request.form.get("disable")):
+      if deny_mail_admin_action(): return redirect("/",302)
       disable_site(request.form["disable"].strip())
       clearCache()
     elif (request.form.get("enable")):
+      if deny_mail_admin_action(): return redirect("/",302)
       enable_site(request.form.get("enable","").strip())
       clearCache()
     elif (request.form.get("hideSite")):
@@ -36,13 +41,16 @@ def do_action():
       clearCache()
     #redirects management block
     elif (request.form.get("del_redir") and not request.form.get("selected")):
+      if deny_mail_admin_action(): return redirect("/",302)
       del_redirect(request.form.get("del_redir","").strip(),request.form.get("sitename","").strip())
       return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
     elif (request.form.get("del_redir") and request.form.get("selected")):
+      if deny_mail_admin_action(): return redirect("/",302)
       array = request.form.getlist("selected")
       del_selected_redirects(array,request.form.get("sitename","").strip())
       return redirect(f"/redirects_manager?site={request.form.get('sitename','').strip()}",302)
     elif (request.form.get("applyChanges")):
+      if deny_mail_admin_action(): return redirect("/",302)
       sitename = request.form.get("sitename","").strip()
       applyChanges(sitename)
       if sitename:
@@ -50,8 +58,10 @@ def do_action():
       return redirect("/redirects_bulk/",302)
     #Git block
     elif (request.form.get("gitPull") and not request.form.get("selected")):
+      if deny_mail_admin_action(): return redirect("/",302)
       makePull(request.form["gitPull"].strip())
     elif (request.form.get("gitPull") and request.form.get("selected")):
+      if deny_mail_admin_action(): return redirect("/",302)
       pullArray = request.form.getlist("selected")
       makePull(request.form.get("gitPull","").strip(),pullArray)
     return redirect("/",302)

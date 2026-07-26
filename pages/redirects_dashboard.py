@@ -5,10 +5,12 @@ from flask import Blueprint, current_app, jsonify, render_template, flash, redir
 from flask_login import login_required, current_user
 from db.database import RedirectsRules, Domain_account, Cloudflare
 from functions.site_actions import is_admin, sync_redirects_to_db
+from functions.rights_required import block_mail_admin
 
 redirects_dashboard_bp = Blueprint("redirects_dashboard", __name__)
 @redirects_dashboard_bp.route("/redirects_dashboard/", methods=['GET'])
 @login_required
+@block_mail_admin
 def show_redirects_dashboard():
   """GET request: shows a combined dashboard of all 301 redirects (RedirectsRules) grouped by domain, for every domain known in the DB"""
   try:

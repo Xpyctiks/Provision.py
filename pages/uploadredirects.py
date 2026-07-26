@@ -5,10 +5,12 @@ from flask import render_template,request,redirect,flash,Blueprint
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 from functions.site_actions import normalize_domain,is_admin,sync_redirects_to_db
+from functions.rights_required import block_mail_admin
 
 uploadredir_bp = Blueprint("upload_redirects", __name__)
 @uploadredir_bp.route("/upload_redirects/", methods=['POST'])
 @login_required
+@block_mail_admin
 def uploadredir_file():
   """POST request processor: getting uploaded CSV file and takes redirects from it."""
   try:
@@ -115,6 +117,7 @@ def uploadredir_file():
 
 @uploadredir_bp.route("/upload_redirects/", methods=['GET'])
 @login_required
+@block_mail_admin
 def show_uploadredir_file():
   """GET request: show /upload_redirects page."""
   try:

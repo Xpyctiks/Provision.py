@@ -8,10 +8,12 @@ from werkzeug.utils import secure_filename
 from functions.pages_forms import *
 from functions.provision_func import *
 from functions.site_actions import is_admin,clearCache
+from functions.rights_required import block_mail_admin
 
 upload_bp = Blueprint("upload", __name__)
 @upload_bp.route("/upload/", methods=['POST'])
 @login_required
+@block_mail_admin
 def upload_file():
   """POST request processor: getting uploaded zip archive and deploys the site from it."""
   try:
@@ -67,6 +69,7 @@ def upload_file():
 
 @upload_bp.route("/upload/", methods=['GET'])
 @login_required
+@block_mail_admin
 def show_upload_page():
   """GET request: show /upload page."""
   try:

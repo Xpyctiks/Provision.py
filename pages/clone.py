@@ -4,11 +4,13 @@ from functions.pages_forms import *
 from functions.clone_func import *
 from functions.site_actions import normalize_domain,is_admin,clearCache
 from functions.provision_func import finishJob
+from functions.rights_required import block_mail_admin
 import os
 
 clone_bp = Blueprint("clone", __name__)
 @clone_bp.route("/clone/", methods=['GET'])
 @login_required
+@block_mail_admin
 def showClonePage():
   """GET request: show /clone page"""
   try:
@@ -30,6 +32,7 @@ def showClonePage():
 
 @clone_bp.route("/clone/", methods=['POST'])
 @login_required
+@block_mail_admin
 def doClone():
   """POST request processor: processes a site clone request - either to a single domain, or, if the bulk domains_list textarea is filled, to every domain listed there"""
   domain = ""

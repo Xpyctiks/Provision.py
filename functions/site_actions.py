@@ -12,6 +12,7 @@ from db.db import db
 from db.database import *
 from functions.cli_management import del_account,del_owner
 from functions.cache_func import page_cache
+from functions.rights_required import MAIL_ADMIN_RIGHTS
 
 def delete_site(sitename: str) -> bool:
   """Site action: full delete selected site. Requires "sitename" as a parameter"""
@@ -608,6 +609,11 @@ def is_admin():
       return ""
   else:
     return ""
+
+def is_mail_admin():
+  """Checks if the current user has the mail-admin role (view-only access, no site modification rights)"""
+  user = User.query.filter_by(realname=current_user.realname).first()
+  return bool(user and user.rights == MAIL_ADMIN_RIGHTS)
 
 def hide_site(sitename: str) -> bool:
   """Site owner hides this site from other users by adding a SitesShowRestricions record limited to himself"""

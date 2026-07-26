@@ -3,7 +3,7 @@ import os
 import re
 from flask import render_template,Blueprint,current_app,flash,make_response
 from flask_login import login_required,current_user
-from functions.site_actions import count_redirects, is_admin
+from functions.site_actions import count_redirects, is_admin, is_mail_admin
 from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,getSiteHrefHistory,load_cf_active_zones
 from db.database import Domain_account,User,Messages,Cloudflare,SitesShowRestricions,CloudflareEmailsStatus
 from functions.send_to_telegram import send_to_telegram
@@ -163,7 +163,7 @@ def index():
       db.session.commit()
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
-    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors,version=current_app.config.get("VERSION","")))
+    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),mail_admin=is_mail_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors,version=current_app.config.get("VERSION","")))
     if not current_app.debug:
       page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
       response.headers["X-Cache"] = "MISS"

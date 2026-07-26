@@ -6,10 +6,12 @@ from db.database import Provision_templates
 from functions.provision_func import start_autoprovision,check_web_archive,deploy_web_archive
 from functions.pages_forms import *
 from functions.site_actions import normalize_domain,is_admin,clearCache
+from functions.rights_required import block_mail_admin
 
 provision_bp = Blueprint("provision", __name__)
 @provision_bp.route("/provision/", methods=['GET'])
 @login_required
+@block_mail_admin
 def show_provision_page():
   """GET request: shows /provision page"""
   try:
@@ -27,6 +29,7 @@ def show_provision_page():
 
 @provision_bp.route("/provision/", methods=['POST'])
 @login_required
+@block_mail_admin
 def do_provision():
   """POST request processor: process automatic site deployment"""
   try:

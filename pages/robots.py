@@ -4,10 +4,12 @@ from flask import request,redirect,flash,Blueprint,current_app,jsonify
 from flask_login import current_user, login_required
 from functions.send_to_telegram import send_to_telegram
 from functions.site_actions import normalize_domain
+from functions.rights_required import block_mail_admin
 
 robots_bp = Blueprint("/robots", __name__)
 @robots_bp.route("/robots/", methods=['POST'])
 @login_required
+@block_mail_admin
 def editRobots():
   try:
     data = request.json
@@ -28,6 +30,7 @@ def editRobots():
 
 @robots_bp.route("/robots/", methods=['GET'])
 @login_required
+@block_mail_admin
 def showRobots():
   try:
     if request.args.get('domain'):
