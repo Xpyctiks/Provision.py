@@ -41,5 +41,5 @@ def deny_mail_admin_action():
   if current_user.rights == MAIL_ADMIN_RIGHTS:
     logging.warning(f"deny_mail_admin_action(): Attempt to run a site-modifying action by mail-admin user {current_user.realname}")
     flash('У вас немає прав тут бути!', 'alert alert-danger')
-    return True
+    return redirect("/",301)
   return False

@@ -5,7 +5,7 @@ import html
 from flask import render_template,request,redirect,flash,Blueprint,jsonify
 from flask_login import login_required,current_user
 from db.database import Cloudflare
-from functions.site_actions import normalize_domain,is_admin
+from functions.site_actions import normalize_domain,is_admin, is_mail_admin
 from functions.pages_forms import loadClodflareAccounts,_load_zones_for_account
 
 cloudflare_domains_bp = Blueprint("cloudflare_domains", __name__)
@@ -16,7 +16,7 @@ def show_cloudflareDomains():
   try:
     #parsing Cloudflare accounts available
     cf_list, first_cf = loadClodflareAccounts()
-    return render_template("template-cloudflare_domains.html",source_site=(request.args.get('source_site') or 'Error').strip(),cf_list=cf_list,first_cf=first_cf,admin_panel=is_admin())
+    return render_template("template-cloudflare_domains.html",source_site=(request.args.get('source_site') or 'Error').strip(),cf_list=cf_list,first_cf=first_cf,admin_panel=is_admin(),mail_admin=is_mail_admin())
   except Exception as err:
     logging.error(f"show_cloudflareDomains(): general render error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка на сторінці колнування, дивіться логи!", 'alert alert-danger')

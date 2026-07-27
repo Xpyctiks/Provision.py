@@ -14,14 +14,8 @@ cloudflare_email_bulk_bp = Blueprint("cloudflare_email_bulk", __name__)
 @login_required
 def show_bulk_email_page():
   accounts = Cloudflare.query.all()
-  accounts_options = "".join(
-    f'<option value="{acc.account}">{acc.account}</option>' for acc in accounts
-  )
-  return render_template(
-    "template-cloudflare_email_bulk.html",
-    accounts_options=accounts_options,
-    admin_panel=is_admin()
-  )
+  accounts_options = "".join(f'<option value="{acc.account}">{acc.account}</option>' for acc in accounts)
+  return render_template("template-cloudflare_email_bulk.html",accounts_options=accounts_options,admin_panel=is_admin())
 
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/account_data", methods=['GET'])
 @login_required

@@ -136,6 +136,7 @@
       </td>
       {{site.table_type2|safe}} {{site.html_lang|safe}}</td>
       {{site.table_type2|safe}}
+      {% if not mail_admin %}
       <div class="accordion" id="folderAccordion{{site.id|safe}}">
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingOne{{site.id|safe}}">
@@ -165,6 +166,7 @@
           <input type="button" id="buttonSetHref{{site.id|safe}}" name="buttonSetHref" value="OK✅" class="btn btn-outline-secondary buttonSetHref" data-site="{{site.site_name|safe}}" data-slug-id="siteSlug{{site.id|safe}}" data-hreflang-id="siteHreflang{{site.id|safe}}" style="width: 65px;">
         </div>
       </div>
+      {% endif %}
       </td>
       {{site.table_type2|safe}}{{site.getSiteOwner}}<br>{{site.site_status|safe}}</td>
       {{site.table_type2|safe}}{{site.cf_account|safe}}</td>

@@ -28,10 +28,12 @@
         <ul class="dropdown-menu">
           <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
           <li><hr class="dropdown-divider"></li>
+          {% if not mail_admin %}
           <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
+          {% endif %}
           <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
