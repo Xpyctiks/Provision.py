@@ -4,7 +4,7 @@ import os
 from flask import Blueprint, current_app, jsonify, render_template, flash, redirect
 from flask_login import login_required, current_user
 from db.database import RedirectsRules, Domain_account, Cloudflare
-from functions.site_actions import is_admin, sync_redirects_to_db
+from functions.site_actions import is_admin, sync_redirects_to_db, is_mail_admin
 from functions.rights_required import block_mail_admin
 
 redirects_dashboard_bp = Blueprint("redirects_dashboard", __name__)
@@ -44,7 +44,7 @@ def show_redirects_dashboard():
     <td>{updated_cell}</td>
     <td><a class="btn btn-sm btn-secondary" href="/redirects_manager?site={domain}" title="Перегляд та керування редіректами для цього домену.">⚙Керувати</a></td>
   </tr>"""
-    return render_template("template-redirects_dashboard.html", rows_html=rows_html, cf_accounts_list=cf_accounts_list, admin_panel=is_admin())
+    return render_template("template-redirects_dashboard.html", rows_html=rows_html, cf_accounts_list=cf_accounts_list, admin_panel=is_admin(),mail_admin=is_mail_admin())
   except Exception as err:
     logging.error(f"show_redirects_dashboard(): general error by {current_user.realname}: {err}")
     flash('Неочікувана помилка при завантаженні дашборду редіректів! Дивіться логи.', 'alert alert-danger')

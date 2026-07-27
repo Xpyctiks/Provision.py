@@ -5,7 +5,7 @@ import requests
 from flask import Blueprint, current_app, jsonify, render_template, request, flash, redirect
 from flask_login import login_required, current_user
 from db.database import Cloudflare
-from functions.site_actions import is_admin, sync_redirects_to_db
+from functions.site_actions import is_admin, sync_redirects_to_db, is_mail_admin
 from functions.rights_required import block_mail_admin
 
 redirects_bulk_bp = Blueprint("redirects_bulk", __name__)
@@ -26,7 +26,8 @@ def show_redirects_bulk_page():
     "template-redirects_bulk.html",
     accounts_options=accounts_options,
     admin_panel=is_admin(),
-    applyButton=applyButton
+    applyButton=applyButton,
+    mail_admin=is_mail_admin()
   )
 
 @redirects_bulk_bp.route("/redirects_bulk/account_data", methods=['GET'])
