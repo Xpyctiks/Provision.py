@@ -12,14 +12,20 @@ function isNearBottom(el, threshold = 50) {
   return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
 }
 
+function hasActiveSelection(el) {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
+  return el.contains(sel.anchorNode);
+}
+
 async function loadLogs() {
+  const box = document.getElementById("log-box");
+  if (hasActiveSelection(box)) return;  
   const res = await fetch("/logs/api/");
   const data = await res.json();
-  const box = document.getElementById("log-box");
   const shouldScroll = isNearBottom(box);
   const html = data.lines.map(line => colorize(line)).join("");
-
-  document.getElementById("log-box").innerHTML = html;
+  box.innerHTML = html;
   if (shouldScroll) {
     box.scrollTop = box.scrollHeight;
   }
