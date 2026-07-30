@@ -269,3 +269,73 @@ document.addEventListener("DOMContentLoaded", function () {
       .classList.remove("d-none");
   }
 });
+
+function csvEscape(value) {
+  const str = value === undefined || value === null ? "" : String(value);
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const exportBtn = document.getElementById("exportHrefHistoryBtn");
+  if (!exportBtn) return;
+  exportBtn.addEventListener("click", async function () {
+    exportBtn.disabled = true;
+    showLoading();
+    try {
+      const sites = Array.from(document.querySelectorAll(".accordion-path[data-path]")).map(btn => ({
+        domain: btn.dataset.path,
+        owner: btn.closest("tr")?.dataset.owner || ""
+      }));
+
+      const results = await Promise.all(sites.map(async ({ domain, owner }) => {
+        try {
+          const response = await fetch(`/action/show/hrefhistory?domain=${encodeURIComponent(domain)}&format=json`);
+          const history = await response.json();
+          return { domain, owner, history: Array.isArray(history) ? history : [] };
+        } catch (err) {
+          console.warn(`Не вдалося завантажити історію Href для ${domain}:`, err);
+          return { domain, owner, history: [] };
+        }
+      }));
+
+      const keysOrder = [];
+      const rows = [];
+      results.forEach(({ domain, owner, history }) => {
+        if (history.length === 0) {
+          rows.push({ domain, owner });
+          return;
+        }
+        history.forEach(entry => {
+          Object.keys(entry).forEach(key => {
+            if (!keysOrder.includes(key)) keysOrder.push(key);
+          });
+          rows.push(Object.assign({ domain, owner }, entry));
+        });
+      });
+
+      const columns = ["domain", "owner", ...keysOrder];
+      let csv = "﻿" + columns.join(",") + "\r\n";
+      rows.forEach(row => {
+        csv += columns.map(col => csvEscape(row[col])).join(",") + "\r\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `href_history_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch (err) {
+      alert("Помилка при вивантаженні історії Href у CSV");
+      console.error(err);
+    } finally {
+      hideLoading();
+      exportBtn.disabled = false;
+    }
+  });
+});

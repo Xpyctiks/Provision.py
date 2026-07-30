@@ -1,7 +1,7 @@
 import os
 import json
 from html import escape
-from flask import redirect,Blueprint,request
+from flask import redirect,Blueprint,request,jsonify
 from flask_login import login_required,current_user
 from functions.site_actions import *
 from functions.rights_required import deny_mail_admin_action
@@ -73,16 +73,23 @@ def do_action():
 @action_bp.route("/action/show/hrefhistory", methods=["GET"])
 @login_required
 def showHrefHistory():
-  """GET request: takes a domain as the parameter, reads its clones-history.json from the site's root folder and returns HTML for the accordion with the history of Href changes."""
+  """GET request: takes a domain as the parameter, reads its clones-history.json from the site's root folder and returns HTML for the accordion with the history of Href changes. Pass format=json to get the raw history list instead (used by the CSV export button)."""
   try:
     domain = str(normalize_domain(request.args.get("domain","")))
+    as_json = request.args.get("format","") == "json"
     history_path = os.path.join(current_app.config.get("WEB_FOLDER",""),domain,"clones-history.json")
     if not os.path.exists(history_path):
+      if as_json:
+        return jsonify([])
       return '<div class="text-muted">Файл clones-history.json для цього сайту не знайдено.</div>'
     with open(history_path,"r",encoding="utf-8") as f:
       history = json.load(f)
     if not history:
+      if as_json:
+        return jsonify([])
       return '<div class="text-muted">Файл clones-history.json порожній.</div>'
+    if as_json:
+      return jsonify(history)
     badges = {"current": "bg-success", "deleted": "bg-danger"}
     html = ""
     for entry in history:

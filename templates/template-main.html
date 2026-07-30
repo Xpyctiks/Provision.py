@@ -88,7 +88,7 @@
         <th scope="col" style="width: 15%">Можливі дії:</th>
         <th scope="col" style="width: 15%">Назва сайту: (Обрати всі:&nbsp;<input class="form-check-input is-invalid" type="checkbox" onclick="checkAll(this)" id="checkbox">)</th>
         <th scope="col" style="width: 5%">Lang:</th>
-        <th scope="col" style="width: 37%">Додаткова інформація:</th>
+        <th scope="col" style="width: 37%">Додаткова інформація:{% if not mail_admin %}&nbsp;<button type="button" id="exportHrefHistoryBtn" class="btn btn-sm btn-outline-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Вивантажити історію змін Href усіх сайтів у CSV файл (разом із власником домену)">⬇️CSV</button>{% endif %}</th>
         <th scope="col" style="width: 10%">Власник:</th>
         <th scope="col" style="width: 15%">Аккаунт:</th>
       </tr>
