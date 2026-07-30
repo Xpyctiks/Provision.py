@@ -79,12 +79,77 @@ def load_cf_accounts_checkboxes():
     logging.error(f"load_cf_accounts_checkboxes(): global error {err}")
     return "Error"
 
+def recheck_domain_statuses():
+  """Re-checks every domain still in just_bought/ns_set stage against the live Cloudflare zone status and
+  advances it to ready_to_setup once Cloudflare reports the zone as active (NS propagated, domain served by CF)."""
+  try:
+    rows = DomainPurchase.query.filter(DomainPurchase.stage.in_(["just_bought", "ns_set"])).all()
+    #group by cloudflare_account to minimize API calls - one zones listing per account instead of per domain
+    by_account = {}
+    for row in rows:
+      if not row.cloudflare_account:
+        continue
+      by_account.setdefault(row.cloudflare_account, []).append(row)
+    for account_email, account_rows in by_account.items():
+      acc = Cloudflare.query.filter_by(account=account_email).first()
+      if not acc:
+        continue
+      zones = _load_zones_for_account(acc)
+      for row in account_rows:
+        is_ready = zones.get(row.domain) == "active"
+        new_stage = "ready_to_setup" if is_ready else "ns_set"
+        if row.stage != new_stage:
+          logging.info(f"recheck_domain_statuses(): Domain {row.domain} stage {row.stage} -> {new_stage} (CF zone status: {zones.get(row.domain)})")
+          row.stage = new_stage
+    db.session.commit()
+  except Exception as err:
+    logging.error(f"recheck_domain_statuses(): global error: {err}")
+
+def load_actionable_domains():
+  """Returns all DomainPurchase rows still awaiting setup (not yet ready_to_email/done), grouped implicitly by account via ordering."""
+  return DomainPurchase.query.filter(DomainPurchase.stage.in_(["just_bought", "ns_set", "ready_to_setup"])).order_by(DomainPurchase.cloudflare_account, DomainPurchase.domain).all()
+
+def distinct_actionable_accounts(rows: list) -> list:
+  """Returns the distinct Cloudflare accounts present among the given rows, in first-seen order."""
+  seen = []
+  for row in rows:
+    if row.cloudflare_account and row.cloudflare_account not in seen:
+      seen.append(row.cloudflare_account)
+  return seen
+
+def render_actionable_domains(rows: list) -> str:
+  """Builds the Крок 2 checkbox list: one entry per domain, only ready_to_setup domains get an enabled checkbox."""
+  if not rows:
+    return '<div class="text-muted text-center py-2">Немає доменів, що очікують налаштування</div>'
+  stage_labels = {
+    "just_bought": '<span class="badge bg-warning text-dark">Щойно куплено</span>',
+    "ns_set": '<span class="badge bg-info text-dark">NS встановлено</span>',
+    "ready_to_setup": '<span class="badge bg-success">Готовий до розгортання</span>'
+  }
+  html = ""
+  for i, row in enumerate(rows, 1):
+    label = stage_labels.get(row.stage, '<span class="badge bg-secondary">?</span>')
+    account = row.cloudflare_account or ""
+    if row.stage == "ready_to_setup":
+      checkbox = f'<input class="form-check-input setup-domain-check" type="checkbox" name="setup_domains" value="{row.domain}" id="setup-dom-{i}">'
+    else:
+      checkbox = '<input class="form-check-input" type="checkbox" disabled>'
+    html += f"""<div class="col-12 col-md-6 col-lg-4 setup-domain-item" data-account="{account}">
+  <div class="form-check d-flex align-items-center gap-2 py-1">
+    {checkbox}
+    <label class="form-check-label flex-grow-1" for="setup-dom-{i}">{row.domain}</label>
+    {label}
+  </div>
+  <div class="text-muted small ms-4">{account or '—'}</div>
+</div>\n"""
+  return html
+
 def render_purchase_history():
-  """Builds the Крок 2 history table rows from the DomainPurchase log."""
+  """Builds the 'Історія покупок' table rows from the full DomainPurchase log."""
   try:
     rows = DomainPurchase.query.order_by(DomainPurchase.id.desc()).limit(200).all()
     if not rows:
-      return '<tr><td colspan="8" class="text-center text-muted">Історія покупок поки що порожня</td></tr>'
+      return '<tr><td colspan="9" class="text-center text-muted">Історія покупок поки що порожня</td></tr>'
     html = ""
     for r in rows:
       color = "table-success" if r.status == "success" else "table-danger"
@@ -94,6 +159,7 @@ def render_purchase_history():
     <td>{r.registrator}</td>
     <td>{r.cloudflare_account or "-"}</td>
     <td>{r.status}</td>
+    <td>{r.stage}</td>
     <td>{r.message or ""}</td>
     <td>{r.purchased_by}</td>
     <td>{r.created.strftime('%d-%m-%Y %H:%M:%S')}</td>
@@ -101,7 +167,7 @@ def render_purchase_history():
     return html
   except Exception as err:
     logging.error(f"render_purchase_history(): global error {err}")
-    return f'<tr><td colspan="8">Помилка завантаження історії: {err}</td></tr>'
+    return f'<tr><td colspan="9">Помилка завантаження історії: {err}</td></tr>'
 
 def count_free_slots(cf_accounts: list) -> dict:
   """For every given Cloudflare account, returns how many domain slots are free before hitting the 50-domain limit."""
@@ -132,12 +198,14 @@ def _add_domain_to_cf(acc: Cloudflare, domain: str):
   except Exception as err:
     return False, str(err)
 
-def _update_purchase_row(domain: str, account, status: str, message: str):
+def _update_purchase_row(domain: str, account, status: str, message: str, stage: str = None):
   row = DomainPurchase.query.filter_by(domain=domain).order_by(DomainPurchase.id.desc()).first()
   if row:
     row.cloudflare_account = account
     row.status = status
     row.message = message
+    if stage is not None:
+      row.stage = stage
     db.session.commit()
 
 def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: DomainRegistrator, realname: str) -> dict:
@@ -167,7 +235,7 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
       ok, msg = dynadot_register_domain(registrator, domain, duration=1)
       status = "success" if ok else "error"
       message = "Куплено, очікує налаштування Cloudflare" if ok else f"Помилка покупки: {msg}"
-      db.session.add(DomainPurchase(domain=domain, registrator=registrator.name, cloudflare_account=None, status=status, message=message, purchased_by=realname))
+      db.session.add(DomainPurchase(domain=domain, registrator=registrator.name, cloudflare_account=None, status=status, message=message, purchased_by=realname, stage="just_bought"))
       db.session.commit()
       if ok:
         purchased.append(domain)
@@ -200,7 +268,7 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
         if ns_ok:
           logging.info(f"purchase_and_setup_domains(): Domain {domain} added to CF account {acc.account}, NS set, registered in DB")
           cf_setup_log.append((domain, True, f"Додано в Cloudflare ({acc.account}), NS встановлено, зареєстровано в базі"))
-          _update_purchase_row(domain, acc.account, "success", "Додано в Cloudflare, NS встановлено, зареєстровано в базі")
+          _update_purchase_row(domain, acc.account, "success", "Додано в Cloudflare, NS встановлено, зареєстровано в базі", stage="ns_set")
         else:
           logging.error(f"purchase_and_setup_domains(): Domain {domain} added to CF account {acc.account} but NS set failed: {ns_msg}")
           cf_setup_log.append((domain, False, f"Додано в Cloudflare ({acc.account}), але NS НЕ встановлено: {ns_msg}"))

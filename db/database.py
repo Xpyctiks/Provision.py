@@ -128,3 +128,5 @@ class DomainPurchase(db.Model):
   message = db.Column(db.String(512), nullable=True)
   purchased_by = db.Column(db.String(80), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
+  #tracks the domain's lifecycle through the setup pipeline: just_bought -> ns_set -> ready_to_setup -> ready_to_email -> done
+  stage = db.Column(db.String(20), nullable=False, default="just_bought")

@@ -110,6 +110,69 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// ── Крок 2: Server / Template dropdown click handlers (same pattern as provision.js) ──
+
+document.querySelectorAll('.dropdown-item.server').forEach(item => {
+  item.addEventListener('click', function () {
+    const value = this.getAttribute('data-value');
+    document.getElementById('selected_server').value = value;
+    document.getElementById('Server').innerText = value;
+  });
+});
+
+document.querySelectorAll('.dropdown-item.template').forEach(item => {
+  item.addEventListener('click', function () {
+    const value = this.getAttribute('data-value');
+    document.getElementById('selected_template').value = value;
+    document.getElementById('Template').innerText = value;
+  });
+});
+
+// ── Крок 2: Cloudflare account filter - narrows the domain list and reloads the destination address list ──
+
+function updateDestinationAddresses(account) {
+  const select = document.getElementById('destination_email');
+  if (!select) return;
+  const addresses = (window.DOMAIN_PURCHASE_ADDRESSES || {})[account] || [];
+  if (!account) {
+    select.innerHTML = '<option value="">— Спочатку оберіть аккаунт Cloudflare вище —</option>';
+    return;
+  }
+  if (!addresses.length) {
+    select.innerHTML = '<option value="">Верифікованих адрес не знайдено для цього аккаунту</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">— Оберіть адресу —</option>' +
+    addresses.map(email => `<option value="${email}">${email}</option>`).join('');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const filter = document.getElementById('cfAccountFilter');
+  if (!filter) return;
+  filter.addEventListener('change', function () {
+    const account = this.value;
+    document.querySelectorAll('#setupDomainsContainer .setup-domain-item').forEach(item => {
+      item.style.display = (!account || item.dataset.account === account) ? '' : 'none';
+    });
+    updateDestinationAddresses(account);
+  });
+});
+
+// ── Крок 2: email alias persistence (defaults to "support") ──────────────────
+
+document.addEventListener('DOMContentLoaded', function () {
+  const aliasField = document.getElementById('email_alias');
+  if (aliasField) {
+    const saved = getCookie('domain_purchase_email_alias');
+    if (saved) {
+      aliasField.value = saved;
+    }
+    aliasField.addEventListener('input', function () {
+      setCookie('domain_purchase_email_alias', this.value, 365);
+    });
+  }
+});
+
 // ── Loading spinner (shared behavior with other pages) ───────────────────────
 
 function showLoading() {

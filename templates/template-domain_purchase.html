@@ -62,7 +62,8 @@
 </div>
 <ul class="nav nav-tabs">
   <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/domain_purchase/step1/">Крок 1: Купівля доменів</a></li>
-  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/">Крок 2: Історія покупок</a></li>
+  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/">Крок 2: Налаштування доменів</a></li>
+  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/">Історія покупок</a></li>
 </ul>
 <br>
 {% if active1 %}
@@ -117,6 +118,70 @@
 {% if active2 %}
 <div class="container-fluid">
   <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+      <div class="card mx-auto mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Домени, що очікують налаштування:</h5>
+          <select id="cfAccountFilter" class="form-select form-select-sm" style="width:auto;">
+            <option value="">👤 Усі аккаунти Cloudflare</option>
+            {{accounts_options|safe}}
+          </select>
+        </div>
+        <div class="card-body">
+          <form action="/domain_purchase/step2/" method="POST" id="setupform" class="needs-validation" novalidate>
+            <div id="setupDomainsContainer" class="row g-1 mb-3">
+              {{domains_html|safe}}
+            </div>
+            <hr>
+            <div class="row g-3">
+              <div class="col-12 col-md-6 dropdown">
+                <h6 class="card-title">Сервер для DNS записів:</h6>
+                <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Server" data-bs-toggle="dropdown" aria-expanded="false">{{first_server|safe}}</button>
+                <ul class="dropdown-menu" aria-labelledby="Server">
+                  {{server_list|safe}}
+                </ul>
+                <input type="hidden" name="selected_server" id="selected_server" value="{{first_server|safe}}" required>
+              </div>
+              <div class="col-12 col-md-6 dropdown">
+                <h6 class="card-title">Шаблон для розгортання (ігнорується, якщо обрано сайт для клонування):</h6>
+                <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Template" data-bs-toggle="dropdown" aria-expanded="false">{{first_template|safe}}</button>
+                <ul class="dropdown-menu" aria-labelledby="Template">
+                  {{templates|safe}}
+                </ul>
+                <input type="hidden" name="selected_template" id="selected_template" value="{{first_template|safe}}">
+              </div>
+              <div class="col-12 col-md-6">
+                <h6 class="card-title">Або клонувати наявний сайт (пріоритет над шаблоном):</h6>
+                <select class="form-select" id="selected_clone_source" name="selected_clone_source">
+                  <option value="">— Не клонувати, розгорнути з шаблону —</option>
+                  {{sites_options|safe}}
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <h6 class="card-title">Адреса призначення для пошти (Destination Address):</h6>
+                <select class="form-select" id="destination_email" name="destination_email" required>
+                  <option value="">— Спочатку оберіть аккаунт Cloudflare вище —</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <h6 class="card-title">Локальна частина email-аліасу (напр. support@домен):</h6>
+                <input type="text" class="form-control" id="email_alias" name="email_alias" value="support" required>
+              </div>
+            </div>
+            <div class="d-grid mt-3 col-12 col-md-4 mx-auto">
+              <button type="submit" class="btn btn-info w-100" name="buttonSetupDomains" value="Submit" onclick="showLoading()">Розгорнути обрані домени</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>window.DOMAIN_PURCHASE_ADDRESSES = {{addresses_by_account_json|default('{}')|safe}};</script>
+{% endif %}
+{% if active3 %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
     <div class="col-12">
       <div class="card mx-auto">
         <div class="card-header">
@@ -132,6 +197,7 @@
                   <th scope="col">Реєстратор:</th>
                   <th scope="col">Аккаунт Cloudflare:</th>
                   <th scope="col">Статус:</th>
+                  <th scope="col">Стадія:</th>
                   <th scope="col">Повідомлення:</th>
                   <th scope="col">Хто купив:</th>
                   <th scope="col">Дата:</th>
