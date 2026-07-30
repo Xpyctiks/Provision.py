@@ -582,4 +582,48 @@ def handler_messages(form):
   except Exception as err:
     logging.error(f"Admin {current_user.realname}>handler_publishMessage() global error: {err}")
     flash('Якась глобальна помилка при додаванні повідомлення! Дивіться логи!','alert alert-danger')
+
+@rights_required(255)
+def handler_registrators(form):
+  """Handler for saving/deleting domain registrator accounts to DB, received from admin panel"""
+  logging.info(f"---------------------------Processing domain registrator management from admin panel by {current_user.realname}---------------------------")
+  try:
+    #processing delete registrator request
+    if "buttonDeleteRegistrator" in form:
+      registrator = DomainRegistrator.query.filter_by(id=int(form.get('buttonDeleteRegistrator').strip())).first()
+      if registrator:
+        db.session.delete(registrator)
+        db.session.commit()
+        logging.info(f"Admin {current_user.realname}>Domain registrator {registrator.name} with ID {form.get('buttonDeleteRegistrator').strip()} deleted successfully!")
+        flash(f'Реєстратор {registrator.name} з ID {form.get("buttonDeleteRegistrator").strip()} успішно видален!','alert alert-success')
+        return
+      else:
+        logging.error(f"Admin {current_user.realname}>Domain registrator with ID {form.get('buttonDeleteRegistrator').strip()} deletion error - no such registrator!")
+        flash(f'Помилка видалення реєстратора з ID {form.get("buttonDeleteRegistrator").strip()} - такого не існує!','alert alert-warning')
+        return
+    #processing add registrator request
+    elif "buttonAddRegistrator" in form:
+      name = form.get("new-registrator-name", "").strip()
+      production_key = form.get("new-registrator-production-key", "").strip()
+      secret_key = form.get("new-registrator-secret-key", "").strip()
+      if not name or not production_key or not secret_key:
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for domain registrator add procedure has not been received!")
+        flash(f'Один або декілька важливих параметрів для створення реєстратора не були отримані сервером!','alert alert-warning')
+        return
+      #check if this registrator already exists in DB
+      registrator = DomainRegistrator.query.filter_by(name=name).first()
+      if registrator:
+        logging.error(f"Admin {current_user.realname}>Registrator {name} already exists in DB!")
+        flash(f'Реєстратор {name} вже існує!','alert alert-danger')
+        return
+      new_registrator = DomainRegistrator(name=name, api_production_key=production_key, api_secret_key=secret_key)
+      db.session.add(new_registrator)
+      db.session.commit()
+      logging.info(f"Admin {current_user.realname}>Domain registrator {name} created successfully!")
+      flash(f'Реєстратор {name} успішно створен!','alert alert-success')
+      return
+  except Exception as err:
+    logging.error(f"Admin {current_user.realname}>handler_registrators() global error: {err}")
+    flash('Помилка обробки функцій реєстраторів доменів!','alert alert-danger')
+    return
     return

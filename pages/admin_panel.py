@@ -46,6 +46,9 @@ def catch_admin_panel():
     elif "buttonDeleteRestriction" in request.form or "buttonAddRestriction" in request.form or "buttonEditRestriction" in request.form:
       handler_restrictions(request.form)
       return redirect("/admin_panel/restrictions/",302)
+    elif "buttonDeleteRegistrator" in request.form or "buttonAddRegistrator" in request.form:
+      handler_registrators(request.form)
+      return redirect("/admin_panel/registrators/",302)
     else:
       flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
       logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
@@ -620,5 +623,58 @@ def admin_panel_messages():
     return render_template("template-admin_panel.html",active9="active",data=html_data,admin_panel=is_admin())
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
+    flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
+    return redirect("/",302)
+
+@admin_panel_bp.route("/admin_panel/registrators/", methods=['GET'])
+@login_required
+@rights_required(255)
+def admin_panel_registrators():
+  try:
+    html_data = f"""
+<div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
+  <table class="table table-bordered">
+  <thead>
+  <tr class="table-warning">
+    <th scope="col" style="width: 45px;">ID:</th>
+    <th scope="col" style="width: 150px;">Назва:</th>
+    <th scope="col" style="width: 350px;">Production Key:</th>
+    <th scope="col" style="width: 350px;">Secret Key:</th>
+    <th scope="col" style="width: 150px;">Створен:</th>
+  </tr>
+  </thead>
+  <tbody>"""
+    registrators = DomainRegistrator.query.order_by(DomainRegistrator.id).all()
+    for i, s in enumerate(registrators, 1):
+      html_data += f"""
+  <tr class="table-success">
+    <form action="/admin_panel/" method="POST" id="postform" novalidate>
+    <td class="table-success cname-cell" >{s.id}
+    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteRegistrator" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний реєстратор із бази.">❌</button>    
+    </td></form>
+    <td class="table-success cname-cell" >{s.name}</td>
+    <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.api_production_key}</details></td>
+    <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.api_secret_key}</details></td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
+  </tr>"""
+    html_data += """
+  </tbody>
+  </table>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
+  <div class="input-group mb-2">
+  <span class="input-group-text">Назва:</span>
+  <input type="text" class="form-control" id="field1" name="new-registrator-name" value="">
+  <span class="input-group-text">Production Key:</span>
+  <input type="text" class="form-control" id="field2" name="new-registrator-production-key" value="">
+  <span class="input-group-text">Secret Key:</span>
+  <input type="text" class="form-control" id="field3" name="new-registrator-secret-key" value="">
+  <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddRegistrator" onclick="showLoading()">Додати реєстратора</button>
+   </div>
+  </form>
+ </div>
+</div>"""
+    return render_template("template-admin_panel.html",active11="active",data=html_data,admin_panel=is_admin())
+  except Exception as err:
+    logging.error(f"admin_panel_registrators(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)

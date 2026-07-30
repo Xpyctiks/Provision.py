@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Automatic provision system for a lot of small sites">
+  <meta name="version" content="{{ version }}">
+  <title>The Provision</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/provision.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous" defer></script>
+</head>
+<body>
+<main>
+<div>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center me-auto">
+        <img src="{{ url_for('static', filename='images/favicon.svg') }}" alt="Logo" width="32" height="32">
+        <a class="navbar-brand" href="/">&nbsp;The Provision:</a>
+        <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
+      </div>
+      <div class="dropdown mx-auto">
+        <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+        <ul class="dropdown-menu">
+          <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% if not mail_admin %}
+          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% endif %}
+          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% if not mail_admin %}
+          <li><a class="dropdown-item" href="/redirects_bulk/" class="btn btn-secondary">🔀Bulk редіректи</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/redirects_dashboard/" class="btn btn-secondary">📈Дашборд редіректів</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% endif %}
+          {{admin_panel|safe}}
+        </ul>
+      </div>
+      <div class="ms-auto d-flex align-items-center">
+        <form class="d-flex" action="/logout" method="POST">
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+</div>
+<ul class="nav nav-tabs">
+  <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/domain_purchase/step1/">Крок 1: Купівля доменів</a></li>
+  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/">Крок 2: Історія покупок</a></li>
+</ul>
+<br>
+{% if active1 %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-12 col-lg-10 col-xl-10">
+      <div class="card mx-auto">
+        <div class="card-header">
+          <h4 style="text-align: center;">Купівля нових доменів через Dynadot:</h4>
+        </div>
+        <div class="card-body">
+          <form action="/domain_purchase/step1/" method="POST" id="postform" class="needs-validation" novalidate>
+            <h5 class="card-title">Список доменів для покупки (кожен домен з нового рядка):</h5>
+            <div class="mb-3">
+              <textarea class="form-control font-monospace" id="domains" name="domains" rows="10" placeholder="example1.com&#10;example2.com&#10;example3.com" autofocus required></textarea>
+              <div class="invalid-feedback">
+                Вкажіть хоча б один домен.
+              </div>
+            </div>
+            <div class="card mb-3">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Оберіть аккаунти Cloudflare, на які додавати куплені домени <span class="badge bg-secondary ms-1" id="cfAccountCountBadge">0</span></h6>
+                <div class="d-flex gap-2">
+                  <button type="button" id="cfSelectAllBtn" class="btn btn-sm btn-outline-success">Обрати всі</button>
+                  <button type="button" id="cfDeselectAllBtn" class="btn btn-sm btn-outline-secondary">Скасувати</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="cfAccountsContainer" class="row g-1">
+                  {{cf_checkboxes|safe}}
+                </div>
+              </div>
+            </div>
+            <div class="mb-3 dropdown">
+              <h5 class="card-title">Оберіть реєстратора доменів:</h5>
+              <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Registrator" data-bs-toggle="dropdown" aria-expanded="false">{{first_reg|safe}}</button>
+              <ul class="dropdown-menu" aria-labelledby="Registrator">
+                {{reg_list|safe}}
+              </ul>
+              <input type="hidden" name="selected_registrator" id="selected_registrator" value="{{first_reg|safe}}" required>
+            </div>
+            <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
+              <button type="submit" class="btn btn-info w-100" name="buttonPurchase" value="Submit" onclick="showLoading()">Купити домени</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if active2 %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <div class="card mx-auto">
+        <div class="card-header">
+          <h4 style="text-align: center;">Історія покупок доменів:</h4>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th scope="col">ID:</th>
+                  <th scope="col">Домен:</th>
+                  <th scope="col">Реєстратор:</th>
+                  <th scope="col">Аккаунт Cloudflare:</th>
+                  <th scope="col">Статус:</th>
+                  <th scope="col">Повідомлення:</th>
+                  <th scope="col">Хто купив:</th>
+                  <th scope="col">Дата:</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{history_rows|safe}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="myModalLabel">Інформація:</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <ul class=flashes style="margin-top: 33px;" id="message">
+          {% for category, message in messages %}
+          <li class="{{ category }}">{{ message|safe}}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+<script src="{{ url_for('static', filename='js/domain_purchase.js') }}" defer></script>
+</main>
+</body>
+</html>

@@ -111,3 +111,20 @@ class RedirectsRules(db.Model):
   created = db.Column(db.DateTime, default=datetime.now)
   updated = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
   updatedby = db.Column(db.String(256), nullable=True)
+
+class DomainRegistrator(db.Model):
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String(256), nullable=False,unique=True)
+  api_production_key = db.Column(db.String(256), nullable=False)
+  api_secret_key = db.Column(db.String(256), nullable=False)
+  created = db.Column(db.DateTime, default=datetime.now)
+
+class DomainPurchase(db.Model):
+  id = db.Column(db.Integer, primary_key=True)
+  domain = db.Column(db.String(256), nullable=False)
+  registrator = db.Column(db.String(256), nullable=False)
+  cloudflare_account = db.Column(db.String(256), nullable=True)
+  status = db.Column(db.String(20), nullable=False)
+  message = db.Column(db.String(512), nullable=True)
+  purchased_by = db.Column(db.String(80), nullable=False)
+  created = db.Column(db.DateTime, default=datetime.now)
