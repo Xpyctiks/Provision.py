@@ -1,6 +1,6 @@
 import logging
-from flask import redirect,Blueprint,request,render_template,flash
-from flask_login import login_required, current_user
+from flask import redirect,Blueprint,request,render_template,flash,current_app
+from flask_login import login_required,current_user
 from db.database import *
 from functions.send_to_telegram import send_to_telegram
 from functions.admin_panel_func import *
@@ -92,7 +92,7 @@ def admin_panel_settings():
   </div>
  </form>
 </div>"""
-    return render_template("template-admin_panel.html",active1="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active1="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_settings(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -169,7 +169,7 @@ def admin_panel_users():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active2="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active2="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_users(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -223,7 +223,7 @@ def admin_panel_templates():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active3="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active3="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_templates(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -277,7 +277,7 @@ def admin_panel_cloudflare():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active4="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active4="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_cloudflare(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -336,7 +336,7 @@ def admin_panel_owners():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active5="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active5="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_owners(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -390,7 +390,7 @@ def admin_panel_servers():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active6="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active6="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_servers(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -453,7 +453,7 @@ def admin_panel_links():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active7="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active7="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_links(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -522,7 +522,7 @@ def admin_panel_accounts():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active8="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active8="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -581,7 +581,7 @@ def admin_panel_restrictions():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active10="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active10="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_restrictions(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -620,7 +620,7 @@ def admin_panel_messages():
     </div>
   </div>
 </div>"""
-    return render_template("template-admin_panel.html",active9="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active9="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_accounts(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
@@ -673,7 +673,7 @@ def admin_panel_registrators():
   </form>
  </div>
 </div>"""
-    return render_template("template-admin_panel.html",active11="active",data=html_data,admin_panel=is_admin())
+    return render_template("template-admin_panel.html",active11="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_registrators(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')

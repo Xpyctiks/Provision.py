@@ -1,11 +1,11 @@
 import logging
 import os
 import requests
-from flask import Blueprint, current_app, jsonify, request, redirect, render_template, flash
-from flask_login import login_required, current_user
-from db.database import Cloudflare, CloudflareEmailsStatus, CloudflareEmailsRules
+from flask import Blueprint,current_app,jsonify,request,redirect,render_template,flash
+from flask_login import login_required,current_user
+from db.database import Cloudflare,CloudflareEmailsStatus,CloudflareEmailsRules
 from db.db import db
-from functions.site_actions import is_admin, is_mail_admin
+from functions.site_actions import is_admin,is_mail_admin
 
 cloudflare_email_bp = Blueprint("cloudflare_email", __name__)
 
@@ -251,7 +251,8 @@ def manage_email():
       addresses_html=addresses_html,
       addresses_options=addresses_options,
       admin_panel=is_admin(),
-      mail_admin=is_mail_admin()
+      mail_admin=is_mail_admin(),
+      version=current_app.config.get("VERSION","")
     )
   except Exception as err:
     logging.error(f"manage_email(): general error by {current_user.realname} for domain {domain}: {err}")

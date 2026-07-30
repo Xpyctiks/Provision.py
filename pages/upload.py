@@ -1,7 +1,7 @@
 import logging
 import os
 import pathlib
-from flask import render_template,request,redirect,flash,Blueprint
+from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import current_user, login_required
 from functions.send_to_telegram import send_to_telegram
 from werkzeug.utils import secure_filename
@@ -79,7 +79,7 @@ def show_upload_page():
     cf_list, first_cf = loadClodflareAccounts()
     #parsing Servers accounts available
     server_list, first_server = loadServersList()
-    return render_template("template-upload.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
+    return render_template("template-upload.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_upload_page(): Upload page general render error: {err}")
     flash(f"Неочікувана помилка на сторінці ручного розгортання, дивіться логи!", 'alert alert-danger')

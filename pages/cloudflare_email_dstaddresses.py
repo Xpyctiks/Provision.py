@@ -1,9 +1,9 @@
 import logging
 import requests
-from flask import Blueprint, render_template, request, redirect, flash
-from flask_login import login_required, current_user
+from flask import Blueprint,render_template,request,redirect,flash,current_app
+from flask_login import login_required,current_user
 from db.database import Cloudflare
-from functions.site_actions import is_admin, is_mail_admin
+from functions.site_actions import is_admin,is_mail_admin
 
 cloudflare_email_dstaddresses_bp = Blueprint("cloudflare_email_dstaddresses", __name__)
 def _get_headers(account: str, token: str) -> dict:
@@ -82,7 +82,7 @@ def show_dstaddresses():
       </form>
     </td>
   </tr>"""
-    return render_template("template-cloudflare_email_dstaddress.html",accounts_list=accounts_list,selected_account=selected_account,addresses_html=addresses_html,admin_panel=is_admin(),mail_admin=is_mail_admin())
+    return render_template("template-cloudflare_email_dstaddress.html",accounts_list=accounts_list,selected_account=selected_account,addresses_html=addresses_html,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_dstaddresses(): general error by {current_user.realname}: {err}")
     flash('Неочікувана помилка на сторінці управління адресами призначення! Дивіться логи.','alert alert-danger')

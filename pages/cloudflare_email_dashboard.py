@@ -1,8 +1,8 @@
 import logging
-from flask import Blueprint, render_template, flash, redirect
-from flask_login import login_required, current_user
-from db.database import CloudflareEmailsStatus, CloudflareEmailsRules, Domain_account, Cloudflare
-from functions.site_actions import is_admin, is_mail_admin
+from flask import Blueprint,render_template,flash,redirect,current_app
+from flask_login import login_required,current_user
+from db.database import CloudflareEmailsStatus,CloudflareEmailsRules,Domain_account,Cloudflare
+from functions.site_actions import is_admin,is_mail_admin
 
 cloudflare_email_dashboard_bp = Blueprint("cloudflare_email_dashboard", __name__)
 @cloudflare_email_dashboard_bp.route("/cloudflare_email_dashboard/", methods=['GET'])
@@ -49,7 +49,7 @@ def show_cloudflare_email_dashboard():
     <td>{updated_cell}</td>
     <td><a class="btn btn-sm btn-secondary" href="/cloudflare_email/manage?domain={s.domain}" title="Перегляд та керування Email Routing для цього домену.">⚙Керувати</a></td>
   </tr>"""
-    return render_template("template-cloudflare_email_dashboard.html", rows_html=rows_html, cf_accounts_list=cf_accounts_list, admin_panel=is_admin(),mail_admin=is_mail_admin())
+    return render_template("template-cloudflare_email_dashboard.html", rows_html=rows_html, cf_accounts_list=cf_accounts_list, admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_cloudflare_email_dashboard(): general error by {current_user.realname}: {err}")
     flash('Неочікувана помилка при завантаженні дашборду Email Routing! Дивіться логи.', 'alert alert-danger')

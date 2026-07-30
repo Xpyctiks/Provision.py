@@ -1,10 +1,10 @@
 import logging
 import requests
-from flask import render_template,request,redirect,flash,Blueprint
+from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
-from db.database import Domain_account, Cloudflare
+from db.database import Domain_account,Cloudflare
 from functions.send_to_telegram import send_to_telegram
-from functions.site_actions import normalize_domain,is_admin, is_mail_admin
+from functions.site_actions import normalize_domain,is_admin,is_mail_admin
 
 dns_validation_bp = Blueprint("dns_validation", __name__)
 @dns_validation_bp.route("/dns_validation/", methods=['GET'])
@@ -74,7 +74,7 @@ def dns_validation():
           "record_conent": record_content,
           "record_id": record_id
         })
-    return render_template("template-dns_validation.html",html_data=html_data,domain=domain,account=account,admin_panel=is_admin(),mail_admin=is_mail_admin())
+    return render_template("template-dns_validation.html",html_data=html_data,domain=domain,account=account,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"dns_validation(): general render error: {err}")
     flash(f"Неочікувана помилка на сторінці ДНС валідації, дивіться логи!", 'alert alert-danger')

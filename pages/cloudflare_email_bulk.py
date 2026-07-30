@@ -1,7 +1,7 @@
 import logging
 import requests
-from flask import Blueprint, jsonify, render_template, request, flash, redirect
-from flask_login import login_required, current_user
+from flask import Blueprint,jsonify,render_template,request,flash,redirect,current_app
+from flask_login import login_required,current_user
 from db.database import Cloudflare
 from functions.site_actions import is_admin,is_mail_admin
 from pages.cloudflare_email import (
@@ -15,7 +15,7 @@ cloudflare_email_bulk_bp = Blueprint("cloudflare_email_bulk", __name__)
 def show_bulk_email_page():
   accounts = Cloudflare.query.all()
   accounts_options = "".join(f'<option value="{acc.account}">{acc.account}</option>' for acc in accounts)
-  return render_template("template-cloudflare_email_bulk.html",accounts_options=accounts_options,admin_panel=is_admin(),mail_admin=is_mail_admin())
+  return render_template("template-cloudflare_email_bulk.html",accounts_options=accounts_options,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
 
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/account_data", methods=['GET'])
 @login_required

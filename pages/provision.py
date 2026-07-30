@@ -21,7 +21,7 @@ def show_provision_page():
     cf_list, first_cf = loadClodflareAccounts()
     #parsing Servers accounts available
     server_list, first_server = loadServersList()
-    return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
+    return render_template("template-provision.html",templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_provision_page(): general error by {current_user.realname}: {err}")
     flash('Загальна помилка на сторінці /provision! Дивіться логи!','alert alert-danger')

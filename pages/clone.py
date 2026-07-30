@@ -24,7 +24,7 @@ def showClonePage():
     cf_list, first_cf = loadClodflareAccounts()
     #parsing Servers accounts available
     server_list, first_server = loadServersList()
-    return render_template("template-clone.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin())
+    return render_template("template-clone.html",source_site=(request.args.get('source_site') or 'Error').strip(),templates=templates_list,first_template=first_template,cf_list=cf_list,first_cf=first_cf,first_server=first_server,server_list=server_list,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"Clone page general render error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка на сторінці колнування, дивіться логи!", 'alert alert-danger')

@@ -10,7 +10,7 @@ logs_bp = Blueprint("logs", __name__)
 def showLogs():
   """Simple functions that shows up a current content of programm log file."""
   try:
-    return render_template("template-logs.html",admin_panel=is_admin(),mail_admin=is_mail_admin())
+    return render_template("template-logs.html",admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"showLogs(): gereral error: {err}")
     flash(f"Загальна помилка сторінки логу!",'alert alert-danger')

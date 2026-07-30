@@ -1,4 +1,4 @@
-from flask import render_template,request,redirect,flash,Blueprint
+from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
 import os
 import logging
@@ -47,7 +47,7 @@ def show_redirects():
         applyButton = "btn-warning"
       else:
         applyButton = "btn-outline-warning"
-      return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton,admin_panel=is_admin())
+      return render_template("template-redirects.html",table=table,sitename=site,applyButton=applyButton,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
     else:
       return redirect("/",302)
   except Exception as err:

@@ -1,5 +1,5 @@
 import logging
-from flask import render_template,request,redirect,flash,Blueprint,session
+from flask import render_template,request,redirect,flash,Blueprint,session,current_app
 from flask_login import login_user,current_user
 from db.database import User
 from functions.send_to_telegram import send_to_telegram
@@ -46,7 +46,7 @@ def show_login_page():
       logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>GET request: User {current_user.username} IP:{ip}, Real-IP:{real_ip} is already logged in. Redirecting to the main page.")
       return redirect('/',302)
     else:
-      return render_template("template-login.html")
+      return render_template("template-login.html",version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>show_login_page(): general error: {err}")
     send_to_telegram(f"show_login_page(): general error: {err}",f"🚒Provision error by {current_user.realname}:")
