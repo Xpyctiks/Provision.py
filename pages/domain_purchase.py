@@ -143,7 +143,8 @@ def show_domain_purchase_step2():
       addresses_by_account_json=json.dumps(addresses_by_account),
       sites_options=sites_options,templates=templates_list,first_template=first_template,
       server_list=server_list,first_server=first_server,
-      admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION","")
+      admin_panel=is_admin(),mail_admin=is_mail_admin(),
+      version=current_app.config.get("VERSION","")
     )
   except Exception as err:
     logging.error(f"show_domain_purchase_step2(): general render error by {current_user.realname}: {err}")

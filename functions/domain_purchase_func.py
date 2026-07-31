@@ -233,14 +233,14 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
     purchase_log = []
     for domain in domains:
       ok, msg = dynadot_register_domain(registrator, domain, duration=1)
-      status = "success" if ok else "error"
-      message = "Куплено, очікує налаштування Cloudflare" if ok else f"Помилка покупки: {msg}"
-      db.session.add(DomainPurchase(domain=domain, registrator=registrator.name, cloudflare_account=None, status=status, message=message, purchased_by=realname, stage="just_bought"))
-      db.session.commit()
       if ok:
+        #only a successful purchase gets a DB record - a failed attempt leaves no trace of the domain at all
+        db.session.add(DomainPurchase(domain=domain, registrator=registrator.name, cloudflare_account=None, status="success", message="Куплено, очікує налаштування Cloudflare", purchased_by=realname, stage="just_bought"))
+        db.session.commit()
         purchased.append(domain)
         purchase_log.append((domain, True, "Домен успішно куплено"))
       else:
+        logging.error(f"purchase_and_setup_domains(): Purchase failed for domain {domain}, skipping any DB records for it: {msg}")
         purchase_log.append((domain, False, f"Помилка покупки: {msg}"))
     #Phase 2: sequential Cloudflare assignment (fill account 1 to the limit, then move to next)
     cf_setup_log = []
