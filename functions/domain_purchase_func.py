@@ -267,14 +267,20 @@ def _smtp2go_post(path: str, headers: dict, payload: dict) -> dict:
     raise RuntimeError(f"SMTP2GO {path} повернув не-JSON відповідь (HTTP {response.status_code}): {snippet}")
 
 def _smtp2go_domain_verified(headers: dict, domain: str):
-  """Fetches the current domain/view state from SMTP2GO and returns True only if both DKIM and
-  return-path are confirmed verified."""
+  """Fetches the current domain/view state from SMTP2GO and returns True only if DKIM, return-path,
+  AND the tracking CNAME (the "link" tracker) are all confirmed verified."""
   view_result = _smtp2go_post("/domain/view", headers, {"domain": domain})
   domains_data = view_result.get("data", {}).get("domains", [])
   if not domains_data:
     return False
-  dinfo = domains_data[0].get("domain", {})
-  return bool(dinfo.get("dkim_verified")) and bool(dinfo.get("rpath_verified"))
+  entry = domains_data[0]
+  dinfo = entry.get("domain", {})
+  if not (bool(dinfo.get("dkim_verified")) and bool(dinfo.get("rpath_verified"))):
+    return False
+  trackers = entry.get("trackers", [])
+  if not trackers:
+    return False
+  return all(bool(tr.get("cname_verified")) for tr in trackers)
 
 def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_account: Smtp2goAccount, realname: str):
   """Adds the domain as a Verified Sender on SMTP2GO (POST /domain/add), reads back the DKIM/return-path

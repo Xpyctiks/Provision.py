@@ -136,6 +136,4 @@ class DomainPurchase(db.Model):
   created = db.Column(db.DateTime, default=datetime.now)
   stage = db.Column(db.String(20), nullable=False, default="just_bought")
   smtp2go_status = db.Column(db.String(20), nullable=True)
-  #which SMTP2GO account owns this domain's Verified Sender setup - needed so the automatic recheck
-  #on the Історія покупок page knows which API key to use, without requiring the admin to pick it again
   smtp2go_account = db.Column(db.String(256), nullable=True)
