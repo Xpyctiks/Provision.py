@@ -131,8 +131,9 @@ class DomainPurchase(db.Model):
   registrator = db.Column(db.String(256), nullable=False)
   cloudflare_account = db.Column(db.String(256), nullable=True)
   status = db.Column(db.String(20), nullable=False)
-  #message is a running log appended to at every pipeline stage (purchase, deploy, email routing, smtp2go), so it needs more room than a single status line
   message = db.Column(db.String(1024), nullable=True)
   purchased_by = db.Column(db.String(80), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
   stage = db.Column(db.String(20), nullable=False, default="just_bought")
+  #tracks the SMTP2GO verified-sender sub-process independently of stage: None -> smtp2go_set (DNS written, awaiting verification) -> smtp2go_done (verified)
+  smtp2go_status = db.Column(db.String(20), nullable=True)

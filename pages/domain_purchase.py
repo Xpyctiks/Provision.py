@@ -14,7 +14,7 @@ from functions.domain_purchase_func import (
   parse_domain_textarea,load_domain_registrators,load_cf_accounts_checkboxes,render_purchase_history,
   purchase_and_setup_domains,recheck_domain_statuses,load_actionable_domains,distinct_actionable_accounts,
   render_actionable_domains,load_smtp2go_accounts,get_purchase_row,append_purchase_message,
-  _setup_smtp2go_for_domain
+  _setup_smtp2go_for_domain,verify_smtp2go_for_domain
 )
 from pages.cloudflare_email import (
   _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,
@@ -331,8 +331,8 @@ def retry_smtp2go():
       return redirect("/domain_purchase/history/",302)
     ok, msg = _setup_smtp2go_for_domain(domain, row.cloudflare_account, smtp2go_account, current_user.realname)
     if ok:
-      append_purchase_message(row, f"SMTP2GO налаштовано: {msg}")
-      flash(f"SMTP2GO успішно налаштовано для домену {domain}: {msg}", 'alert alert-success')
+      append_purchase_message(row, f"SMTP2GO: {msg}")
+      flash(f"SMTP2GO налаштовано для домену {domain}: {msg}", 'alert alert-success')
     else:
       logging.error(f"retry_smtp2go(): SMTP2GO setup failed for domain {domain}: {msg}")
       flash(f"Помилка налаштування SMTP2GO для домену {domain}: {msg}", 'alert alert-danger')
@@ -340,4 +340,34 @@ def retry_smtp2go():
   except Exception as err:
     logging.error(f"retry_smtp2go(): general error by {current_user.realname}: {err}")
     flash("Неочікувана помилка при повторному налаштуванні SMTP2GO, дивіться логи!", 'alert alert-danger')
+    return redirect("/domain_purchase/history/",302)
+
+@domain_purchase_bp.route("/domain_purchase/history/verify_smtp2go/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def verify_smtp2go():
+  """POST request processor: manually re-checks SMTP2GO verification for a domain already in smtp2go_set"""
+  try:
+    domain = (request.form.get("verify_smtp2go_domain") or "").strip()
+    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
+    logging.info(f"-----------------------Manual SMTP2GO verification for domain {domain} requested by {current_user.realname} (account: {selected_smtp2go})-----------------------")
+    if not domain or not selected_smtp2go:
+      flash("Помилка! Домен або аккаунт SMTP2GO не вказано!", 'alert alert-danger')
+      return redirect("/domain_purchase/history/",302)
+    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
+    if not smtp2go_account:
+      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
+      return redirect("/domain_purchase/history/",302)
+    ok, msg = verify_smtp2go_for_domain(domain, smtp2go_account)
+    if ok:
+      row = get_purchase_row(domain)
+      if row:
+        append_purchase_message(row, "SMTP2GO верифіковано")
+      flash(f"Домен {domain}: {msg}", 'alert alert-success')
+    else:
+      flash(f"Домен {domain}: {msg}", 'alert alert-warning')
+    return redirect("/domain_purchase/history/",302)
+  except Exception as err:
+    logging.error(f"verify_smtp2go(): general error by {current_user.realname}: {err}")
+    flash("Неочікувана помилка при верифікації SMTP2GO, дивіться логи!", 'alert alert-danger')
     return redirect("/domain_purchase/history/",302)

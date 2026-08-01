@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 import idna
 import requests
 from db.db import db
@@ -161,20 +162,24 @@ def render_actionable_domains(rows: list) -> str:
   return html
 
 def render_purchase_history():
-  """Builds the 'Історія покупок' table rows from the full DomainPurchase log. A domain whose message
-  already shows a successful Email Routing setup but no SMTP2GO note yet gets a retry button in the
-  Дії column (submits to the shared form wrapping the whole table on Крок 2's history tab)."""
+  """Builds the 'Історія покупок' table rows from the full DomainPurchase log. Depending on smtp2go_status,
+  a domain gets either a "set up SMTP2GO" button (never attempted), a "verify SMTP2GO" button (DNS written,
+  awaiting verification) or no button at all (already smtp2go_done, or Email Routing itself isn't done yet).
+  Both buttons submit to the shared form wrapping the whole table on Крок 2's history tab, each one
+  overriding the target URL via formaction so they can share the same selected_smtp2go account field."""
   try:
     rows = DomainPurchase.query.order_by(DomainPurchase.id.desc()).limit(200).all()
     if not rows:
-      return '<tr><td colspan="10" class="text-center text-muted">Історія покупок поки що порожня</td></tr>'
+      return '<tr><td colspan="11" class="text-center text-muted">Історія покупок поки що порожня</td></tr>'
     html = ""
     for r in rows:
       color = "table-success" if r.status == "success" else "table-danger"
       message = r.message or ""
-      needs_smtp2go_retry = r.cloudflare_account and "Email Routing активовано" in message and "SMTP2GO налаштовано" not in message
-      if needs_smtp2go_retry:
-        actions = f'<button type="submit" class="btn btn-sm btn-outline-warning" name="retry_smtp2go_domain" value="{r.domain}" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Спробувати ще раз налаштувати SMTP2GO для цього домену">📧 Налаштувати SMTP2GO</button>'
+      email_routing_done = r.cloudflare_account and "Email Routing активовано" in message
+      if email_routing_done and not r.smtp2go_status:
+        actions = f'<button type="submit" class="btn btn-sm btn-outline-warning" formaction="/domain_purchase/history/retry_smtp2go/" name="retry_smtp2go_domain" value="{r.domain}" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати домен в SMTP2GO та прописати DNS записи">📧 Налаштувати SMTP2GO</button>'
+      elif r.smtp2go_status == "smtp2go_set":
+        actions = f'<button type="submit" class="btn btn-sm btn-outline-info" formaction="/domain_purchase/history/verify_smtp2go/" name="verify_smtp2go_domain" value="{r.domain}" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Перевірити, чи вже верифіковані DNS записи SMTP2GO">🔄 Верифікувати SMTP2GO</button>'
       else:
         actions = ""
       html += f"""  <tr class="{color}">
@@ -184,6 +189,7 @@ def render_purchase_history():
     <td>{r.cloudflare_account or "-"}</td>
     <td>{r.status}</td>
     <td>{r.stage}</td>
+    <td>{r.smtp2go_status or "-"}</td>
     <td>{message}</td>
     <td>{r.purchased_by}</td>
     <td>{r.created.strftime('%d-%m-%Y %H:%M:%S')}</td>
@@ -192,7 +198,7 @@ def render_purchase_history():
     return html
   except Exception as err:
     logging.error(f"render_purchase_history(): global error {err}")
-    return f'<tr><td colspan="10">Помилка завантаження історії: {err}</td></tr>'
+    return f'<tr><td colspan="11">Помилка завантаження історії: {err}</td></tr>'
 
 def count_free_slots(cf_accounts: list) -> dict:
   """For every given Cloudflare account, returns how many domain slots are free before hitting the 50-domain limit."""
@@ -260,11 +266,23 @@ def _smtp2go_post(path: str, headers: dict, payload: dict) -> dict:
     snippet = response.text[:200].replace("\n", " ") if response.text else "(порожня відповідь)"
     raise RuntimeError(f"SMTP2GO {path} повернув не-JSON відповідь (HTTP {response.status_code}): {snippet}")
 
+def _smtp2go_domain_verified(headers: dict, domain: str):
+  """Fetches the current domain/view state from SMTP2GO and returns True only if both DKIM and
+  return-path are confirmed verified."""
+  view_result = _smtp2go_post("/domain/view", headers, {"domain": domain})
+  domains_data = view_result.get("data", {}).get("domains", [])
+  if not domains_data:
+    return False
+  dinfo = domains_data[0].get("domain", {})
+  return bool(dinfo.get("dkim_verified")) and bool(dinfo.get("rpath_verified"))
+
 def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_account: Smtp2goAccount, realname: str):
-  """Adds the domain as a Verified Sender on SMTP2GO (POST /domain/add), reads back the DKIM/return-path/
-  tracking CNAME records it requires (POST /domain/view), and writes those records into the domain's
-  Cloudflare zone (unproxied, since verification CNAMEs must resolve directly, not through Cloudflare's proxy).
-  Then asks SMTP2GO to verify immediately, though actual verification can take up to 48h for DNS propagation."""
+  """Adds the domain as a Verified Sender on SMTP2GO (POST /domain/add), reads back the DKIM/return-path
+  CNAME records it requires (POST /domain/view), and writes those plus a fixed tracking CNAME
+  (link -> track.smtp2go.net) into the domain's Cloudflare zone (unproxied, since verification CNAMEs
+  must resolve directly, not through Cloudflare's proxy). Marks the domain smtp2go_set, waits 5s for the
+  records to settle, then asks SMTP2GO to verify - if it's already confirmed, marks it smtp2go_done right
+  away, otherwise it stays smtp2go_set until someone verifies manually (DNS propagation can take up to 48h)."""
   try:
     headers = {"X-Smtp2go-Api-Key": smtp2go_account.api_key, "Content-Type": "application/json"}
     add_result = _smtp2go_post("/domain/add", headers, {"domain": domain})
@@ -277,7 +295,6 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
       logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/view returned no data for {domain}")
       return False, "SMTP2GO не повернув дані по домену після додавання"
     dinfo = domains_data[0].get("domain", {})
-    trackers = domains_data[0].get("trackers", [])
     acc = Cloudflare.query.filter_by(account=cf_account_email).first()
     if not acc:
       return False, "Cloudflare акаунт для запису DNS SMTP2GO не знайдено"
@@ -291,9 +308,8 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
       records_to_add.append((f"{dinfo['dkim_selector']}._domainkey", dinfo["dkim_value"]))
     if dinfo.get("rpath_selector") and dinfo.get("rpath_value"):
       records_to_add.append((dinfo["rpath_selector"], dinfo["rpath_value"]))
-    for tr in trackers:
-      if tr.get("subdomain") and tr.get("cname_value"):
-        records_to_add.append((tr["subdomain"], tr["cname_value"]))
+    #SMTP2GO's tracking CNAME is always this fixed host/target - add it unconditionally, alongside DKIM/return-path
+    records_to_add.append(("link", "track.smtp2go.net"))
     added, failed = [], []
     for name, value in records_to_add:
       data = {"type": "CNAME", "name": name, "content": value, "ttl": 1, "proxied": False, "comment": "SMTP2GO domain verification"}
@@ -307,15 +323,44 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
         logging.error(f"_setup_smtp2go_for_domain(): Failed to add DNS record {name} for {domain}: {error_msg}")
     if not added and not dinfo.get("dkim_verified"):
       return False, f"Не вдалося додати жодного DNS запису для SMTP2GO: {'; '.join(failed)}"
-    #best-effort verify call - DNS propagation can still take up to 48h, so a non-verified result here is expected, not an error
+    row = get_purchase_row(domain)
+    if row:
+      row.smtp2go_status = "smtp2go_set"
+      db.session.commit()
+    #give the freshly written records a moment to settle before asking SMTP2GO to verify them
+    time.sleep(5)
+    verified = False
     try:
       _smtp2go_post("/domain/verify", headers, {"domain": domain})
+      verified = _smtp2go_domain_verified(headers, domain)
     except RuntimeError as verify_err:
-      logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/verify call failed for {domain}: {verify_err}")
-    msg = f"додано {len(added)} DNS запис(ів)" + (f", помилки: {'; '.join(failed)}" if failed else "") + " (верифікація може тривати до 48 годин)"
+      logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO verify/re-check call failed for {domain}: {verify_err}")
+    if verified and row:
+      row.smtp2go_status = "smtp2go_done"
+      db.session.commit()
+    msg = f"додано {len(added)} DNS запис(ів)" + (f", помилки: {'; '.join(failed)}" if failed else "")
+    msg += " - верифіковано одразу!" if verified else " (статус: очікує верифікації, розповсюдження може тривати до 48 годин)"
     return True, msg
   except Exception as err:
     logging.error(f"_setup_smtp2go_for_domain(): error for domain {domain}: {err}")
+    return False, str(err)
+
+def verify_smtp2go_for_domain(domain: str, smtp2go_account: Smtp2goAccount):
+  """Manual re-verification for a domain already in smtp2go_set: asks SMTP2GO to verify again and,
+  if DKIM+return-path are now confirmed, promotes it to smtp2go_done. Does not touch DNS records."""
+  try:
+    headers = {"X-Smtp2go-Api-Key": smtp2go_account.api_key, "Content-Type": "application/json"}
+    _smtp2go_post("/domain/verify", headers, {"domain": domain})
+    verified = _smtp2go_domain_verified(headers, domain)
+    if verified:
+      row = get_purchase_row(domain)
+      if row:
+        row.smtp2go_status = "smtp2go_done"
+        db.session.commit()
+      return True, "DNS записи верифіковано, SMTP2GO повністю налаштовано"
+    return False, "DNS записи ще не верифіковані (розповсюдження може тривати до 48 годин, спробуйте пізніше)"
+  except Exception as err:
+    logging.error(f"verify_smtp2go_for_domain(): error for domain {domain}: {err}")
     return False, str(err)
 
 def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: DomainRegistrator, realname: str) -> dict:
