@@ -12,6 +12,7 @@ from functions.dynadot_func import dynadot_register_domain, dynadot_set_ns
 
 CF_ACCOUNT_DOMAIN_LIMIT = 50
 DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
+SMTP2GO_API_BASE = "https://eu-api.smtp2go.com/v3"
 
 def _clean_domain(raw: str):
   """Normalizes and validates one domain token. Returns the normalized domain or None if invalid."""
@@ -251,10 +252,6 @@ def append_purchase_message(row: DomainPurchase, text: str, stage: str = None):
     row.stage = stage
   db.session.commit()
 
-#Official regional API base URLs (https://developers.smtp2go.com/docs/endpoints) - "eu-api", not "app-eu" (the
-#latter is the web dashboard host and returns HTML, which broke .json() parsing with "Expecting value" errors)
-SMTP2GO_API_BASE = "https://eu-api.smtp2go.com/v3"
-
 def _smtp2go_post(path: str, headers: dict, payload: dict) -> dict:
   """POSTs to the SMTP2GO API and safely parses the JSON response. Raises RuntimeError with a clear
   message (including HTTP status and a snippet of the raw body) if the response isn't valid JSON -
@@ -267,20 +264,22 @@ def _smtp2go_post(path: str, headers: dict, payload: dict) -> dict:
     raise RuntimeError(f"SMTP2GO {path} повернув не-JSON відповідь (HTTP {response.status_code}): {snippet}")
 
 def _smtp2go_domain_verified(headers: dict, domain: str):
-  """Fetches the current domain/view state from SMTP2GO and returns True only if DKIM, return-path,
-  AND the tracking CNAME (the "link" tracker) are all confirmed verified."""
+  """Fetches the current domain/view state from SMTP2GO. Returns (verified, details): verified is True
+  only if DKIM, return-path AND every tracking CNAME are confirmed verified; details carries the raw
+  per-check flags so callers can log exactly which one is still failing."""
   view_result = _smtp2go_post("/domain/view", headers, {"domain": domain})
   domains_data = view_result.get("data", {}).get("domains", [])
   if not domains_data:
-    return False
+    return False, {"dkim_verified": None, "rpath_verified": None, "cname_verified": []}
   entry = domains_data[0]
   dinfo = entry.get("domain", {})
-  if not (bool(dinfo.get("dkim_verified")) and bool(dinfo.get("rpath_verified"))):
-    return False
   trackers = entry.get("trackers", [])
-  if not trackers:
-    return False
-  return all(bool(tr.get("cname_verified")) for tr in trackers)
+  dkim_verified = bool(dinfo.get("dkim_verified"))
+  rpath_verified = bool(dinfo.get("rpath_verified"))
+  cname_verified = [bool(tr.get("cname_verified")) for tr in trackers]
+  details = {"dkim_verified": dkim_verified, "rpath_verified": rpath_verified, "cname_verified": cname_verified}
+  verified = dkim_verified and rpath_verified and bool(cname_verified) and all(cname_verified)
+  return verified, details
 
 def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_account: Smtp2goAccount, realname: str):
   """Adds the domain as a Verified Sender on SMTP2GO (POST /domain/add), reads back the DKIM/return-path
@@ -339,7 +338,7 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
     verified = False
     try:
       _smtp2go_post("/domain/verify", headers, {"domain": domain})
-      verified = _smtp2go_domain_verified(headers, domain)
+      verified, _ = _smtp2go_domain_verified(headers, domain)
     except RuntimeError as verify_err:
       logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO verify/re-check call failed for {domain}: {verify_err}")
     if verified and row:
@@ -358,14 +357,16 @@ def verify_smtp2go_for_domain(domain: str, smtp2go_account: Smtp2goAccount):
   try:
     headers = {"X-Smtp2go-Api-Key": smtp2go_account.api_key, "Content-Type": "application/json"}
     _smtp2go_post("/domain/verify", headers, {"domain": domain})
-    verified = _smtp2go_domain_verified(headers, domain)
+    verified, details = _smtp2go_domain_verified(headers, domain)
     if verified:
       row = get_purchase_row(domain)
       if row:
         row.smtp2go_status = "smtp2go_done"
         db.session.commit()
       return True, "DNS записи верифіковано, SMTP2GO повністю налаштовано"
-    return False, "DNS записи ще не верифіковані (розповсюдження може тривати до 48 годин, спробуйте пізніше)"
+    return False, (f"DNS записи ще не верифіковані (dkim_verified={details.get('dkim_verified')}, "
+                   f"rpath_verified={details.get('rpath_verified')}, cname_verified={details.get('cname_verified')}); "
+                   f"розповсюдження може тривати до 48 годин, спробуйте пізніше")
   except Exception as err:
     logging.error(f"verify_smtp2go_for_domain(): error for domain {domain}: {err}")
     return False, str(err)
@@ -398,7 +399,8 @@ def recheck_smtp2go_statuses():
         continue
       headers = {"X-Smtp2go-Api-Key": acc.api_key, "Content-Type": "application/json"}
       try:
-        if _smtp2go_domain_verified(headers, row.domain):
+        verified, details = _smtp2go_domain_verified(headers, row.domain)
+        if verified:
           logging.info(f"recheck_smtp2go_statuses(): domain {row.domain} is now verified on SMTP2GO, promoting smtp2go_set -> smtp2go_done")
           row.smtp2go_status = "smtp2go_done"
           if not row.smtp2go_account:
@@ -406,7 +408,9 @@ def recheck_smtp2go_statuses():
           row.message = f"{row.message}; SMTP2GO верифіковано" if row.message else "SMTP2GO верифіковано"
           db.session.commit()
         else:
-          logging.info(f"recheck_smtp2go_statuses(): domain {row.domain} still not verified on SMTP2GO")
+          logging.info(f"recheck_smtp2go_statuses(): domain {row.domain} still not verified on SMTP2GO "
+                       f"(dkim_verified={details.get('dkim_verified')}, rpath_verified={details.get('rpath_verified')}, "
+                       f"cname_verified={details.get('cname_verified')})")
       except RuntimeError as err:
         logging.error(f"recheck_smtp2go_statuses(): SMTP2GO check failed for domain {row.domain}: {err}")
   except Exception as err:
