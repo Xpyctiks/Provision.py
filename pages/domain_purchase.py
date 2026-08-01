@@ -234,10 +234,11 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
       results.append((domain, False, "Помилка розгортання сайту, дивіться логи"))
       continue
     clearCache()
+    #the running message log only ever gets a note on SUCCESS of a step - failures are logged and shown
+    #in the flash summary for this request, but never written to DomainPurchase.message
     append_purchase_message(row, "Сайт розгорнуто", stage="ready_to_email")
     ok, msg = _setup_email_for_domain(domain, cf_account, destination_email, email_alias, realname)
     if not ok:
-      append_purchase_message(row, f"Помилка Email Routing: {msg}")
       results.append((domain, False, f"Сайт розгорнуто, але помилка Email Routing: {msg}"))
       continue
     append_purchase_message(row, "Email Routing активовано", stage="done")
@@ -246,7 +247,6 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
       append_purchase_message(row, f"SMTP2GO налаштовано: {msg2}")
       results.append((domain, True, "Сайт розгорнуто, Email Routing активовано, SMTP2GO налаштовано"))
     else:
-      append_purchase_message(row, f"Помилка SMTP2GO: {msg2}")
       results.append((domain, True, f"Сайт розгорнуто, Email Routing активовано, але помилка SMTP2GO: {msg2}"))
   return results
 
@@ -302,8 +302,42 @@ def show_domain_purchase_history():
   """GET request: shows the full purchase history log"""
   try:
     history_rows = render_purchase_history()
-    return render_template("template-domain_purchase.html",active3="active",history_rows=history_rows,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
+    smtp2go_list, first_smtp2go = load_smtp2go_accounts()
+    return render_template("template-domain_purchase.html",active3="active",history_rows=history_rows,smtp2go_list=smtp2go_list,first_smtp2go=first_smtp2go,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_domain_purchase_hisory(): general render error by {current_user.realname}: {err}")
     flash("Неочікувана помилка на сторінці купівлі доменів, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
+
+@domain_purchase_bp.route("/domain_purchase/history/retry_smtp2go/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def retry_smtp2go():
+  """POST request processor: retries the SMTP2GO Verified Sender setup for one domain from Історія покупок"""
+  try:
+    domain = (request.form.get("retry_smtp2go_domain") or "").strip()
+    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
+    logging.info(f"-----------------------Retry SMTP2GO setup for domain {domain} requested by {current_user.realname} (account: {selected_smtp2go})-----------------------")
+    if not domain or not selected_smtp2go:
+      flash("Помилка! Домен або аккаунт SMTP2GO не вказано!", 'alert alert-danger')
+      return redirect("/domain_purchase/history/",302)
+    row = get_purchase_row(domain)
+    if not row or not row.cloudflare_account:
+      flash(f"Помилка! Домен {domain} не знайдено, або для нього не вказано аккаунт Cloudflare!", 'alert alert-danger')
+      return redirect("/domain_purchase/history/",302)
+    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
+    if not smtp2go_account:
+      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
+      return redirect("/domain_purchase/history/",302)
+    ok, msg = _setup_smtp2go_for_domain(domain, row.cloudflare_account, smtp2go_account, current_user.realname)
+    if ok:
+      append_purchase_message(row, f"SMTP2GO налаштовано: {msg}")
+      flash(f"SMTP2GO успішно налаштовано для домену {domain}: {msg}", 'alert alert-success')
+    else:
+      logging.error(f"retry_smtp2go(): SMTP2GO setup failed for domain {domain}: {msg}")
+      flash(f"Помилка налаштування SMTP2GO для домену {domain}: {msg}", 'alert alert-danger')
+    return redirect("/domain_purchase/history/",302)
+  except Exception as err:
+    logging.error(f"retry_smtp2go(): general error by {current_user.realname}: {err}")
+    flash("Неочікувана помилка при повторному налаштуванні SMTP2GO, дивіться логи!", 'alert alert-danger')
+    return redirect("/domain_purchase/history/",302)

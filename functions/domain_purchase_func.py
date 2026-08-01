@@ -161,14 +161,22 @@ def render_actionable_domains(rows: list) -> str:
   return html
 
 def render_purchase_history():
-  """Builds the 'Історія покупок' table rows from the full DomainPurchase log."""
+  """Builds the 'Історія покупок' table rows from the full DomainPurchase log. A domain whose message
+  already shows a successful Email Routing setup but no SMTP2GO note yet gets a retry button in the
+  Дії column (submits to the shared form wrapping the whole table on Крок 2's history tab)."""
   try:
     rows = DomainPurchase.query.order_by(DomainPurchase.id.desc()).limit(200).all()
     if not rows:
-      return '<tr><td colspan="9" class="text-center text-muted">Історія покупок поки що порожня</td></tr>'
+      return '<tr><td colspan="10" class="text-center text-muted">Історія покупок поки що порожня</td></tr>'
     html = ""
     for r in rows:
       color = "table-success" if r.status == "success" else "table-danger"
+      message = r.message or ""
+      needs_smtp2go_retry = r.cloudflare_account and "Email Routing активовано" in message and "SMTP2GO налаштовано" not in message
+      if needs_smtp2go_retry:
+        actions = f'<button type="submit" class="btn btn-sm btn-outline-warning" name="retry_smtp2go_domain" value="{r.domain}" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Спробувати ще раз налаштувати SMTP2GO для цього домену">📧 Налаштувати SMTP2GO</button>'
+      else:
+        actions = ""
       html += f"""  <tr class="{color}">
     <td>{r.id}</td>
     <td>{r.domain}</td>
@@ -176,14 +184,15 @@ def render_purchase_history():
     <td>{r.cloudflare_account or "-"}</td>
     <td>{r.status}</td>
     <td>{r.stage}</td>
-    <td>{r.message or ""}</td>
+    <td>{message}</td>
     <td>{r.purchased_by}</td>
     <td>{r.created.strftime('%d-%m-%Y %H:%M:%S')}</td>
+    <td>{actions}</td>
   </tr>\n"""
     return html
   except Exception as err:
     logging.error(f"render_purchase_history(): global error {err}")
-    return f'<tr><td colspan="9">Помилка завантаження історії: {err}</td></tr>'
+    return f'<tr><td colspan="10">Помилка завантаження історії: {err}</td></tr>'
 
 def count_free_slots(cf_accounts: list) -> dict:
   """For every given Cloudflare account, returns how many domain slots are free before hitting the 50-domain limit."""
@@ -236,7 +245,20 @@ def append_purchase_message(row: DomainPurchase, text: str, stage: str = None):
     row.stage = stage
   db.session.commit()
 
-SMTP2GO_API_BASE = "https://app-eu.smtp2go.com/v3"
+#Official regional API base URLs (https://developers.smtp2go.com/docs/endpoints) - "eu-api", not "app-eu" (the
+#latter is the web dashboard host and returns HTML, which broke .json() parsing with "Expecting value" errors)
+SMTP2GO_API_BASE = "https://eu-api.smtp2go.com/v3"
+
+def _smtp2go_post(path: str, headers: dict, payload: dict) -> dict:
+  """POSTs to the SMTP2GO API and safely parses the JSON response. Raises RuntimeError with a clear
+  message (including HTTP status and a snippet of the raw body) if the response isn't valid JSON -
+  which happens if the base URL/host is wrong and a login/HTML page is returned instead."""
+  response = requests.post(f"{SMTP2GO_API_BASE}{path}", headers=headers, json=payload, timeout=15)
+  try:
+    return response.json()
+  except ValueError:
+    snippet = response.text[:200].replace("\n", " ") if response.text else "(порожня відповідь)"
+    raise RuntimeError(f"SMTP2GO {path} повернув не-JSON відповідь (HTTP {response.status_code}): {snippet}")
 
 def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_account: Smtp2goAccount, realname: str):
   """Adds the domain as a Verified Sender on SMTP2GO (POST /domain/add), reads back the DKIM/return-path/
@@ -245,11 +267,11 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
   Then asks SMTP2GO to verify immediately, though actual verification can take up to 48h for DNS propagation."""
   try:
     headers = {"X-Smtp2go-Api-Key": smtp2go_account.api_key, "Content-Type": "application/json"}
-    add_result = requests.post(f"{SMTP2GO_API_BASE}/domain/add", headers=headers, json={"domain": domain}, timeout=15).json()
+    add_result = _smtp2go_post("/domain/add", headers, {"domain": domain})
     if add_result.get("data", {}).get("error"):
       logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/add error for {domain}: {add_result['data']['error']}")
       return False, f"Помилка додавання домену в SMTP2GO: {add_result['data']['error']}"
-    view_result = requests.post(f"{SMTP2GO_API_BASE}/domain/view", headers=headers, json={"domain": domain}, timeout=15).json()
+    view_result = _smtp2go_post("/domain/view", headers, {"domain": domain})
     domains_data = view_result.get("data", {}).get("domains", [])
     if not domains_data:
       logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/view returned no data for {domain}")
@@ -286,7 +308,10 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
     if not added and not dinfo.get("dkim_verified"):
       return False, f"Не вдалося додати жодного DNS запису для SMTP2GO: {'; '.join(failed)}"
     #best-effort verify call - DNS propagation can still take up to 48h, so a non-verified result here is expected, not an error
-    requests.post(f"{SMTP2GO_API_BASE}/domain/verify", headers=headers, json={"domain": domain}, timeout=15)
+    try:
+      _smtp2go_post("/domain/verify", headers, {"domain": domain})
+    except RuntimeError as verify_err:
+      logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/verify call failed for {domain}: {verify_err}")
     msg = f"додано {len(added)} DNS запис(ів)" + (f", помилки: {'; '.join(failed)}" if failed else "") + " (верифікація може тривати до 48 годин)"
     return True, msg
   except Exception as err:
