@@ -3,7 +3,7 @@ import re
 import idna
 import requests
 from db.db import db
-from db.database import Cloudflare, DomainRegistrator, DomainPurchase
+from db.database import Cloudflare, DomainRegistrator, DomainPurchase, Smtp2goAccount
 from functions.pages_forms import _load_zones_for_account
 from functions.site_actions import link_domain_and_account
 from functions.provision_func import setSiteOwner
@@ -58,6 +58,22 @@ def load_domain_registrators():
     return reg_list, first_reg
   except Exception as err:
     logging.error(f"load_domain_registrators(): global error {err}")
+    return "Error", "Error"
+
+def load_smtp2go_accounts():
+  """Loads all SMTP2GO accounts from DB for the dropdown on Крок 2. Mirrors load_domain_registrators()."""
+  try:
+    accs = Smtp2goAccount.query.order_by(Smtp2goAccount.name).all()
+    first_acc = acc_list = ""
+    if len(accs) == 0:
+      acc_list = "Аккаунти SMTP2GO відсутні у базі!"
+    else:
+      for a in accs:
+        acc_list += f'<li><a class="dropdown-item smtp2go" href="#" data-value="{a.name}">{a.name}</a></li>\n\t\t'
+      first_acc = accs[0].name
+    return acc_list, first_acc
+  except Exception as err:
+    logging.error(f"load_smtp2go_accounts(): global error {err}")
     return "Error", "Error"
 
 def load_cf_accounts_checkboxes():
@@ -207,6 +223,75 @@ def _update_purchase_row(domain: str, account, status: str, message: str, stage:
     if stage is not None:
       row.stage = stage
     db.session.commit()
+
+def get_purchase_row(domain: str):
+  """Returns the most recent DomainPurchase row for the given domain, or None."""
+  return DomainPurchase.query.filter_by(domain=domain).order_by(DomainPurchase.id.desc()).first()
+
+def append_purchase_message(row: DomainPurchase, text: str, stage: str = None):
+  """Appends one more step's note to the domain's running message log (Крок 2 keeps extending it
+  through deploy -> email routing -> SMTP2GO instead of overwriting the earlier purchase/NS message)."""
+  row.message = f"{row.message}; {text}" if row.message else text
+  if stage is not None:
+    row.stage = stage
+  db.session.commit()
+
+SMTP2GO_API_BASE = "https://app-eu.smtp2go.com/v3"
+
+def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_account: Smtp2goAccount, realname: str):
+  """Adds the domain as a Verified Sender on SMTP2GO (POST /domain/add), reads back the DKIM/return-path/
+  tracking CNAME records it requires (POST /domain/view), and writes those records into the domain's
+  Cloudflare zone (unproxied, since verification CNAMEs must resolve directly, not through Cloudflare's proxy).
+  Then asks SMTP2GO to verify immediately, though actual verification can take up to 48h for DNS propagation."""
+  try:
+    headers = {"X-Smtp2go-Api-Key": smtp2go_account.api_key, "Content-Type": "application/json"}
+    add_result = requests.post(f"{SMTP2GO_API_BASE}/domain/add", headers=headers, json={"domain": domain}, timeout=15).json()
+    if add_result.get("data", {}).get("error"):
+      logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/add error for {domain}: {add_result['data']['error']}")
+      return False, f"Помилка додавання домену в SMTP2GO: {add_result['data']['error']}"
+    view_result = requests.post(f"{SMTP2GO_API_BASE}/domain/view", headers=headers, json={"domain": domain}, timeout=15).json()
+    domains_data = view_result.get("data", {}).get("domains", [])
+    if not domains_data:
+      logging.error(f"_setup_smtp2go_for_domain(): SMTP2GO domain/view returned no data for {domain}")
+      return False, "SMTP2GO не повернув дані по домену після додавання"
+    dinfo = domains_data[0].get("domain", {})
+    trackers = domains_data[0].get("trackers", [])
+    acc = Cloudflare.query.filter_by(account=cf_account_email).first()
+    if not acc:
+      return False, "Cloudflare акаунт для запису DNS SMTP2GO не знайдено"
+    cf_headers = {"X-Auth-Email": acc.account, "X-Auth-Key": acc.token, "Content-Type": "application/json"}
+    r = requests.get(f"https://api.cloudflare.com/client/v4/zones?name={domain}", headers=cf_headers, timeout=10).json()
+    if not (r.get("success") and r.get("result")):
+      return False, "Зону домену не знайдено на Cloudflare для запису DNS записів SMTP2GO"
+    zone_id = r["result"][0]["id"]
+    records_to_add = []
+    if dinfo.get("dkim_selector") and dinfo.get("dkim_value"):
+      records_to_add.append((f"{dinfo['dkim_selector']}._domainkey", dinfo["dkim_value"]))
+    if dinfo.get("rpath_selector") and dinfo.get("rpath_value"):
+      records_to_add.append((dinfo["rpath_selector"], dinfo["rpath_value"]))
+    for tr in trackers:
+      if tr.get("subdomain") and tr.get("cname_value"):
+        records_to_add.append((tr["subdomain"], tr["cname_value"]))
+    added, failed = [], []
+    for name, value in records_to_add:
+      data = {"type": "CNAME", "name": name, "content": value, "ttl": 1, "proxied": False, "comment": "SMTP2GO domain verification"}
+      result = requests.post(f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records", headers=cf_headers, json=data, timeout=10).json()
+      if result.get("success"):
+        added.append(name)
+        logging.info(f"_setup_smtp2go_for_domain(): DNS record {name} added for {domain} by {realname}")
+      else:
+        error_msg = (result.get("errors") or [{}])[0].get("message", "Unknown error")
+        failed.append(f"{name}: {error_msg}")
+        logging.error(f"_setup_smtp2go_for_domain(): Failed to add DNS record {name} for {domain}: {error_msg}")
+    if not added and not dinfo.get("dkim_verified"):
+      return False, f"Не вдалося додати жодного DNS запису для SMTP2GO: {'; '.join(failed)}"
+    #best-effort verify call - DNS propagation can still take up to 48h, so a non-verified result here is expected, not an error
+    requests.post(f"{SMTP2GO_API_BASE}/domain/verify", headers=headers, json={"domain": domain}, timeout=15)
+    msg = f"додано {len(added)} DNS запис(ів)" + (f", помилки: {'; '.join(failed)}" if failed else "") + " (верифікація може тривати до 48 годин)"
+    return True, msg
+  except Exception as err:
+    logging.error(f"_setup_smtp2go_for_domain(): error for domain {domain}: {err}")
+    return False, str(err)
 
 def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: DomainRegistrator, realname: str) -> dict:
   """Main pipeline: pre-flight capacity check, Dynadot purchase, then sequential Cloudflare assignment/NS/DB registration.

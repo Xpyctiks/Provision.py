@@ -4,8 +4,7 @@ import json
 import requests
 from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
-from db.db import db
-from db.database import Cloudflare,DomainRegistrator,DomainPurchase,Provision_templates
+from db.database import Cloudflare,DomainRegistrator,Provision_templates,Smtp2goAccount
 from functions.site_actions import is_admin,is_mail_admin,clearCache
 from functions.rights_required import rights_required,ADMIN_RIGHTS
 from functions.pages_forms import loadTemplatesList,loadServersList
@@ -14,7 +13,8 @@ from functions.provision_func import start_autoprovision,finishJob
 from functions.domain_purchase_func import (
   parse_domain_textarea,load_domain_registrators,load_cf_accounts_checkboxes,render_purchase_history,
   purchase_and_setup_domains,recheck_domain_statuses,load_actionable_domains,distinct_actionable_accounts,
-  render_actionable_domains
+  render_actionable_domains,load_smtp2go_accounts,get_purchase_row,append_purchase_message,
+  _setup_smtp2go_for_domain
 )
 from pages.cloudflare_email import (
   _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,
@@ -137,12 +137,14 @@ def show_domain_purchase_step2():
     sites_options = "".join(f'<option value="{s}">{s}</option>' for s in sites_list)
     templates_list, first_template = loadTemplatesList()
     server_list, first_server = loadServersList()
+    smtp2go_list, first_smtp2go = load_smtp2go_accounts()
     return render_template(
       "template-domain_purchase.html",active2="active",
       domains_html=domains_html,accounts_options=accounts_options,
       addresses_by_account_json=json.dumps(addresses_by_account),
       sites_options=sites_options,templates=templates_list,first_template=first_template,
       server_list=server_list,first_server=first_server,
+      smtp2go_list=smtp2go_list,first_smtp2go=first_smtp2go,
       admin_panel=is_admin(),mail_admin=is_mail_admin(),
       version=current_app.config.get("VERSION","")
     )
@@ -191,14 +193,16 @@ def _setup_email_for_domain(domain: str, account_email: str, destination: str, a
     logging.error(f"_setup_email_for_domain(): error for domain {domain}: {err}")
     return False, str(err)
 
-def _deploy_and_setup_email(domains: list, selected_server: str, selected_template: str, selected_clone_source: str, destination_email: str, email_alias: str, realname: str):
+def _deploy_and_setup_email(domains: list, selected_server: str, selected_template: str, selected_clone_source: str, destination_email: str, email_alias: str, smtp2go_account: Smtp2goAccount, realname: str):
   """For each selected (ready_to_setup) domain: deploys it (clone an existing site, or provision from a template -
   reusing functions/clone_func.start_clone / functions/provision_func.start_autoprovision exactly like
-  pages/clone.py and pages/provision.py do), then activates Email Routing and a forwarding rule for it."""
+  pages/clone.py and pages/provision.py do), then activates Email Routing + a forwarding rule, and finally
+  registers the domain as a Verified Sender on SMTP2GO. Every step appends its own note to the domain's
+  DomainPurchase.message running log instead of overwriting it."""
   web_folder = current_app.config.get("WEB_FOLDER","")
   results = []
   for domain in domains:
-    row = DomainPurchase.query.filter_by(domain=domain).order_by(DomainPurchase.id.desc()).first()
+    row = get_purchase_row(domain)
     if not row or row.stage != "ready_to_setup":
       results.append((domain, False, "Домен не має статусу 'готовий до розгортання', пропущено"))
       continue
@@ -229,16 +233,21 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
       logging.error(f"_deploy_and_setup_email(): Deploy failed for domain {domain}")
       results.append((domain, False, "Помилка розгортання сайту, дивіться логи"))
       continue
-    row.stage = "ready_to_email"
-    db.session.commit()
     clearCache()
+    append_purchase_message(row, "Сайт розгорнуто", stage="ready_to_email")
     ok, msg = _setup_email_for_domain(domain, cf_account, destination_email, email_alias, realname)
-    if ok:
-      row.stage = "done"
-      db.session.commit()
-      results.append((domain, True, "Сайт розгорнуто, Email Routing налаштовано"))
-    else:
+    if not ok:
+      append_purchase_message(row, f"Помилка Email Routing: {msg}")
       results.append((domain, False, f"Сайт розгорнуто, але помилка Email Routing: {msg}"))
+      continue
+    append_purchase_message(row, "Email Routing активовано", stage="done")
+    ok2, msg2 = _setup_smtp2go_for_domain(domain, cf_account, smtp2go_account, realname)
+    if ok2:
+      append_purchase_message(row, f"SMTP2GO налаштовано: {msg2}")
+      results.append((domain, True, "Сайт розгорнуто, Email Routing активовано, SMTP2GO налаштовано"))
+    else:
+      append_purchase_message(row, f"Помилка SMTP2GO: {msg2}")
+      results.append((domain, True, f"Сайт розгорнуто, Email Routing активовано, але помилка SMTP2GO: {msg2}"))
   return results
 
 @domain_purchase_bp.route("/domain_purchase/step2/", methods=['POST'])
@@ -253,14 +262,19 @@ def do_domain_purchase_step2():
     selected_clone_source = (request.form.get("selected_clone_source") or "").strip()
     destination_email = (request.form.get("destination_email") or "").strip()
     email_alias = (request.form.get("email_alias") or "support").strip() or "support"
-    logging.info(f"-----------------------Domain setup form submitted by {current_user.realname}: domains={selected_domains}, server={selected_server}, template={selected_template}, clone_source={selected_clone_source}, destination={destination_email}, alias={email_alias}-----------------------")
-    if not selected_domains or not selected_server or not destination_email:
-      flash("Помилка! Оберіть хоча б один домен зі статусом 'готовий до розгортання', сервер та адресу призначення для пошти!", 'alert alert-danger')
+    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
+    logging.info(f"-----------------------Domain setup form submitted by {current_user.realname}: domains={selected_domains}, server={selected_server}, template={selected_template}, clone_source={selected_clone_source}, destination={destination_email}, alias={email_alias}, smtp2go={selected_smtp2go}-----------------------")
+    if not selected_domains or not selected_server or not destination_email or not selected_smtp2go:
+      flash("Помилка! Оберіть хоча б один домен зі статусом 'готовий до розгортання', сервер, адресу призначення для пошти та аккаунт SMTP2GO!", 'alert alert-danger')
       return redirect("/domain_purchase/step2/",302)
     if not selected_clone_source and not selected_template:
       flash("Помилка! Оберіть шаблон для розгортання, або сайт для клонування!", 'alert alert-danger')
       return redirect("/domain_purchase/step2/",302)
-    results = _deploy_and_setup_email(selected_domains,selected_server,selected_template,selected_clone_source,destination_email,email_alias,current_user.realname)
+    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
+    if not smtp2go_account:
+      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
+      return redirect("/domain_purchase/step2/",302)
+    results = _deploy_and_setup_email(selected_domains,selected_server,selected_template,selected_clone_source,destination_email,email_alias,smtp2go_account,current_user.realname)
     lines = []
     ok_count = 0
     for domain, ok, msg in results:

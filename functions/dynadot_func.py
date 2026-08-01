@@ -18,7 +18,7 @@ def dynadot_register_domain(registrator: DomainRegistrator, domain: str, duratio
     if response.get("Status") == "success":
       logging.info(f"dynadot_register_domain(): Domain {domain} successfully registered via {registrator.name}")
       return True, "OK"
-    error_msg = response.get("Status")
+    error_msg = response.get("Status", "Unknown error?!")
     logging.error(f"dynadot_register_domain(): Error registering domain {domain} via {registrator.name}: {error_msg}")
     return False, error_msg
   except Exception as err:
@@ -40,7 +40,7 @@ def dynadot_set_ns(registrator: DomainRegistrator, domain: str, ns_list: list) -
     if response.get("Status") == "success":
       logging.info(f"dynadot_set_ns(): NS servers for domain {domain} successfully set to {ns_list} via {registrator.name}")
       return True, "OK"
-    error_msg = response.get("Status")
+    error_msg = response.get("Status", "Unknown error?!")
     logging.error(f"dynadot_set_ns(): Error setting NS servers for domain {domain} via {registrator.name}: {error_msg}")
     return False, error_msg
   except Exception as err:

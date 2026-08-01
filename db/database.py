@@ -119,13 +119,20 @@ class DomainRegistrator(db.Model):
   api_secret_key = db.Column(db.String(256), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
 
+class Smtp2goAccount(db.Model):
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String(256), nullable=False,unique=True)
+  api_key = db.Column(db.String(256), nullable=False)
+  created = db.Column(db.DateTime, default=datetime.now)
+
 class DomainPurchase(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   domain = db.Column(db.String(256), nullable=False)
   registrator = db.Column(db.String(256), nullable=False)
   cloudflare_account = db.Column(db.String(256), nullable=True)
   status = db.Column(db.String(20), nullable=False)
-  message = db.Column(db.String(512), nullable=True)
+  #message is a running log appended to at every pipeline stage (purchase, deploy, email routing, smtp2go), so it needs more room than a single status line
+  message = db.Column(db.String(1024), nullable=True)
   purchased_by = db.Column(db.String(80), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
   stage = db.Column(db.String(20), nullable=False, default="just_bought")

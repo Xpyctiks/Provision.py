@@ -49,6 +49,9 @@ def catch_admin_panel():
     elif "buttonDeleteRegistrator" in request.form or "buttonAddRegistrator" in request.form:
       handler_registrators(request.form)
       return redirect("/admin_panel/registrators/",302)
+    elif "buttonDeleteSmtp2go" in request.form or "buttonAddSmtp2go" in request.form:
+      handler_smtp2go(request.form)
+      return redirect("/admin_panel/smtp2go/",302)
     else:
       flash('Помилка! Ні один з можливих параметрів не був передан сторінці /admin_panel в POST запиту!','alert alert-danger')
       logging.error("Something strange was received by /admin_panel via POST request and we can't process that.")
@@ -676,5 +679,54 @@ def admin_panel_registrators():
     return render_template("template-admin_panel.html",active11="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"admin_panel_registrators(): global error {err}")
+    flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
+    return redirect("/",302)
+
+@admin_panel_bp.route("/admin_panel/smtp2go/", methods=['GET'])
+@login_required
+@rights_required(255)
+def admin_panel_smtp2go():
+  try:
+    html_data = f"""
+<div class="card mx-auto" style="max-width: 80vw;" id="SettingsBlock">
+  <table class="table table-bordered">
+  <thead>
+  <tr class="table-warning">
+    <th scope="col" style="width: 45px;">ID:</th>
+    <th scope="col" style="width: 150px;">Назва:</th>
+    <th scope="col" style="width: 350px;">API Key:</th>
+    <th scope="col" style="width: 150px;">Створен:</th>
+  </tr>
+  </thead>
+  <tbody>"""
+    accounts = Smtp2goAccount.query.order_by(Smtp2goAccount.id).all()
+    for i, s in enumerate(accounts, 1):
+      html_data += f"""
+  <tr class="table-success">
+    <form action="/admin_panel/" method="POST" id="postform" novalidate>
+    <td class="table-success cname-cell" >{s.id}
+    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteSmtp2go" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт із бази.">❌</button>    
+    </td></form>
+    <td class="table-success cname-cell" >{s.name}</td>
+    <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.api_key}</details></td>
+    <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
+  </tr>"""
+    html_data += """
+  </tbody>
+  </table>
+  <form action="/admin_panel/" method="POST" id="postform3" class="needs-validation" novalidate>
+  <div class="input-group mb-2">
+  <span class="input-group-text">Назва:</span>
+  <input type="text" class="form-control" id="field1" name="new-smtp2go-name" value="">
+  <span class="input-group-text">API Key:</span>
+  <input type="text" class="form-control" id="field2" name="new-smtp2go-api-key" value="">
+  <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddSmtp2go" onclick="showLoading()">Додати аккаунт</button>
+   </div>
+  </form>
+ </div>
+</div>"""
+    return render_template("template-admin_panel.html",active12="active",data=html_data,admin_panel=is_admin(),version=current_app.config.get("VERSION",""))
+  except Exception as err:
+    logging.error(f"admin_panel_smtp2go(): global error {err}")
     flash('Загальна помилка відображення данних! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)

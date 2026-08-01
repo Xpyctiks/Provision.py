@@ -626,4 +626,47 @@ def handler_registrators(form):
     logging.error(f"Admin {current_user.realname}>handler_registrators() global error: {err}")
     flash('Помилка обробки функцій реєстраторів доменів!','alert alert-danger')
     return
+
+@rights_required(255)
+def handler_smtp2go(form):
+  """Handler for saving/deleting SMTP2GO accounts to DB, received from admin panel"""
+  logging.info(f"---------------------------Processing SMTP2GO account management from admin panel by {current_user.realname}---------------------------")
+  try:
+    #processing delete account request
+    if "buttonDeleteSmtp2go" in form:
+      account = Smtp2goAccount.query.filter_by(id=int(form.get('buttonDeleteSmtp2go').strip())).first()
+      if account:
+        db.session.delete(account)
+        db.session.commit()
+        logging.info(f"Admin {current_user.realname}>SMTP2GO account {account.name} with ID {form.get('buttonDeleteSmtp2go').strip()} deleted successfully!")
+        flash(f'Аккаунт SMTP2GO {account.name} з ID {form.get("buttonDeleteSmtp2go").strip()} успішно видален!','alert alert-success')
+        return
+      else:
+        logging.error(f"Admin {current_user.realname}>SMTP2GO account with ID {form.get('buttonDeleteSmtp2go').strip()} deletion error - no such account!")
+        flash(f'Помилка видалення аккаунту SMTP2GO з ID {form.get("buttonDeleteSmtp2go").strip()} - такого не існує!','alert alert-warning')
+        return
+    #processing add account request
+    elif "buttonAddSmtp2go" in form:
+      name = form.get("new-smtp2go-name", "").strip()
+      api_key = form.get("new-smtp2go-api-key", "").strip()
+      if not name or not api_key:
+        logging.error(f"Admin {current_user.realname}>Some of important parameters for SMTP2GO account add procedure has not been received!")
+        flash(f'Один або декілька важливих параметрів для створення аккаунту SMTP2GO не були отримані сервером!','alert alert-warning')
+        return
+      #check if this account already exists in DB
+      account = Smtp2goAccount.query.filter_by(name=name).first()
+      if account:
+        logging.error(f"Admin {current_user.realname}>SMTP2GO account {name} already exists in DB!")
+        flash(f'Аккаунт SMTP2GO {name} вже існує!','alert alert-danger')
+        return
+      new_account = Smtp2goAccount(name=name, api_key=api_key)
+      db.session.add(new_account)
+      db.session.commit()
+      logging.info(f"Admin {current_user.realname}>SMTP2GO account {name} created successfully!")
+      flash(f'Аккаунт SMTP2GO {name} успішно створен!','alert alert-success')
+      return
+  except Exception as err:
+    logging.error(f"Admin {current_user.realname}>handler_smtp2go() global error: {err}")
+    flash('Помилка обробки функцій аккаунтів SMTP2GO!','alert alert-danger')
+    return
     return

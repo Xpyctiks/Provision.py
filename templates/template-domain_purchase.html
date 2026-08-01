@@ -167,6 +167,14 @@
                 <h6 class="card-title">Локальна частина email-аліасу (напр. support@домен):</h6>
                 <input type="text" class="form-control" id="email_alias" name="email_alias" value="support" required>
               </div>
+              <div class="col-12 col-md-6 dropdown">
+                <h6 class="card-title">Аккаунт SMTP2GO (для верифікації відправника):</h6>
+                <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Smtp2go" data-bs-toggle="dropdown" aria-expanded="false">{{first_smtp2go|safe}}</button>
+                <ul class="dropdown-menu" aria-labelledby="Smtp2go">
+                  {{smtp2go_list|safe}}
+                </ul>
+                <input type="hidden" name="selected_smtp2go" id="selected_smtp2go" value="{{first_smtp2go|safe}}" required>
+              </div>
             </div>
             <div class="d-grid mt-3 col-12 col-md-4 mx-auto">
               <button type="submit" class="btn btn-info w-100" name="buttonSetupDomains" value="Submit" onclick="showLoading()">Розгорнути обрані домени</button>

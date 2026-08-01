@@ -110,6 +110,28 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// ── Крок 2: SMTP2GO account dropdown persistence ─────────────────────────────
+
+(function restoreSelectedSmtp2go() {
+  const saved = getCookie('domain_purchase_smtp2go');
+  if (!saved) return;
+  const item = document.querySelector('.dropdown-item.smtp2go[data-value="' + CSS.escape(saved) + '"]');
+  if (!item) return;
+  const hidden = document.getElementById('selected_smtp2go');
+  if (hidden) hidden.value = saved;
+  const btn = document.getElementById('Smtp2go');
+  if (btn) btn.innerText = saved;
+})();
+
+document.querySelectorAll('.dropdown-item.smtp2go').forEach(item => {
+  item.addEventListener('click', function () {
+    const value = this.getAttribute('data-value');
+    document.getElementById('selected_smtp2go').value = value;
+    document.getElementById('Smtp2go').innerText = value;
+    setCookie('domain_purchase_smtp2go', value, 365);
+  });
+});
+
 // ── Крок 2: Server / Template dropdown click handlers (same pattern as provision.js) ──
 
 document.querySelectorAll('.dropdown-item.server').forEach(item => {
