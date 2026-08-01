@@ -377,24 +377,36 @@ def recheck_smtp2go_statuses():
   try:
     rows = DomainPurchase.query.filter_by(smtp2go_status="smtp2go_set").all()
     if not rows:
+      logging.info("recheck_smtp2go_statuses(): no domains currently in smtp2go_set, nothing to recheck")
       return
-    #cache one Smtp2goAccount lookup + one header dict per account name, since several domains usually share it
+    logging.info(f"recheck_smtp2go_statuses(): rechecking {len(rows)} domain(s) pending SMTP2GO verification")
+    #rows created before smtp2go_account started being persisted have it empty - if exactly one SMTP2GO
+    #account is configured system-wide, fall back to it instead of silently skipping the domain forever
+    all_accounts = Smtp2goAccount.query.all()
+    fallback_account_name = all_accounts[0].name if len(all_accounts) == 1 else None
     accounts_cache = {}
     for row in rows:
-      if not row.smtp2go_account:
+      account_name = row.smtp2go_account or fallback_account_name
+      if not account_name:
+        logging.error(f"recheck_smtp2go_statuses(): domain {row.domain} has no stored smtp2go_account and multiple SMTP2GO accounts exist in DB - can't auto-recheck it, use the manual verify button instead")
         continue
-      if row.smtp2go_account not in accounts_cache:
-        accounts_cache[row.smtp2go_account] = Smtp2goAccount.query.filter_by(name=row.smtp2go_account).first()
-      acc = accounts_cache[row.smtp2go_account]
+      if account_name not in accounts_cache:
+        accounts_cache[account_name] = Smtp2goAccount.query.filter_by(name=account_name).first()
+      acc = accounts_cache[account_name]
       if not acc:
+        logging.error(f"recheck_smtp2go_statuses(): SMTP2GO account {account_name} for domain {row.domain} not found in DB - skipping")
         continue
       headers = {"X-Smtp2go-Api-Key": acc.api_key, "Content-Type": "application/json"}
       try:
         if _smtp2go_domain_verified(headers, row.domain):
-          logging.info(f"recheck_smtp2go_statuses(): Domain {row.domain} is now verified on SMTP2GO, promoting smtp2go_set -> smtp2go_done")
+          logging.info(f"recheck_smtp2go_statuses(): domain {row.domain} is now verified on SMTP2GO, promoting smtp2go_set -> smtp2go_done")
           row.smtp2go_status = "smtp2go_done"
+          if not row.smtp2go_account:
+            row.smtp2go_account = account_name
           row.message = f"{row.message}; SMTP2GO верифіковано" if row.message else "SMTP2GO верифіковано"
           db.session.commit()
+        else:
+          logging.info(f"recheck_smtp2go_statuses(): domain {row.domain} still not verified on SMTP2GO")
       except RuntimeError as err:
         logging.error(f"recheck_smtp2go_statuses(): SMTP2GO check failed for domain {row.domain}: {err}")
   except Exception as err:
