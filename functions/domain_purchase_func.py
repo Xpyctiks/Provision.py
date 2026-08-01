@@ -326,6 +326,7 @@ def _setup_smtp2go_for_domain(domain: str, cf_account_email: str, smtp2go_accoun
     row = get_purchase_row(domain)
     if row:
       row.smtp2go_status = "smtp2go_set"
+      row.smtp2go_account = smtp2go_account.name
       db.session.commit()
     #give the freshly written records a moment to settle before asking SMTP2GO to verify them
     time.sleep(5)
@@ -362,6 +363,36 @@ def verify_smtp2go_for_domain(domain: str, smtp2go_account: Smtp2goAccount):
   except Exception as err:
     logging.error(f"verify_smtp2go_for_domain(): error for domain {domain}: {err}")
     return False, str(err)
+
+def recheck_smtp2go_statuses():
+  """Called on every visit to Історія покупок: re-checks every domain still in smtp2go_set against the
+  live SMTP2GO verification state, and auto-promotes it to smtp2go_done once both DKIM and return-path
+  are confirmed - no manual button click needed once DNS has actually propagated."""
+  try:
+    rows = DomainPurchase.query.filter_by(smtp2go_status="smtp2go_set").all()
+    if not rows:
+      return
+    #cache one Smtp2goAccount lookup + one header dict per account name, since several domains usually share it
+    accounts_cache = {}
+    for row in rows:
+      if not row.smtp2go_account:
+        continue
+      if row.smtp2go_account not in accounts_cache:
+        accounts_cache[row.smtp2go_account] = Smtp2goAccount.query.filter_by(name=row.smtp2go_account).first()
+      acc = accounts_cache[row.smtp2go_account]
+      if not acc:
+        continue
+      headers = {"X-Smtp2go-Api-Key": acc.api_key, "Content-Type": "application/json"}
+      try:
+        if _smtp2go_domain_verified(headers, row.domain):
+          logging.info(f"recheck_smtp2go_statuses(): Domain {row.domain} is now verified on SMTP2GO, promoting smtp2go_set -> smtp2go_done")
+          row.smtp2go_status = "smtp2go_done"
+          row.message = f"{row.message}; SMTP2GO верифіковано" if row.message else "SMTP2GO верифіковано"
+          db.session.commit()
+      except RuntimeError as err:
+        logging.error(f"recheck_smtp2go_statuses(): SMTP2GO check failed for domain {row.domain}: {err}")
+  except Exception as err:
+    logging.error(f"recheck_smtp2go_statuses(): global error: {err}")
 
 def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: DomainRegistrator, realname: str) -> dict:
   """Main pipeline: pre-flight capacity check, Dynadot purchase, then sequential Cloudflare assignment/NS/DB registration.

@@ -14,7 +14,7 @@ from functions.domain_purchase_func import (
   parse_domain_textarea,load_domain_registrators,load_cf_accounts_checkboxes,render_purchase_history,
   purchase_and_setup_domains,recheck_domain_statuses,load_actionable_domains,distinct_actionable_accounts,
   render_actionable_domains,load_smtp2go_accounts,get_purchase_row,append_purchase_message,
-  _setup_smtp2go_for_domain,verify_smtp2go_for_domain
+  _setup_smtp2go_for_domain,verify_smtp2go_for_domain,recheck_smtp2go_statuses
 )
 from pages.cloudflare_email import (
   _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,
@@ -244,7 +244,7 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
     append_purchase_message(row, "Email Routing активовано", stage="done")
     ok2, msg2 = _setup_smtp2go_for_domain(domain, cf_account, smtp2go_account, realname)
     if ok2:
-      append_purchase_message(row, f"SMTP2GO налаштовано: {msg2}")
+      append_purchase_message(row, "SMTP2GO налаштовано")
       results.append((domain, True, "Сайт розгорнуто, Email Routing активовано, SMTP2GO налаштовано"))
     else:
       results.append((domain, True, f"Сайт розгорнуто, Email Routing активовано, але помилка SMTP2GO: {msg2}"))
@@ -301,6 +301,7 @@ def do_domain_purchase_step2():
 def show_domain_purchase_history():
   """GET request: shows the full purchase history log"""
   try:
+    recheck_smtp2go_statuses()
     history_rows = render_purchase_history()
     smtp2go_list, first_smtp2go = load_smtp2go_accounts()
     return render_template("template-domain_purchase.html",active3="active",history_rows=history_rows,smtp2go_list=smtp2go_list,first_smtp2go=first_smtp2go,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
@@ -331,7 +332,7 @@ def retry_smtp2go():
       return redirect("/domain_purchase/history/",302)
     ok, msg = _setup_smtp2go_for_domain(domain, row.cloudflare_account, smtp2go_account, current_user.realname)
     if ok:
-      append_purchase_message(row, f"SMTP2GO: {msg}")
+      append_purchase_message(row, "SMTP2GO налаштовано")
       flash(f"SMTP2GO налаштовано для домену {domain}: {msg}", 'alert alert-success')
     else:
       logging.error(f"retry_smtp2go(): SMTP2GO setup failed for domain {domain}: {msg}")
