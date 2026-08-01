@@ -62,8 +62,8 @@
 </div>
 <ul class="nav nav-tabs">
   <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/domain_purchase/step1/">Крок 1: Купівля доменів</a></li>
-  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/">Крок 2: Налаштування доменів</a></li>
-  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/">Історія покупок</a></li>
+  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/">Крок 2: Налаштування доменів/розгорнути сайти</a></li>
+  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/">Крок 3: Історія покупок/Налаштування smtp2go</a></li>
 </ul>
 <br>
 {% if active1 %}
@@ -195,6 +195,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
           <h4 class="mb-0">Історія покупок доменів:</h4>
           <div class="dropdown">
+            <h6>Аккаунт smtp2go для всіх доменів нижче:</h6>
             <button class="btn btn-secondary dropdown-toggle" type="button" id="Smtp2go" data-bs-toggle="dropdown" aria-expanded="false">{{first_smtp2go|safe}}</button>
             <ul class="dropdown-menu" aria-labelledby="Smtp2go">
               {{smtp2go_list|safe}}
