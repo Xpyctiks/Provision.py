@@ -11,10 +11,19 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
   <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
-  <link href="{{ url_for('static', filename='css/provision.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/domain_purchase.css') }}" rel="stylesheet" crossorigin="anonymous">
   <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous" defer></script>
 </head>
 <body>
+<div id="pageLoadingOverlay">
+  <div class="spinner-border text-info" role="status"></div>
+  <div class="page-loading-text">
+    <span>Перевірка доменів</span>
+    <span class="page-loading-dot"></span>
+    <span class="page-loading-dot"></span>
+    <span class="page-loading-dot"></span>
+  </div>
+</div>
 <main>
 <div>
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
@@ -62,8 +71,8 @@
 </div>
 <ul class="nav nav-tabs">
   <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/domain_purchase/step1/">Крок 1: Купівля доменів</a></li>
-  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/">Крок 2: Налаштування доменів/розгорнути сайти</a></li>
-  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/">Крок 3: Історія покупок/Налаштування smtp2go</a></li>
+  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/" onclick="showPageLoadingOverlay()">Крок 2: Налаштування доменів/розгорнути сайти</a></li>
+  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/" onclick="showPageLoadingOverlay()">Крок 3: Історія покупок/Налаштування smtp2go</a></li>
 </ul>
 <br>
 {% if active1 %}

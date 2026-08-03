@@ -6,6 +6,32 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+// ── Full-page loading overlay (shown while Крок 2/Крок 3 recheck domains server-side) ────────
+
+function showPageLoadingOverlay() {
+  const overlay = document.getElementById("pageLoadingOverlay");
+  if (overlay) {
+    overlay.classList.add("active");
+  }
+}
+
+function hidePageLoadingOverlay() {
+  const overlay = document.getElementById("pageLoadingOverlay");
+  if (overlay) {
+    overlay.classList.remove("active");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", hidePageLoadingOverlay);
+
+//covers the bfcache case (browser back/forward) where a page could be restored with the overlay
+//still active from just before the user navigated away
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    hidePageLoadingOverlay();
+  }
+});
+
 // ── Cookie helpers (persist page state per browser/user across reloads) ─────
 
 function setCookie(name, value, days) {
