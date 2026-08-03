@@ -221,6 +221,43 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// ── Крок 3 (Історія покупок): manual SMTP2GO setup - CF account -> domain AJAX ──
+
+document.addEventListener('DOMContentLoaded', function () {
+  const cfSelect = document.getElementById('manualCfAccount');
+  const domainSelect = document.getElementById('manualDomain');
+  if (!cfSelect || !domainSelect) return;
+  cfSelect.addEventListener('change', function () {
+    const account = this.value;
+    if (!account) {
+      domainSelect.innerHTML = '<option value="">— Спочатку оберіть аккаунт —</option>';
+      domainSelect.disabled = true;
+      return;
+    }
+    domainSelect.disabled = true;
+    domainSelect.innerHTML = '<option value="">— Завантаження доменів... —</option>';
+    //reuses the existing /cloudflare_domains/zones/ AJAX endpoint (same one cloudflare_domains.js uses)
+    fetch('/cloudflare_domains/zones/?account=' + encodeURIComponent(account))
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          domainSelect.innerHTML = '<option value="">Помилка: ' + data.error + '</option>';
+          return;
+        }
+        if (!data.zones.length) {
+          domainSelect.innerHTML = '<option value="">Немає доменів на цьому аккаунті</option>';
+          return;
+        }
+        domainSelect.innerHTML = '<option value="">— Оберіть домен —</option>' +
+          data.zones.map(name => `<option value="${name}">${name}</option>`).join('');
+        domainSelect.disabled = false;
+      })
+      .catch(() => {
+        domainSelect.innerHTML = '<option value="">Помилка завантаження доменів</option>';
+      });
+  });
+});
+
 // ── Loading spinner (shared behavior with other pages) ───────────────────────
 
 function showLoading() {
