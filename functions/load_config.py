@@ -27,7 +27,9 @@ def load_config(application):
         "PHPFPM_PATH": f"{config.phpFpmPath or ''}",
         "SECRET_KEY": f"{config.sessionKey or ''}",
         "AUTHELIA_LOGOUT_URL": f"{config.autheliaLogoutUrl or ''}",
-        "WEB_ARCHIVE_API_URL": f"{config.webArchiveApiUrl or ''}"
+        "WEB_ARCHIVE_API_URL": f"{config.webArchiveApiUrl or ''}",
+        "MAIL_SERVER_API_URL": f"{config.mailServerApiUrl or ''}",
+        "MAIL_SERVER_API_SECRET": f"{config.mailServerApiSecret or ''}"
       })
       logging.basicConfig(filename=config.logFile,level=logging.INFO,format='%(asctime)s - Provision - %(levelname)s - %(message)s',datefmt='%d-%m-%Y %H:%M:%S')
       logging.getLogger('werkzeug').setLevel(logging.WARNING)
@@ -59,7 +61,9 @@ def generate_default_config(application,CONFIG_DIR: str,DB_FILE: str):
         phpPool = "/etc/php/8.2/fpm/pool.d/",
         phpFpmPath = "/usr/sbin/php-fpm8.2",
         autheliaLogoutUrl = "",
-        webArchiveApiUrl = ""
+        webArchiveApiUrl = "",
+        mailServerApiUrl = "",
+        mailServerApiSecret = ""
         )
       try:
         if not os.path.exists(CONFIG_DIR):

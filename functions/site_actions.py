@@ -606,7 +606,9 @@ def is_admin():
     if rights == 255:
       return ('<li><a class="dropdown-item" href="/admin_panel" class="btn btn-secondary">🎮Панель адміністрування</a></li>'
               '<li><hr class="dropdown-divider"></li>'
-              '<li><a class="dropdown-item" href="/domain_purchase/step1/" class="btn btn-secondary">🛒Купівля нових доменів</a></li>')
+              '<li><a class="dropdown-item" href="/domain_purchase/step1/" class="btn btn-secondary">🛒Купівля нових доменів</a></li>'
+              '<li><hr class="dropdown-divider"></li>'
+              '<li><a class="dropdown-item" href="/mail_domains/" class="btn btn-secondary">📨Налаштування доменів для розсилок</a></li>')
     else:
       return ""
   else:

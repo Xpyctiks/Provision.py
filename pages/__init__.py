@@ -12,6 +12,7 @@ from .domain_purchase import domain_purchase_bp
 from .login import login_bp
 from .logout import logout_bp
 from .logs import logs_bp
+from .mail_domains import mail_domains_bp
 from .provision import provision_bp
 from .redirects_bulk import redirects_bulk_bp
 from .redirects_dashboard import redirects_dashboard_bp
@@ -36,6 +37,7 @@ blueprint.register_blueprint(domain_purchase_bp)
 blueprint.register_blueprint(login_bp)
 blueprint.register_blueprint(logout_bp)
 blueprint.register_blueprint(logs_bp)
+blueprint.register_blueprint(mail_domains_bp)
 blueprint.register_blueprint(provision_bp)
 blueprint.register_blueprint(redirects_bulk_bp)
 blueprint.register_blueprint(redirects_dashboard_bp)

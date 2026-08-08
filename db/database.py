@@ -31,6 +31,8 @@ class Settings(db.Model):
   phpFpmPath = db.Column(db.String(512), nullable=False)
   autheliaLogoutUrl = db.Column(db.String(512), nullable=True, default="")
   webArchiveApiUrl = db.Column(db.String(512), nullable=True, default="")
+  mailServerApiUrl = db.Column(db.String(512), nullable=True, default="")
+  mailServerApiSecret = db.Column(db.String(256), nullable=True, default="")
 
 class Provision_templates(db.Model):
   id = db.Column(db.Integer, primary_key=True)
@@ -137,3 +139,21 @@ class DomainPurchase(db.Model):
   stage = db.Column(db.String(20), nullable=False, default="just_bought")
   smtp2go_status = db.Column(db.String(20), nullable=True)
   smtp2go_account = db.Column(db.String(256), nullable=True)
+
+class MailServerDomainStatus(db.Model):
+  id = db.Column(db.Integer, primary_key=True)
+  domain = db.Column(db.String(256), nullable=False)
+  cloudflare_account = db.Column(db.String(256), nullable=True)
+  mailbox = db.Column(db.String(256), nullable=True)
+  #action: "add" (provision on the mail server) or "delete" (deprovision)
+  action = db.Column(db.String(20), nullable=False)
+  status = db.Column(db.String(20), nullable=False)
+  message = db.Column(db.String(1024), nullable=True)
+  #the IP that was resolved from mailServerApiUrl and written into the SPF record at add-time - kept so
+  #delete can strip out exactly that token later, even if the mail server's IP changes in the meantime
+  mail_server_ip = db.Column(db.String(64), nullable=True)
+  #True if the SPF record didn't exist and we created it from scratch (so delete removes it entirely),
+  #False/None if we only inserted our ip4: token into an already-existing SPF record (so delete only strips that token)
+  spf_record_created = db.Column(db.Boolean, nullable=True, default=False)
+  actor = db.Column(db.String(80), nullable=False)
+  created = db.Column(db.DateTime, default=datetime.now)
