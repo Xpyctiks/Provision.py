@@ -61,17 +61,53 @@
   </nav>
 </div>
 <ul class="nav nav-tabs">
-  <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/mail_domains/">Крок 1: Керування доменами</a></li>
-  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/mail_domains/history/">Крок 2: Історія</a></li>
+  <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/mail_domains/">Крок 1: Додати домен</a></li>
+  <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/mail_domains/list/">Крок 2: Список / Історія</a></li>
 </ul>
 <br>
 {% if active1 %}
 <div class="container-fluid">
   <div class="row justify-content-center">
+    <div class="col-12 col-xl-8">
+      <div class="card mx-auto">
+        <div class="card-header">
+          <h4 class="mb-0" style="text-align:center;">Налаштування домену для розсилок:</h4>
+        </div>
+        <div class="card-body">
+          <form action="/mail_domains/" method="POST" novalidate>
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-5">
+                <label class="form-label fw-semibold">Аккаунт Cloudflare:</label>
+                <select class="form-select" id="mailCfAccount" name="mail_cf_account">
+                  <option value="">— Оберіть аккаунт —</option>
+                  {{cf_accounts_options|safe}}
+                </select>
+              </div>
+              <div class="col-12 col-md-5">
+                <label class="form-label fw-semibold">Домен:</label>
+                <select class="form-select" id="mailDomain" name="mail_domain" disabled required>
+                  <option value="">— Спочатку оберіть аккаунт —</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-info w-100" onclick="showLoading()">Додати</button>
+              </div>
+            </div>
+            <div class="form-text mt-2">Буде створено поштову скриньку <code>order@домен</code> та прописано DKIM/DMARC/SPF записи в Cloudflare.</div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if active2 %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
     <div class="col-12">
       <div class="card mx-auto">
         <div class="card-header">
-          <h4 class="mb-0" style="text-align:center;">Налаштування доменів для розсилок:</h4>
+          <h4 class="mb-0" style="text-align:center;">Домени, налаштовані для розсилок:</h4>
         </div>
         <div class="card-body">
           <div class="d-flex align-items-center mb-3 gap-2">
@@ -94,46 +130,12 @@
                   <th scope="col">Власник:</th>
                   <th scope="col">Статус:</th>
                   <th scope="col">Повідомлення:</th>
-                  <th scope="col">Дата:</th>
+                  <th scope="col">Оновлено:</th>
                   <th scope="col">Дії:</th>
                 </tr>
               </thead>
               <tbody>
                 {{domains_html|safe}}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% if active2 %}
-<div class="container-fluid">
-  <div class="row justify-content-center">
-    <div class="col-12">
-      <div class="card mx-auto">
-        <div class="card-header">
-          <h4 class="mb-0" style="text-align:center;">Історія налаштувань доменів для розсилок:</h4>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">ID:</th>
-                  <th scope="col">Домен:</th>
-                  <th scope="col">Аккаунт Cloudflare:</th>
-                  <th scope="col">Дія:</th>
-                  <th scope="col">Статус:</th>
-                  <th scope="col">Повідомлення:</th>
-                  <th scope="col">Хто:</th>
-                  <th scope="col">Дата:</th>
-                </tr>
-              </thead>
-              <tbody>
-                {{history_rows|safe}}
               </tbody>
             </table>
           </div>

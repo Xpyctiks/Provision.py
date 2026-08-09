@@ -142,7 +142,9 @@ class DomainPurchase(db.Model):
 
 class MailServerDomainStatus(db.Model):
   id = db.Column(db.Integer, primary_key=True)
-  domain = db.Column(db.String(256), nullable=False)
+  #exactly one row per domain - every add/retry/delete action updates this same row in place instead of
+  #appending a new one, so Крок 2 doubles as both "current status" and "history" for the domain
+  domain = db.Column(db.String(256), nullable=False, unique=True)
   cloudflare_account = db.Column(db.String(256), nullable=True)
   mailbox = db.Column(db.String(256), nullable=True)
   #action: "add" (provision on the mail server) or "delete" (deprovision)
@@ -157,3 +159,4 @@ class MailServerDomainStatus(db.Model):
   spf_record_created = db.Column(db.Boolean, nullable=True, default=False)
   actor = db.Column(db.String(80), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
+  updated = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)

@@ -6,7 +6,43 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// ── Крок 1: quick filter by domain / owner / Cloudflare account (same pattern as main.js) ──
+// ── Крок 1: Cloudflare account -> domain AJAX (reuses the existing /cloudflare_domains/zones/ endpoint) ──
+
+document.addEventListener('DOMContentLoaded', function () {
+  const cfSelect = document.getElementById('mailCfAccount');
+  const domainSelect = document.getElementById('mailDomain');
+  if (!cfSelect || !domainSelect) return;
+  cfSelect.addEventListener('change', function () {
+    const account = this.value;
+    if (!account) {
+      domainSelect.innerHTML = '<option value="">— Спочатку оберіть аккаунт —</option>';
+      domainSelect.disabled = true;
+      return;
+    }
+    domainSelect.disabled = true;
+    domainSelect.innerHTML = '<option value="">— Завантаження доменів... —</option>';
+    fetch('/cloudflare_domains/zones/?account=' + encodeURIComponent(account))
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          domainSelect.innerHTML = '<option value="">Помилка: ' + data.error + '</option>';
+          return;
+        }
+        if (!data.zones.length) {
+          domainSelect.innerHTML = '<option value="">Немає доменів на цьому аккаунті</option>';
+          return;
+        }
+        domainSelect.innerHTML = '<option value="">— Оберіть домен —</option>' +
+          data.zones.map(name => `<option value="${name}">${name}</option>`).join('');
+        domainSelect.disabled = false;
+      })
+      .catch(() => {
+        domainSelect.innerHTML = '<option value="">Помилка завантаження доменів</option>';
+      });
+  });
+});
+
+// ── Крок 2: quick filter by domain / owner / Cloudflare account (same pattern as main.js) ──
 
 function applyMailDomainsFilters() {
   const ownerEl = document.getElementById("mailOwnerFilter");
@@ -48,7 +84,7 @@ document.addEventListener("keydown", function (e) {
   }
 });
 
-// ── Крок 1: confirm before deleting a domain from the remote mail server ─────
+// ── Крок 2: confirm before deleting a domain from the remote mail server ─────
 
 document.addEventListener("submit", function (e) {
   if (e.target.classList && e.target.classList.contains("delete-mail-domain-form")) {

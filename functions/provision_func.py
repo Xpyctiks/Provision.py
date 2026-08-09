@@ -18,6 +18,7 @@ import functions.variables
 from db.database import Ownership,User
 from db.db import db
 from functions.site_actions import link_domain_and_account
+from functions.mail_domains_func import provision_mail_domain
 from pathlib import Path
 from functions.tld import tld
 
@@ -56,6 +57,18 @@ def setSiteOwner(domain: str) -> bool:
     logging.error(f"setSiteOwner(): Error setting owner {owner} for domain {domain}: {msg}")
     return False
 
+def _trigger_mail_provisioning(domain: str, selected_account: str) -> None:
+  """Best-effort hook called from every place a domain gets successfully registered in the project
+  (finishJob() below covers manual zip upload, auto-provision and clone alike). Provisions the domain
+  on the remote mail server (DKIM/DMARC/SPF + a mailbox login "order") if MAIL_SERVER_API_URL is
+  configured. Never raises/blocks the calling deployment flow - only logs on failure."""
+  try:
+    if not current_app.config.get("MAIL_SERVER_API_URL"):
+      return
+    provision_mail_domain(domain, "order", selected_account, current_user.realname)
+  except Exception as err:
+    logging.error(f"_trigger_mail_provisioning(): error provisioning mail server for domain {domain}: {err}")
+
 def genJobID() -> bool:
   """Smal function to generate random string as the uniq JOBID"""
   try:
@@ -83,6 +96,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
         #writing link of domain and its account to the database
         if not link_domain_and_account(os.path.basename(file)[:-4],selected_account):
           return False
+        _trigger_mail_provisioning(os.path.basename(file)[:-4],selected_account)
         send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):")
         logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
         #quit only if we use zip files. if web provision - not to interrupt flow
@@ -98,12 +112,14 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
         #writing link of domain and its account to the database
         if not link_domain_and_account(os.path.basename(file)[:-4],selected_account):
           return False
+        _trigger_mail_provisioning(os.path.basename(file)[:-4],selected_account)
         findZip_1(selected_account,selected_server,realname)
     elif file == "" and domain != "" and emerg_shutdown == False:
       #writing site owner info to the database
       setSiteOwner(os.path.basename(domain))
       #writing link of domain and its account to the database
       link_domain_and_account(domain,selected_account)
+      _trigger_mail_provisioning(domain,selected_account)
       #here add two symlinks for two shared folders to media/ folder(HARDCODED)
       if os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),".media/payments")) and os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")):
         if not os.path.exists(os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/payments")):
