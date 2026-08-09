@@ -34,8 +34,8 @@ def do_add_mail_domain():
   """POST request processor: provisions the selected domain (from the selected Cloudflare account) for mail sending.
   Mailbox login is always "order", per the project-wide convention (see functions/provision_func.py:finishJob())."""
   try:
-    domain = (request.form.get("mail_domain") or "").strip()
-    cf_account = (request.form.get("mail_cf_account") or "").strip()
+    domain = (request.form.get("domain") or "").strip()
+    cf_account = (request.form.get("cf_account") or "").strip()
     if not domain or not cf_account:
       flash("Помилка! Оберіть аккаунт Cloudflare та домен!", 'alert alert-danger')
       return redirect("/mail_domains/",302)

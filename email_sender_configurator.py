@@ -9,15 +9,18 @@ MySQL schema + Dovecot + rspamd) - it is the counterpart the main Provision.py p
 It is intentionally fully self-contained: no imports from the rest of the Provision.py codebase (it
 does not even live on the same machine), no external config files besides its own .env.
 
-Exposes two endpoints, both POST, both requiring header "X-Api-Key" to match API_KEY from .env:
+Exposes two endpoints, both POST, both requiring header "X-Api-Key" to match API_KEY from .env. The
+mailbox login is NOT a request parameter - it's always the hardcoded MAILBOX_LOGIN below, exactly like
+the mailbox password is already hardcoded, since every domain in this project gets exactly one fixed
+"order@domain" mailbox:
 
-  POST /api/add_new_domain     {"domain": "example.com", "mailbox": "info"}
-    -> adds the domain + mailbox "info@example.com" (hardcoded password) to the PostfixAdmin MySQL
-       database, generates a DKIM key via rspamadm, registers it in rspamd's dkim_signing.conf, restarts
-       rspamd, sends a welcome email to physically create the Dovecot Maildir, and returns the DKIM
-       DNS TXT value to the caller: {"success": true, "dkim": "v=DKIM1; k=rsa; p=..."}
+  POST /api/add_new_domain     {"domain": "example.com"}
+    -> adds the domain + mailbox "order@example.com" (hardcoded login and password) to the PostfixAdmin
+       MySQL database, generates a DKIM key via rspamadm, registers it in rspamd's dkim_signing.conf,
+       restarts rspamd, sends a welcome email to physically create the Dovecot Maildir, and returns the
+       DKIM DNS TXT value to the caller: {"success": true, "dkim": "v=DKIM1; k=rsa; p=..."}
 
-  POST /api/delete_domain      {"domain": "example.com", "mailbox": "info"}
+  POST /api/delete_domain      {"domain": "example.com"}
     -> removes the domain (and every mailbox/alias under it) from the database, removes its DKIM key
        and its dkim_signing.conf entry, restarts rspamd. Returns {"success": true}
 
@@ -39,11 +42,12 @@ rather than granting a limited user passwordless sudo for each of these commands
     DB_NAME=postfixadmin
     DB_USER=postfixadmin
     DB_PASSWORD=...
-    LOG_FILE=/var/log/email_sender_configurator.log  # optional, defaults shown
+    MAILBOX_LOGIN=mailbox                            # optional, defaults shown
+    MAILBOX_PASSWORD=123456                          # optional, defaults shown
+    LOG_FILE=./email_sender_configurator.log         # optional, defaults shown
 
 See .env.example alongside this file.
 """
-
 import os
 import re
 import logging
@@ -51,13 +55,9 @@ import subprocess
 import smtplib
 from email.mime.text import MIMEText
 from pathlib import Path
-
 import pymysql
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-
-#load .env from the same directory as this script, regardless of gunicorn's working directory
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 API_KEY = os.environ.get("API_KEY", "")
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
@@ -66,14 +66,12 @@ DB_NAME = os.environ.get("DB_NAME", "postfixadmin")
 DB_USER = os.environ.get("DB_USER", "postfixadmin")
 DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
 LOG_FILE = os.environ.get("LOG_FILE", "/var/log/email_sender_configurator.log")
-
-#every newly created mailbox gets this hardcoded password, exactly as specified
-MAILBOX_PASSWORD = "Ezz1NCgtJh4zrN1l"
-
+MAILBOX_LOGIN = os.environ.get("MAILBOX_LOGIN", "")
+MAILBOX_PASSWORD = os.environ.get("MAILBOX_PASSWORD", "")
 DKIM_DIR = "/etc/rspamd/dkim"
 DKIM_SIGNING_CONF = "/etc/rspamd/local.d/dkim_signing.conf"
 DKIM_SELECTOR = "default"
-
+load_dotenv(Path(__file__).resolve().parent / ".env")
 logging.basicConfig(
   filename=LOG_FILE,
   level=logging.INFO,
@@ -81,12 +79,10 @@ logging.basicConfig(
   datefmt='%d-%m-%Y %H:%M:%S'
 )
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
-
 application = Flask(__name__)
-app = application  # some gunicorn setups expect "app" as the module-level WSGI object name
+app = application
 
 # ── MySQL (PostfixAdmin schema: domain / mailbox / alias tables) ─────────────
-
 def _get_db_connection():
   return pymysql.connect(
     host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD, database=DB_NAME,
@@ -272,22 +268,19 @@ def add_new_domain():
     return jsonify({"success": False, "error": "Unauthorized"}), 401
   data = request.get_json(silent=True) or {}
   domain = (data.get("domain") or "").strip().lower()
-  mailbox = (data.get("mailbox") or "").strip().lower()
-  if "@" in mailbox:
-    mailbox = mailbox.split("@")[0]
-  if not domain or not mailbox:
-    return jsonify({"success": False, "error": "domain and mailbox are required"}), 400
-  logging.info(f"-----------------------Adding domain {domain} with mailbox {mailbox}-----------------------")
+  if not domain:
+    return jsonify({"success": False, "error": "domain is required"}), 400
+  logging.info(f"-----------------------Adding domain {domain} with mailbox {MAILBOX_LOGIN}-----------------------")
   try:
     if db_domain_exists(domain):
       logging.error(f"add_new_domain(): domain {domain} already exists in the database")
       return jsonify({"success": False, "error": f"Domain {domain} already exists"}), 409
     password_hash = hash_password(MAILBOX_PASSWORD)
-    db_add_domain_and_mailbox(domain, mailbox, password_hash)
+    db_add_domain_and_mailbox(domain, MAILBOX_LOGIN, password_hash)
     dkim_value = generate_dkim_key(domain)
     add_domain_to_dkim_signing_conf(domain)
     restart_rspamd()
-    send_welcome_email(domain, mailbox)
+    send_welcome_email(domain, MAILBOX_LOGIN)
     logging.info(f"add_new_domain(): domain {domain} successfully configured, DKIM: {dkim_value[:40]}...")
     return jsonify({"success": True, "dkim": dkim_value}), 200
   except Exception as err:
@@ -301,10 +294,9 @@ def delete_domain():
     return jsonify({"success": False, "error": "Unauthorized"}), 401
   data = request.get_json(silent=True) or {}
   domain = (data.get("domain") or "").strip().lower()
-  mailbox = (data.get("mailbox") or "").strip().lower()
   if not domain:
     return jsonify({"success": False, "error": "domain is required"}), 400
-  logging.info(f"-----------------------Deleting domain {domain} (mailbox {mailbox})-----------------------")
+  logging.info(f"-----------------------Deleting domain {domain} (mailbox {MAILBOX_LOGIN})-----------------------")
   try:
     db_delete_domain(domain)
     remove_domain_from_dkim_signing_conf(domain)
@@ -317,5 +309,4 @@ def delete_domain():
     return jsonify({"success": False, "error": str(err)}), 500
 
 if __name__ == "__main__":
-  #dev-only fallback - production must run under gunicorn, see the module docstring
   application.run(host="127.0.0.1", port=8686)

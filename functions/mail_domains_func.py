@@ -136,7 +136,8 @@ def provision_mail_domain(domain: str, mailbox: str, cf_account: str, actor: str
     return False, message
 
   try:
-    result = _mailserver_post("/api/add_new_domain", {"domain": domain, "mailbox": mailbox})
+    #mailbox is intentionally not sent - email_sender_configurator.py always uses its own hardcoded "order" login
+    result = _mailserver_post("/api/add_new_domain", {"domain": domain})
   except RuntimeError as err:
     return _fail(f"Помилка звернення до поштового сервера: {err}")
   if not result.get("success"):
@@ -198,7 +199,8 @@ def deprovision_mail_domain(domain: str, actor: str):
     return False, message
 
   try:
-    result = _mailserver_post("/api/delete_domain", {"domain": domain, "mailbox": mailbox})
+    #mailbox is intentionally not sent - email_sender_configurator.py always uses its own hardcoded "order" login
+    result = _mailserver_post("/api/delete_domain", {"domain": domain})
   except RuntimeError as err:
     return _fail(f"Помилка звернення до поштового сервера: {err}")
   if not result.get("success"):
