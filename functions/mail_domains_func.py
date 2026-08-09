@@ -80,14 +80,18 @@ def _upsert_spf(headers: dict, zone_id: str, domain: str, ip: str):
   Returns (ok, spf_created, message)."""
   try:
     records = _find_txt_records(headers, zone_id, domain)
-    spf_record = next((r for r in records if r.get("content", "").startswith("v=spf1")), None)
+    #Cloudflare sometimes returns TXT content wrapped in literal double quotes, and "v=spf1" isn't
+    #always guaranteed to be the very first thing recorded - so search with "in", not "startswith"
+    spf_record = next((r for r in records if "v=spf1" in r.get("content", "")), None)
     if spf_record:
-      old_content = spf_record["content"]
+      #strip any wrapping quotes Cloudflare returned before editing, they're not part of the real value
+      old_content = spf_record["content"].strip().strip('"')
       if f"ip4:{ip}" in old_content:
         return True, False, "SPF вже містить цю IP-адресу"
-      #insert right after "v=spf1 " so ip4: is evaluated before any include:/-all catch-all mechanism
-      parts = old_content.split(" ", 1)
-      new_content = f"{parts[0]} ip4:{ip} {parts[1]}" if len(parts) > 1 else f"{parts[0]} ip4:{ip}"
+      #insert right after "v=spf1" (wherever it sits) so ip4: is evaluated before any include:/-all catch-all
+      insert_at = old_content.find("v=spf1") + len("v=spf1")
+      new_content = f"{old_content[:insert_at]} ip4:{ip}{old_content[insert_at:]}"
+      new_content = " ".join(new_content.split())
       data = {"type": "TXT", "name": domain, "content": new_content, "ttl": spf_record.get("ttl", 1)}
       r = requests.put(f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{spf_record['id']}", headers=headers, json=data, timeout=10).json()
       if r.get("success"):
@@ -222,14 +226,16 @@ def deprovision_mail_domain(domain: str, actor: str):
             if not r.get("success"):
               dns_notes.append(f"Не вдалося видалити {name}")
         #SPF rollback: delete entirely if we created it from scratch, otherwise just strip our ip4: token
-        spf_record = next((r for r in _find_txt_records(headers, zone_id, domain) if r.get("content", "").startswith("v=spf1")), None)
+        #(same "in" check as _upsert_spf() - Cloudflare doesn't guarantee v=spf1 is at position 0 or unquoted)
+        spf_record = next((r for r in _find_txt_records(headers, zone_id, domain) if "v=spf1" in r.get("content", "")), None)
         if spf_record:
           if row.spf_record_created:
             r = requests.delete(f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{spf_record['id']}", headers=headers, timeout=10).json()
             if not r.get("success"):
               dns_notes.append("Не вдалося видалити SPF запис")
           elif row.mail_server_ip and f"ip4:{row.mail_server_ip}" in spf_record["content"]:
-            new_content = " ".join(spf_record["content"].replace(f"ip4:{row.mail_server_ip}", "").split())
+            old_content = spf_record["content"].strip().strip('"')
+            new_content = " ".join(old_content.replace(f"ip4:{row.mail_server_ip}", "").split())
             data = {"type": "TXT", "name": domain, "content": new_content, "ttl": spf_record.get("ttl", 1)}
             r = requests.put(f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{spf_record['id']}", headers=headers, json=data, timeout=10).json()
             if not r.get("success"):

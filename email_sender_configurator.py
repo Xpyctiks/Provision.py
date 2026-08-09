@@ -58,6 +58,7 @@ from pathlib import Path
 import pymysql
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 API_KEY = os.environ.get("API_KEY", "")
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
@@ -71,7 +72,7 @@ MAILBOX_PASSWORD = os.environ.get("MAILBOX_PASSWORD", "")
 DKIM_DIR = "/etc/rspamd/dkim"
 DKIM_SIGNING_CONF = "/etc/rspamd/local.d/dkim_signing.conf"
 DKIM_SELECTOR = "default"
-load_dotenv(Path(__file__).resolve().parent / ".env")
+
 logging.basicConfig(
   filename=LOG_FILE,
   level=logging.INFO,
@@ -103,6 +104,7 @@ def db_add_domain_and_mailbox(domain: str, local_part: str, password_hash: str):
   the same three inserts PostfixAdmin itself does when an admin adds a new domain + first mailbox."""
   username = f"{local_part}@{domain}"
   maildir = f"{domain}/{local_part}/"
+  logging.info(f"db_add_domain_and_mailbox(): inserting domain={domain}, mailbox={username}, maildir={maildir}")
   conn = _get_db_connection()
   try:
     with conn.cursor() as cur:
@@ -121,8 +123,10 @@ def db_add_domain_and_mailbox(domain: str, local_part: str, password_hash: str):
         (username, username, domain)
       )
     conn.commit()
-  except Exception:
+    logging.info(f"db_add_domain_and_mailbox(): domain/mailbox/alias rows for {domain} committed successfully")
+  except Exception as err:
     conn.rollback()
+    logging.error(f"db_add_domain_and_mailbox(): failed for domain {domain}, rolled back: {err}")
     raise
   finally:
     conn.close()
@@ -130,15 +134,21 @@ def db_add_domain_and_mailbox(domain: str, local_part: str, password_hash: str):
 def db_delete_domain(domain: str):
   """Removes every alias/mailbox under the domain, then the domain row itself. Does NOT touch the
   physical Maildir on disk (mail data removal is left as a deliberate manual/separate step)."""
+  logging.info(f"db_delete_domain(): removing alias/mailbox/domain rows for {domain}")
   conn = _get_db_connection()
   try:
     with conn.cursor() as cur:
       cur.execute("DELETE FROM alias WHERE domain=%s", (domain,))
+      aliases_deleted = cur.rowcount
       cur.execute("DELETE FROM mailbox WHERE domain=%s", (domain,))
+      mailboxes_deleted = cur.rowcount
       cur.execute("DELETE FROM domain WHERE domain=%s", (domain,))
+      domains_deleted = cur.rowcount
     conn.commit()
-  except Exception:
+    logging.info(f"db_delete_domain(): removed for {domain} - {aliases_deleted} alias(es), {mailboxes_deleted} mailbox(es), {domains_deleted} domain row(s)")
+  except Exception as err:
     conn.rollback()
+    logging.error(f"db_delete_domain(): failed for domain {domain}, rolled back: {err}")
     raise
   finally:
     conn.close()
@@ -150,7 +160,9 @@ def hash_password(password: str) -> str:
   stores in mailbox.password."""
   result = subprocess.run(["doveadm", "pw", "-s", "SHA512-CRYPT", "-p", password], capture_output=True, text=True, timeout=15)
   if result.returncode != 0 or not result.stdout.strip():
+    logging.error(f"hash_password(): doveadm pw failed: {result.stderr.strip() or 'no output'}")
     raise RuntimeError(f"doveadm pw failed: {result.stderr.strip() or 'no output'}")
+  logging.info("hash_password(): mailbox password hash generated via doveadm")
   return result.stdout.strip()
 
 # ── DKIM key generation (rspamadm) ────────────────────────────────────────────
@@ -172,21 +184,31 @@ def generate_dkim_key(domain: str) -> str:
   fixes its ownership for the rspamd daemon, and returns the cleaned-up public DKIM TXT value."""
   os.makedirs(DKIM_DIR, exist_ok=True)
   key_path = _dkim_key_path(domain)
+  logging.info(f"generate_dkim_key(): running rspamadm dkim_keygen for {domain} -> {key_path}")
   result = subprocess.run(
     ["rspamadm", "dkim_keygen", "-b", "2048", "-s", DKIM_SELECTOR, "-d", domain, "-k", key_path],
     capture_output=True, text=True, timeout=30
   )
   if result.returncode != 0 or not os.path.exists(key_path):
+    logging.error(f"generate_dkim_key(): rspamadm dkim_keygen failed for {domain}: {result.stderr.strip() or result.stdout.strip()}")
     raise RuntimeError(f"rspamadm dkim_keygen failed: {result.stderr.strip() or result.stdout.strip()}")
+  logging.info(f"generate_dkim_key(): DKIM key file created at {key_path}")
   chown_result = subprocess.run(["chown", "_rspamd:_rspamd", key_path], capture_output=True, text=True, timeout=10)
   if chown_result.returncode != 0:
     logging.error(f"generate_dkim_key(): chown _rspamd:_rspamd failed for {key_path}: {chown_result.stderr.strip()}")
-  return _parse_dkim_output(result.stdout)
+  else:
+    logging.info(f"generate_dkim_key(): ownership of {key_path} set to _rspamd:_rspamd")
+  dkim_value = _parse_dkim_output(result.stdout)
+  logging.info(f"generate_dkim_key(): DKIM TXT value for {domain} parsed successfully ({len(dkim_value)} chars)")
+  return dkim_value
 
 def remove_dkim_key(domain: str):
   key_path = _dkim_key_path(domain)
   if os.path.exists(key_path):
     os.remove(key_path)
+    logging.info(f"remove_dkim_key(): removed DKIM key file {key_path}")
+  else:
+    logging.warning(f"remove_dkim_key(): DKIM key file {key_path} not found, nothing to remove")
 
 # ── rspamd dkim_signing.conf domain{} block management ───────────────────────
 
@@ -209,12 +231,15 @@ def add_domain_to_dkim_signing_conf(domain: str):
   content = Path(DKIM_SIGNING_CONF).read_text(encoding="utf-8")
   block = _dkim_signing_block(domain)
   if block in content:
+    logging.info(f"add_domain_to_dkim_signing_conf(): block for {domain} already present in {DKIM_SIGNING_CONF}, nothing to do")
     return  # already present (e.g. a retried request) - nothing to do
   last_brace = content.rfind("}")
   if last_brace == -1:
+    logging.error(f"add_domain_to_dkim_signing_conf(): no closing brace found in {DKIM_SIGNING_CONF}")
     raise RuntimeError(f"{DKIM_SIGNING_CONF}: не знайдено закриваючої дужки блоку domain {{ }}")
   new_content = content[:last_brace] + block + content[last_brace:]
   _write_text_file(DKIM_SIGNING_CONF, new_content)
+  logging.info(f"add_domain_to_dkim_signing_conf(): added selectors block for {domain} to {DKIM_SIGNING_CONF}")
 
 def remove_domain_from_dkim_signing_conf(domain: str):
   content = Path(DKIM_SIGNING_CONF).read_text(encoding="utf-8")
@@ -224,6 +249,7 @@ def remove_domain_from_dkim_signing_conf(domain: str):
     return
   new_content = content.replace(block, "", 1)
   _write_text_file(DKIM_SIGNING_CONF, new_content)
+  logging.info(f"remove_domain_from_dkim_signing_conf(): removed selectors block for {domain} from {DKIM_SIGNING_CONF}")
 
 def _write_text_file(path: str, content: str):
   try:
@@ -234,7 +260,9 @@ def _write_text_file(path: str, content: str):
 def restart_rspamd():
   result = subprocess.run(["systemctl", "restart", "rspamd"], capture_output=True, text=True, timeout=30)
   if result.returncode != 0:
+    logging.error(f"restart_rspamd(): systemctl restart rspamd failed: {result.stderr.strip()}")
     raise RuntimeError(f"Не вдалося перезапустити rspamd: {result.stderr.strip()}")
+  logging.info("restart_rspamd(): rspamd restarted successfully")
 
 # ── Welcome email (physically creates the Dovecot Maildir on first delivery) ─
 
@@ -252,14 +280,28 @@ def send_welcome_email(domain: str, local_part: str):
     msg["To"] = to_addr
     with smtplib.SMTP("127.0.0.1", 25, timeout=20) as smtp:
       smtp.sendmail(from_addr, [to_addr], msg.as_string())
+    logging.info(f"send_welcome_email(): welcome email sent to {to_addr} (Maildir should now be created)")
   except Exception as err:
     logging.error(f"send_welcome_email(): failed to send welcome email to {local_part}@{domain}: {err}")
 
 # ── API ────────────────────────────────────────────────────────────────────
 
+def _fingerprint(secret: str) -> str:
+  """Returns a short, safe-to-log fingerprint of a secret (never the full value)."""
+  return f"{secret[:4]}...({len(secret)} chars)" if secret else "(empty)"
+
 def _check_api_key() -> bool:
   provided = request.headers.get("X-Api-Key", "")
-  return bool(API_KEY) and provided == API_KEY
+  if not API_KEY:
+    logging.error("_check_api_key(): API_KEY is empty/not set in this script's .env - rejecting every request until it's configured and the process is restarted")
+    return False
+  if not provided:
+    logging.warning("_check_api_key(): request has no X-Api-Key header at all")
+    return False
+  if provided != API_KEY:
+    logging.warning(f"_check_api_key(): X-Api-Key mismatch - got {_fingerprint(provided)}, expected {_fingerprint(API_KEY)}")
+    return False
+  return True
 
 @application.route("/api/add_new_domain", methods=["POST"])
 def add_new_domain():
@@ -270,18 +312,22 @@ def add_new_domain():
   domain = (data.get("domain") or "").strip().lower()
   if not domain:
     return jsonify({"success": False, "error": "domain is required"}), 400
-  logging.info(f"-----------------------Adding domain {domain} with mailbox {MAILBOX_LOGIN}-----------------------")
+  logging.info(f"-----------------------Adding domain {domain} with mailbox {MAILBOX_LOGIN} (requested from {request.remote_addr})-----------------------")
   try:
     if db_domain_exists(domain):
       logging.error(f"add_new_domain(): domain {domain} already exists in the database")
       return jsonify({"success": False, "error": f"Domain {domain} already exists"}), 409
+    logging.info(f"add_new_domain(): [1/5] domain {domain} not yet in database, proceeding")
     password_hash = hash_password(MAILBOX_PASSWORD)
+    logging.info(f"add_new_domain(): [2/5] password hash ready for {domain}")
     db_add_domain_and_mailbox(domain, MAILBOX_LOGIN, password_hash)
+    logging.info(f"add_new_domain(): [3/5] database rows created for {domain}")
     dkim_value = generate_dkim_key(domain)
     add_domain_to_dkim_signing_conf(domain)
     restart_rspamd()
+    logging.info(f"add_new_domain(): [4/5] DKIM key generated and rspamd reconfigured for {domain}")
     send_welcome_email(domain, MAILBOX_LOGIN)
-    logging.info(f"add_new_domain(): domain {domain} successfully configured, DKIM: {dkim_value[:40]}...")
+    logging.info(f"add_new_domain(): [5/5] domain {domain} fully configured, DKIM: {dkim_value[:40]}...")
     return jsonify({"success": True, "dkim": dkim_value}), 200
   except Exception as err:
     logging.error(f"add_new_domain(): error configuring domain {domain}: {err}")
@@ -296,13 +342,15 @@ def delete_domain():
   domain = (data.get("domain") or "").strip().lower()
   if not domain:
     return jsonify({"success": False, "error": "domain is required"}), 400
-  logging.info(f"-----------------------Deleting domain {domain} (mailbox {MAILBOX_LOGIN})-----------------------")
+  logging.info(f"-----------------------Deleting domain {domain} (mailbox {MAILBOX_LOGIN}, requested from {request.remote_addr})-----------------------")
   try:
     db_delete_domain(domain)
+    logging.info(f"delete_domain(): [1/3] database rows removed for {domain}")
     remove_domain_from_dkim_signing_conf(domain)
     remove_dkim_key(domain)
+    logging.info(f"delete_domain(): [2/3] DKIM key and dkim_signing.conf entry removed for {domain}")
     restart_rspamd()
-    logging.info(f"delete_domain(): domain {domain} successfully removed")
+    logging.info(f"delete_domain(): [3/3] domain {domain} fully removed")
     return jsonify({"success": True}), 200
   except Exception as err:
     logging.error(f"delete_domain(): error deleting domain {domain}: {err}")
