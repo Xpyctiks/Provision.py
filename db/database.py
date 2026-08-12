@@ -119,6 +119,8 @@ class DomainRegistrator(db.Model):
   name = db.Column(db.String(256), nullable=False,unique=True)
   api_production_key = db.Column(db.String(256), nullable=False)
   api_secret_key = db.Column(db.String(256), nullable=False)
+  provider = db.Column(db.String(20), nullable=False, default="dynadot")   #"dynadot" | "spaceship"
+  contact_id = db.Column(db.String(64), nullable=True, default="")         #Spaceship contact ID, порожньо для Dynadot
   created = db.Column(db.DateTime, default=datetime.now)
 
 class DomainPurchase(db.Model):

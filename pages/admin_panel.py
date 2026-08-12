@@ -638,8 +638,10 @@ def admin_panel_registrators():
   <tr class="table-warning">
     <th scope="col" style="width: 45px;">ID:</th>
     <th scope="col" style="width: 150px;">Назва:</th>
+    <th scope="col" style="width: 120px;">Провайдер:</th>
     <th scope="col" style="width: 350px;">Production Key:</th>
     <th scope="col" style="width: 350px;">Secret Key:</th>
+    <th scope="col" style="width: 200px;">Contact ID:</th>
     <th scope="col" style="width: 150px;">Створен:</th>
   </tr>
   </thead>
@@ -653,8 +655,10 @@ def admin_panel_registrators():
     <button type="submit" class="btn btn-outline-warning" name="buttonDeleteRegistrator" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний реєстратор із бази.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.name}</td>
+    <td class="table-success cname-cell" >{s.provider}</td>
     <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.api_production_key}</details></td>
     <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.api_secret_key}</details></td>
+    <td class="table-success cname-cell" >{s.contact_id or "-"}</td>
     <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
   </tr>"""
     html_data += """
@@ -664,10 +668,17 @@ def admin_panel_registrators():
   <div class="input-group mb-2">
   <span class="input-group-text">Назва:</span>
   <input type="text" class="form-control" id="field1" name="new-registrator-name" value="">
+  <span class="input-group-text">Провайдер:</span>
+  <select class="form-select" id="field-provider" name="new-registrator-provider">
+    <option value="dynadot" selected>Dynadot</option>
+    <option value="spaceship">Spaceship</option>
+  </select>
   <span class="input-group-text">Production Key:</span>
   <input type="text" class="form-control" id="field2" name="new-registrator-production-key" value="">
   <span class="input-group-text">Secret Key:</span>
   <input type="text" class="form-control" id="field3" name="new-registrator-secret-key" value="">
+  <span class="input-group-text">Contact ID (лише для Spaceship):</span>
+  <input type="text" class="form-control" id="field4" name="new-registrator-contact-id" value="">
   <button type="submit" class="btn form-control" style="background-color: palegreen;" name="buttonAddRegistrator" onclick="showLoading()">Додати реєстратора</button>
    </div>
   </form>

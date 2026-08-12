@@ -9,6 +9,7 @@ from functions.pages_forms import _load_zones_for_account
 from functions.site_actions import link_domain_and_account
 from functions.provision_func import setSiteOwner
 from functions.dynadot_func import dynadot_register_domain, dynadot_set_ns
+from functions.spaceship_func import spaceship_register_domain, spaceship_set_ns
 
 CF_ACCOUNT_DOMAIN_LIMIT = 50
 DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
@@ -199,6 +200,18 @@ def _add_domain_to_cf(acc: Cloudflare, domain: str):
   except Exception as err:
     return False, str(err)
 
+def _register_domain(registrator: DomainRegistrator, domain: str, duration: int = 1):
+  """Dispatches domain registration to the correct API based on registrator.provider."""
+  if registrator.provider == "spaceship":
+    return spaceship_register_domain(registrator, domain, duration=duration)
+  return dynadot_register_domain(registrator, domain, duration=duration)
+
+def _set_ns(registrator: DomainRegistrator, domain: str, ns_list: list):
+  """Dispatches nameserver assignment to the correct API based on registrator.provider."""
+  if registrator.provider == "spaceship":
+    return spaceship_set_ns(registrator, domain, ns_list)
+  return dynadot_set_ns(registrator, domain, ns_list)
+
 def _update_purchase_row(domain: str, account, status: str, message: str, stage: str = None):
   row = DomainPurchase.query.filter_by(domain=domain).order_by(DomainPurchase.id.desc()).first()
   if row:
@@ -245,7 +258,7 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
     purchased = []
     purchase_log = []
     for domain in domains:
-      ok, msg = dynadot_register_domain(registrator, domain, duration=1)
+      ok, msg = _register_domain(registrator, domain, duration=1)
       if ok:
         #only a successful purchase gets a DB record - a failed attempt leaves no trace of the domain at all
         db.session.add(DomainPurchase(domain=domain, registrator=registrator.name, cloudflare_account=None, status="success", message="Куплено, очікує налаштування Cloudflare", purchased_by=realname, stage="just_bought"))
@@ -274,7 +287,7 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
           placed = True
           break
         ns = ns_or_err
-        ns_ok, ns_msg = dynadot_set_ns(registrator, domain, ns)
+        ns_ok, ns_msg = _set_ns(registrator, domain, ns)
         setSiteOwner(domain)
         link_domain_and_account(domain, acc.account)
         remaining_slots[acc.account] -= 1

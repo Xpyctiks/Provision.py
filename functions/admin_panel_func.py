@@ -606,9 +606,15 @@ def handler_registrators(form):
       name = form.get("new-registrator-name", "").strip()
       production_key = form.get("new-registrator-production-key", "").strip()
       secret_key = form.get("new-registrator-secret-key", "").strip()
+      provider = (form.get("new-registrator-provider") or "dynadot").strip()
+      contact_id = form.get("new-registrator-contact-id", "").strip()
       if not name or not production_key or not secret_key:
         logging.error(f"Admin {current_user.realname}>Some of important parameters for domain registrator add procedure has not been received!")
         flash(f'Один або декілька важливих параметрів для створення реєстратора не були отримані сервером!','alert alert-warning')
+        return
+      if provider == "spaceship" and not contact_id:
+        logging.error(f"Admin {current_user.realname}>Spaceship registrator {name} add procedure - Contact ID has not been received!")
+        flash(f'Для реєстратора Spaceship обов\'язково потрібно вказати Contact ID!','alert alert-warning')
         return
       #check if this registrator already exists in DB
       registrator = DomainRegistrator.query.filter_by(name=name).first()
@@ -616,7 +622,7 @@ def handler_registrators(form):
         logging.error(f"Admin {current_user.realname}>Registrator {name} already exists in DB!")
         flash(f'Реєстратор {name} вже існує!','alert alert-danger')
         return
-      new_registrator = DomainRegistrator(name=name, api_production_key=production_key, api_secret_key=secret_key)
+      new_registrator = DomainRegistrator(name=name, api_production_key=production_key, api_secret_key=secret_key, provider=provider, contact_id=contact_id)
       db.session.add(new_registrator)
       db.session.commit()
       logging.info(f"Admin {current_user.realname}>Domain registrator {name} created successfully!")
