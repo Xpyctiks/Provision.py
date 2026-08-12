@@ -121,12 +121,6 @@ class DomainRegistrator(db.Model):
   api_secret_key = db.Column(db.String(256), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
 
-class Smtp2goAccount(db.Model):
-  id = db.Column(db.Integer, primary_key=True)
-  name = db.Column(db.String(256), nullable=False,unique=True)
-  api_key = db.Column(db.String(256), nullable=False)
-  created = db.Column(db.DateTime, default=datetime.now)
-
 class DomainPurchase(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   domain = db.Column(db.String(256), nullable=False)
@@ -137,8 +131,6 @@ class DomainPurchase(db.Model):
   purchased_by = db.Column(db.String(80), nullable=False)
   created = db.Column(db.DateTime, default=datetime.now)
   stage = db.Column(db.String(20), nullable=False, default="just_bought")
-  smtp2go_status = db.Column(db.String(20), nullable=True)
-  smtp2go_account = db.Column(db.String(256), nullable=True)
 
 class MailServerDomainStatus(db.Model):
   id = db.Column(db.Integer, primary_key=True)

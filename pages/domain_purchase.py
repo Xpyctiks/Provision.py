@@ -4,8 +4,7 @@ import json
 import requests
 from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
-from db.db import db
-from db.database import Cloudflare,DomainRegistrator,Provision_templates,Smtp2goAccount,DomainPurchase
+from db.database import Cloudflare,DomainRegistrator,Provision_templates
 from functions.site_actions import is_admin,is_mail_admin,clearCache
 from functions.rights_required import rights_required,ADMIN_RIGHTS
 from functions.pages_forms import loadTemplatesList,loadServersList
@@ -14,8 +13,7 @@ from functions.provision_func import start_autoprovision,finishJob
 from functions.domain_purchase_func import (
   parse_domain_textarea,load_domain_registrators,load_cf_accounts_checkboxes,render_purchase_history,
   purchase_and_setup_domains,recheck_domain_statuses,load_actionable_domains,distinct_actionable_accounts,
-  render_actionable_domains,load_smtp2go_accounts,get_purchase_row,append_purchase_message,
-  _setup_smtp2go_for_domain,verify_smtp2go_for_domain,recheck_smtp2go_statuses
+  render_actionable_domains,get_purchase_row,append_purchase_message
 )
 from pages.cloudflare_email import (
   _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,
@@ -138,14 +136,12 @@ def show_domain_purchase_step2():
     sites_options = "".join(f'<option value="{s}">{s}</option>' for s in sites_list)
     templates_list, first_template = loadTemplatesList()
     server_list, first_server = loadServersList()
-    smtp2go_list, first_smtp2go = load_smtp2go_accounts()
     return render_template(
       "template-domain_purchase.html",active2="active",
       domains_html=domains_html,accounts_options=accounts_options,
       addresses_by_account_json=json.dumps(addresses_by_account),
       sites_options=sites_options,templates=templates_list,first_template=first_template,
       server_list=server_list,first_server=first_server,
-      smtp2go_list=smtp2go_list,first_smtp2go=first_smtp2go,
       admin_panel=is_admin(),mail_admin=is_mail_admin(),
       version=current_app.config.get("VERSION","")
     )
@@ -194,12 +190,11 @@ def _setup_email_for_domain(domain: str, account_email: str, destination: str, a
     logging.error(f"_setup_email_for_domain(): error for domain {domain}: {err}")
     return False, str(err)
 
-def _deploy_and_setup_email(domains: list, selected_server: str, selected_template: str, selected_clone_source: str, destination_email: str, email_alias: str, smtp2go_account: Smtp2goAccount, realname: str):
+def _deploy_and_setup_email(domains: list, selected_server: str, selected_template: str, selected_clone_source: str, destination_email: str, email_alias: str, realname: str):
   """For each selected (ready_to_setup) domain: deploys it (clone an existing site, or provision from a template -
   reusing functions/clone_func.start_clone / functions/provision_func.start_autoprovision exactly like
-  pages/clone.py and pages/provision.py do), then activates Email Routing + a forwarding rule, and finally
-  registers the domain as a Verified Sender on SMTP2GO. Every step appends its own note to the domain's
-  DomainPurchase.message running log instead of overwriting it."""
+  pages/clone.py and pages/provision.py do), then activates Email Routing + a forwarding rule. Every step
+  appends its own note to the domain's DomainPurchase.message running log instead of overwriting it."""
   web_folder = current_app.config.get("WEB_FOLDER","")
   results = []
   for domain in domains:
@@ -243,12 +238,7 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
       results.append((domain, False, f"Сайт розгорнуто, але помилка Email Routing: {msg}"))
       continue
     append_purchase_message(row, "Email Routing активовано", stage="done")
-    ok2, msg2 = _setup_smtp2go_for_domain(domain, cf_account, smtp2go_account, realname)
-    if ok2:
-      append_purchase_message(row, "SMTP2GO налаштовано")
-      results.append((domain, True, "Сайт розгорнуто, Email Routing активовано, SMTP2GO налаштовано"))
-    else:
-      results.append((domain, True, f"Сайт розгорнуто, Email Routing активовано, але помилка SMTP2GO: {msg2}"))
+    results.append((domain, True, "Сайт розгорнуто, Email Routing активовано"))
   return results
 
 @domain_purchase_bp.route("/domain_purchase/step2/", methods=['POST'])
@@ -263,19 +253,14 @@ def do_domain_purchase_step2():
     selected_clone_source = (request.form.get("selected_clone_source") or "").strip()
     destination_email = (request.form.get("destination_email") or "").strip()
     email_alias = (request.form.get("email_alias") or "support").strip() or "support"
-    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
-    logging.info(f"-----------------------Domain setup form submitted by {current_user.realname}: domains={selected_domains}, server={selected_server}, template={selected_template}, clone_source={selected_clone_source}, destination={destination_email}, alias={email_alias}, smtp2go={selected_smtp2go}-----------------------")
-    if not selected_domains or not selected_server or not destination_email or not selected_smtp2go:
-      flash("Помилка! Оберіть хоча б один домен зі статусом 'готовий до розгортання', сервер, адресу призначення для пошти та аккаунт SMTP2GO!", 'alert alert-danger')
+    logging.info(f"-----------------------Domain setup form submitted by {current_user.realname}: domains={selected_domains}, server={selected_server}, template={selected_template}, clone_source={selected_clone_source}, destination={destination_email}, alias={email_alias}-----------------------")
+    if not selected_domains or not selected_server or not destination_email:
+      flash("Помилка! Оберіть хоча б один домен зі статусом 'готовий до розгортання', сервер та адресу призначення для пошти!", 'alert alert-danger')
       return redirect("/domain_purchase/step2/",302)
     if not selected_clone_source and not selected_template:
       flash("Помилка! Оберіть шаблон для розгортання, або сайт для клонування!", 'alert alert-danger')
       return redirect("/domain_purchase/step2/",302)
-    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
-    if not smtp2go_account:
-      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
-      return redirect("/domain_purchase/step2/",302)
-    results = _deploy_and_setup_email(selected_domains,selected_server,selected_template,selected_clone_source,destination_email,email_alias,smtp2go_account,current_user.realname)
+    results = _deploy_and_setup_email(selected_domains,selected_server,selected_template,selected_clone_source,destination_email,email_alias,current_user.realname)
     lines = []
     ok_count = 0
     for domain, ok, msg in results:
@@ -302,121 +287,9 @@ def do_domain_purchase_step2():
 def show_domain_purchase_history():
   """GET request: shows the full purchase history log"""
   try:
-    recheck_smtp2go_statuses()
     history_rows = render_purchase_history()
-    smtp2go_list, first_smtp2go = load_smtp2go_accounts()
-    cf_accounts_options = "".join(f'<option value="{acc.account}">{acc.account}</option>' for acc in Cloudflare.query.order_by(Cloudflare.account).all())
-    return render_template("template-domain_purchase.html",active3="active",history_rows=history_rows,smtp2go_list=smtp2go_list,first_smtp2go=first_smtp2go,cf_accounts_options=cf_accounts_options,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
+    return render_template("template-domain_purchase.html",active3="active",history_rows=history_rows,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_domain_purchase_hisory(): general render error by {current_user.realname}: {err}")
     flash("Неочікувана помилка на сторінці купівлі доменів, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
-
-@domain_purchase_bp.route("/domain_purchase/history/manual_smtp2go/", methods=['POST'])
-@login_required
-@rights_required(ADMIN_RIGHTS)
-def manual_smtp2go():
-  """POST request processor: runs the full SMTP2GO Verified Sender setup (same pipeline as Крок 2) for an
-  arbitrary existing domain picked directly from a Cloudflare account - not necessarily one that went
-  through the domain-purchase flow. Creates a DomainPurchase row for it if none exists yet, so it shows
-  up in Історія покупок and gets rechecked/verified exactly like every other domain."""
-  try:
-    domain = (request.form.get("manual_domain") or "").strip()
-    cf_account_email = (request.form.get("manual_cf_account") or "").strip()
-    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
-    logging.info(f"-----------------------Manual SMTP2GO setup for domain {domain} (Cloudflare account: {cf_account_email}) requested by {current_user.realname} (SMTP2GO account: {selected_smtp2go})-----------------------")
-    if not domain or not cf_account_email or not selected_smtp2go:
-      flash("Помилка! Оберіть аккаунт Cloudflare, домен та аккаунт SMTP2GO!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    acc = Cloudflare.query.filter_by(account=cf_account_email).first()
-    if not acc:
-      flash(f"Помилка! Аккаунт Cloudflare {cf_account_email} не знайдено в базі!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
-    if not smtp2go_account:
-      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    row = get_purchase_row(domain)
-    if not row:
-      row = DomainPurchase(domain=domain, registrator="Ручне додавання", cloudflare_account=cf_account_email, status="success", message="Домен доданий вручну для налаштування SMTP2GO", purchased_by=current_user.realname, stage="done")
-      db.session.add(row)
-      db.session.commit()
-      logging.info(f"manual_smtp2go(): created new DomainPurchase record for manually-added domain {domain}")
-    elif not row.cloudflare_account:
-      row.cloudflare_account = cf_account_email
-      db.session.commit()
-    ok, msg = _setup_smtp2go_for_domain(domain, cf_account_email, smtp2go_account, current_user.realname)
-    if ok:
-      append_purchase_message(row, "SMTP2GO налаштовано")
-      flash(f"SMTP2GO налаштовано для домену {domain}: {msg}", 'alert alert-success')
-    else:
-      logging.error(f"manual_smtp2go(): SMTP2GO setup failed for domain {domain}: {msg}")
-      flash(f"Помилка налаштування SMTP2GO для домену {domain}: {msg}", 'alert alert-danger')
-    return redirect("/domain_purchase/history/",302)
-  except Exception as err:
-    logging.error(f"manual_smtp2go(): general error by {current_user.realname}: {err}")
-    flash("Неочікувана помилка при ручному налаштуванні SMTP2GO, дивіться логи!", 'alert alert-danger')
-    return redirect("/domain_purchase/history/",302)
-
-@domain_purchase_bp.route("/domain_purchase/history/retry_smtp2go/", methods=['POST'])
-@login_required
-@rights_required(ADMIN_RIGHTS)
-def retry_smtp2go():
-  """POST request processor: retries the SMTP2GO Verified Sender setup for one domain from Історія покупок"""
-  try:
-    domain = (request.form.get("retry_smtp2go_domain") or "").strip()
-    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
-    logging.info(f"-----------------------Retry SMTP2GO setup for domain {domain} requested by {current_user.realname} (account: {selected_smtp2go})-----------------------")
-    if not domain or not selected_smtp2go:
-      flash("Помилка! Домен або аккаунт SMTP2GO не вказано!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    row = get_purchase_row(domain)
-    if not row or not row.cloudflare_account:
-      flash(f"Помилка! Домен {domain} не знайдено, або для нього не вказано аккаунт Cloudflare!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
-    if not smtp2go_account:
-      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    ok, msg = _setup_smtp2go_for_domain(domain, row.cloudflare_account, smtp2go_account, current_user.realname)
-    if ok:
-      append_purchase_message(row, "SMTP2GO налаштовано")
-      flash(f"SMTP2GO налаштовано для домену {domain}: {msg}", 'alert alert-success')
-    else:
-      logging.error(f"retry_smtp2go(): SMTP2GO setup failed for domain {domain}: {msg}")
-      flash(f"Помилка налаштування SMTP2GO для домену {domain}: {msg}", 'alert alert-danger')
-    return redirect("/domain_purchase/history/",302)
-  except Exception as err:
-    logging.error(f"retry_smtp2go(): general error by {current_user.realname}: {err}")
-    flash("Неочікувана помилка при повторному налаштуванні SMTP2GO, дивіться логи!", 'alert alert-danger')
-    return redirect("/domain_purchase/history/",302)
-
-@domain_purchase_bp.route("/domain_purchase/history/verify_smtp2go/", methods=['POST'])
-@login_required
-@rights_required(ADMIN_RIGHTS)
-def verify_smtp2go():
-  """POST request processor: manually re-checks SMTP2GO verification for a domain already in smtp2go_set"""
-  try:
-    domain = (request.form.get("verify_smtp2go_domain") or "").strip()
-    selected_smtp2go = (request.form.get("selected_smtp2go") or "").strip()
-    logging.info(f"-----------------------Manual SMTP2GO verification for domain {domain} requested by {current_user.realname} (account: {selected_smtp2go})-----------------------")
-    if not domain or not selected_smtp2go:
-      flash("Помилка! Домен або аккаунт SMTP2GO не вказано!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    smtp2go_account = Smtp2goAccount.query.filter_by(name=selected_smtp2go).first()
-    if not smtp2go_account:
-      flash(f"Помилка! Аккаунт SMTP2GO {selected_smtp2go} не знайдено в базі!", 'alert alert-danger')
-      return redirect("/domain_purchase/history/",302)
-    ok, msg = verify_smtp2go_for_domain(domain, smtp2go_account)
-    if ok:
-      row = get_purchase_row(domain)
-      if row:
-        append_purchase_message(row, "SMTP2GO верифіковано")
-      flash(f"Домен {domain}: {msg}", 'alert alert-success')
-    else:
-      flash(f"Домен {domain}: {msg}", 'alert alert-warning')
-    return redirect("/domain_purchase/history/",302)
-  except Exception as err:
-    logging.error(f"verify_smtp2go(): general error by {current_user.realname}: {err}")
-    flash("Неочікувана помилка при верифікації SMTP2GO, дивіться логи!", 'alert alert-danger')
-    return redirect("/domain_purchase/history/",302)

@@ -72,7 +72,7 @@
 <ul class="nav nav-tabs">
   <li class="nav-item"><a class="nav-link {{active1|safe}}" href="/domain_purchase/step1/">Крок 1: Купівля доменів</a></li>
   <li class="nav-item"><a class="nav-link {{active2|safe}}" href="/domain_purchase/step2/" onclick="showPageLoadingOverlay()">Крок 2: Налаштування доменів/розгорнути сайти</a></li>
-  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/" onclick="showPageLoadingOverlay()">Крок 3: Історія покупок/Налаштування smtp2go</a></li>
+  <li class="nav-item"><a class="nav-link {{active3|safe}}" href="/domain_purchase/history/" onclick="showPageLoadingOverlay()">Крок 3: Історія покупок</a></li>
 </ul>
 <br>
 {% if active1 %}
@@ -176,14 +176,6 @@
                 <h6 class="card-title">Локальна частина email-аліасу (напр. support@домен):</h6>
                 <input type="text" class="form-control" id="email_alias" name="email_alias" value="support" required>
               </div>
-              <div class="col-12 col-md-6 dropdown">
-                <h6 class="card-title">Аккаунт SMTP2GO (для верифікації відправника):</h6>
-                <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Smtp2go" data-bs-toggle="dropdown" aria-expanded="false">{{first_smtp2go|safe}}</button>
-                <ul class="dropdown-menu" aria-labelledby="Smtp2go">
-                  {{smtp2go_list|safe}}
-                </ul>
-                <input type="hidden" name="selected_smtp2go" id="selected_smtp2go" value="{{first_smtp2go|safe}}" required>
-              </div>
             </div>
             <div class="d-grid mt-3 col-12 col-md-4 mx-auto">
               <button type="submit" class="btn btn-info w-100" name="buttonSetupDomains" value="Submit" onclick="showLoading()">Розгорнути обрані домени</button>
@@ -200,70 +192,33 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12">
-      <form action="/domain_purchase/history/retry_smtp2go/" method="POST" id="historyform" novalidate>
-        <input type="hidden" name="selected_smtp2go" id="selected_smtp2go" value="{{first_smtp2go|safe}}">
-        <div class="card mx-auto mb-3">
-          <div class="card-header">
-            <h5 class="mb-0">Ручне налаштування SMTP2GO для домену:</h5>
-          </div>
-          <div class="card-body">
-            <div class="row g-3 align-items-end">
-              <div class="col-12 col-md-5">
-                <label class="form-label fw-semibold">Аккаунт Cloudflare:</label>
-                <select class="form-select" id="manualCfAccount" name="manual_cf_account">
-                  <option value="">— Оберіть аккаунт —</option>
-                  {{cf_accounts_options|safe}}
-                </select>
-              </div>
-              <div class="col-12 col-md-5">
-                <label class="form-label fw-semibold">Домен:</label>
-                <select class="form-select" id="manualDomain" name="manual_domain" disabled required>
-                  <option value="">— Спочатку оберіть аккаунт —</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-2">
-                <button type="submit" formaction="/domain_purchase/history/manual_smtp2go/" name="buttonManualSmtp2go" class="btn btn-info w-100" onclick="showPageLoadingOverlay()">Налаштувати SMTP2GO</button>
-              </div>
-            </div>
+      <div class="card mx-auto">
+        <div class="card-header">
+          <h4 class="mb-0">Історія покупок доменів:</h4>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th scope="col">ID:</th>
+                  <th scope="col">Домен:</th>
+                  <th scope="col">Реєстратор:</th>
+                  <th scope="col">Аккаунт Cloudflare:</th>
+                  <th scope="col">Статус:</th>
+                  <th scope="col">Стадія:</th>
+                  <th scope="col">Повідомлення:</th>
+                  <th scope="col">Хто купив:</th>
+                  <th scope="col">Дата:</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{history_rows|safe}}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div class="card mx-auto">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Історія покупок доменів:</h4>
-            <div class="dropdown">
-              <h6>Аккаунт smtp2go для всіх доменів нижче:</h6>
-              <button class="btn btn-secondary dropdown-toggle" type="button" id="Smtp2go" data-bs-toggle="dropdown" aria-expanded="false">{{first_smtp2go|safe}}</button>
-              <ul class="dropdown-menu" aria-labelledby="Smtp2go">
-                {{smtp2go_list|safe}}
-              </ul>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-bordered table-hover">
-                <thead>
-                  <tr>
-                    <th scope="col">ID:</th>
-                    <th scope="col">Домен:</th>
-                    <th scope="col">Реєстратор:</th>
-                    <th scope="col">Аккаунт Cloudflare:</th>
-                    <th scope="col">Статус:</th>
-                    <th scope="col">Стадія:</th>
-                    <th scope="col">SMTP2GO:</th>
-                    <th scope="col">Повідомлення:</th>
-                    <th scope="col">Хто купив:</th>
-                    <th scope="col">Дата:</th>
-                    <th scope="col">Дії:</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{history_rows|safe}}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </div>

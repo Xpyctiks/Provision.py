@@ -10,7 +10,7 @@ from functions.cache_func import page_cache
 CONFIG_DIR = "/etc/provision/"
 DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
 application = Flask(__name__)
-application.config["VERSION"] = "2.8.6"
+application.config["VERSION"] = "2.8.7"
 application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800

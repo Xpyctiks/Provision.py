@@ -136,28 +136,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// ── Крок 2: SMTP2GO account dropdown persistence ─────────────────────────────
-
-(function restoreSelectedSmtp2go() {
-  const saved = getCookie('domain_purchase_smtp2go');
-  if (!saved) return;
-  const item = document.querySelector('.dropdown-item.smtp2go[data-value="' + CSS.escape(saved) + '"]');
-  if (!item) return;
-  const hidden = document.getElementById('selected_smtp2go');
-  if (hidden) hidden.value = saved;
-  const btn = document.getElementById('Smtp2go');
-  if (btn) btn.innerText = saved;
-})();
-
-document.querySelectorAll('.dropdown-item.smtp2go').forEach(item => {
-  item.addEventListener('click', function () {
-    const value = this.getAttribute('data-value');
-    document.getElementById('selected_smtp2go').value = value;
-    document.getElementById('Smtp2go').innerText = value;
-    setCookie('domain_purchase_smtp2go', value, 365);
-  });
-});
-
 // ── Крок 2: Server / Template dropdown click handlers (same pattern as provision.js) ──
 
 document.querySelectorAll('.dropdown-item.server').forEach(item => {
@@ -219,43 +197,6 @@ document.addEventListener('DOMContentLoaded', function () {
       setCookie('domain_purchase_email_alias', this.value, 365);
     });
   }
-});
-
-// ── Крок 3 (Історія покупок): manual SMTP2GO setup - CF account -> domain AJAX ──
-
-document.addEventListener('DOMContentLoaded', function () {
-  const cfSelect = document.getElementById('manualCfAccount');
-  const domainSelect = document.getElementById('manualDomain');
-  if (!cfSelect || !domainSelect) return;
-  cfSelect.addEventListener('change', function () {
-    const account = this.value;
-    if (!account) {
-      domainSelect.innerHTML = '<option value="">— Спочатку оберіть аккаунт —</option>';
-      domainSelect.disabled = true;
-      return;
-    }
-    domainSelect.disabled = true;
-    domainSelect.innerHTML = '<option value="">— Завантаження доменів... —</option>';
-    //reuses the existing /cloudflare_domains/zones/ AJAX endpoint (same one cloudflare_domains.js uses)
-    fetch('/cloudflare_domains/zones/?account=' + encodeURIComponent(account))
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          domainSelect.innerHTML = '<option value="">Помилка: ' + data.error + '</option>';
-          return;
-        }
-        if (!data.zones.length) {
-          domainSelect.innerHTML = '<option value="">Немає доменів на цьому аккаунті</option>';
-          return;
-        }
-        domainSelect.innerHTML = '<option value="">— Оберіть домен —</option>' +
-          data.zones.map(name => `<option value="${name}">${name}</option>`).join('');
-        domainSelect.disabled = false;
-      })
-      .catch(() => {
-        domainSelect.innerHTML = '<option value="">Помилка завантаження доменів</option>';
-      });
-  });
 });
 
 // ── Loading spinner (shared behavior with other pages) ───────────────────────
