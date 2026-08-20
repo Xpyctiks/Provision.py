@@ -127,6 +127,11 @@ function openEditor(domain) {
   });
 }
 
+function openDropUpload(site) {
+  document.getElementById("dropUploadSitename").value = site;
+  document.getElementById("dropUploadSiteLabel").textContent = site;
+}
+
 function saveEditor() {
   const content = document.getElementById("editorTextarea").value;
   const domain = document.getElementById("domain").value;

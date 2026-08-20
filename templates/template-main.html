@@ -111,6 +111,8 @@
             <li><hr class="dropdown-divider"></li>
             <li><button class="btn btn-primary gitpull-btn dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" id="gitPullButton" name="gitPull" form="main_form" onclick="showLoading()" style="margin-top: 5px;" title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button></li>
             <li><hr class="dropdown-divider"></li>
+            <li><button class="btn btn-outline-primary dropdown-item" data-bs-toggle="modal" data-bs-target="#dropUploadModal" onclick="openDropUpload('{{site.site_name|safe}}')" title="Завантажити ZIP/TAR.GZ архів, який розпакується у public/drop цього сайту (папка drop буде повністю очищена перед розпакуванням).">📦Завантажити архив в drop</button></li>
+            <li><hr class="dropdown-divider"></li>
             <li><a class="btn btn-info dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="manager" href="/redirects_manager?site={{site.site_name|safe}}" value="{{site.site_name|safe}}" style="margin-top: 5px; width: 236px;" title="Керування 301-ми редіректами для цього сайту.">🚥Редіректи (~{{site.count_redirects|safe}} шт. вже є)</a></li>
             <li><hr class="dropdown-divider"></li>
             {% endif %}
@@ -192,6 +194,27 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="dropUploadModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Завантажити архів у папку drop: <span id="dropUploadSiteLabel"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/drop_upload/" method="POST" enctype="multipart/form-data">
+        <div class="modal-body">
+          <input type="hidden" name="sitename" id="dropUploadSitename">
+          <input type="file" class="form-control" name="archiveFile" accept=".zip,.tar.gz,.tgz" required>
+          <div class="form-text text-danger mt-2">Увага: вміст папки <code>public/drop</code> буде повністю видалено перед розпакуванням архіву!</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Відміна</button>
+          <button type="submit" class="btn btn-success" onclick="showLoading()">⬆️ Завантажити</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
