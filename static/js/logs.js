@@ -1,3 +1,11 @@
+document.addEventListener("DOMContentLoaded", function () {
+  const modalElement = document.getElementById("myModal");
+  if (modalElement) {
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+  }
+});
+
 function colorize(line) {
   if (line.includes("ERROR"))
     return `<span class="log-ERROR">${line}</span>`;

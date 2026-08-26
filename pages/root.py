@@ -1,9 +1,11 @@
 import logging
 import math
+import os
 from urllib.parse import urlencode
-from flask import render_template,Blueprint,current_app,flash,make_response,request,jsonify
+from flask import render_template,Blueprint,current_app,flash,make_response,request,jsonify,redirect
 from flask_login import login_required,current_user
 from functions.site_actions import is_admin, is_mail_admin
+from functions.rights_required import ADMIN_RIGHTS
 from db.database import Messages,User,Cloudflare,SitesShowRestricions
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
@@ -41,11 +43,15 @@ def index():
         response.set_cookie("x_cache", "HIT")
         return response
     web_folder = current_app.config.get("WEB_FOLDER","")
-    if web_folder == "":
-      logging.error(f"index(): root page generate function ERROR! - web_folder variable is empty!")
+    if not web_folder or not os.path.isdir(web_folder):
+      logging.error(f"index(): WEB_FOLDER is empty or does not point to an existing folder: '{web_folder}'")
       if ajax or export_list:
-        return jsonify({"error": "WEB_FOLDER is empty"}), 500
-      return "index(): root page generate function ERROR!", 500
+        return jsonify({"error": "WEB_FOLDER is empty or invalid"}), 500
+      if current_user.rights == ADMIN_RIGHTS:
+        flash(f'Помилка! Папка з сайтами (WEB_FOLDER) не задана або не існує: "{web_folder}". Перевірте і виправте це налаштування!', 'alert alert-danger')
+        return redirect("/admin_panel/settings/", 302)
+      flash('Помилка конфігурації сервера: папка з сайтами недоступна. Зверніться до адміністратора.', 'alert alert-danger')
+      return redirect("/logs/", 302)
     #shared (not per-user), briefly-cached lightweight index of ALL sites
     index_rows = get_cached_site_index(web_folder)
     #checking SitesShowRestricions table - hide a site from the current user if it has restrictions and the user is not listed in showforuser
