@@ -505,4 +505,35 @@ document.addEventListener("submit", function (e) {
       e.preventDefault();
     }
   }
+  if (btn && btn.id === "bulkDeleteDomainsBtn") {
+    const count = document.querySelectorAll("#modalResultBody .existing-domain-check:checked").length;
+    if (!confirm(`⚠Видалити ${count} обраних доменів з аккаунту? Це незворотньо!`)) {
+      e.preventDefault();
+    }
+  }
+});
+
+// ── Existing domains modal: bulk selection (select-all + submit button state) ──
+
+function updateBulkDeleteDomainsState() {
+  const checkedCount = document.querySelectorAll("#modalResultBody .existing-domain-check:checked").length;
+  const btn = document.getElementById("bulkDeleteDomainsBtn");
+  const countSpan = document.getElementById("bulkDeleteCount");
+  if (btn) btn.disabled = checkedCount === 0;
+  if (countSpan) countSpan.textContent = checkedCount;
+}
+
+document.addEventListener("change", function (e) {
+  if (e.target.id === "selectAllExistingDomains") {
+    document.querySelectorAll("#modalResultBody .existing-domain-check").forEach(function (cb) {
+      cb.checked = e.target.checked;
+    });
+    updateBulkDeleteDomainsState();
+  } else if (e.target.classList.contains("existing-domain-check")) {
+    if (!e.target.checked) {
+      const selectAll = document.getElementById("selectAllExistingDomains");
+      if (selectAll) selectAll.checked = false;
+    }
+    updateBulkDeleteDomainsState();
+  }
 });

@@ -74,7 +74,7 @@ def user():
 @with_app_context
 def user_add(username, realname, password):
   """Add new user"""
-  register_user(username, realname, password)
+  register_user(username=username, password=password, realname=realname)
 
 @user.command("del")
 @click.argument("username")

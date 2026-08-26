@@ -140,6 +140,7 @@ def show_existingDomains():
           else:
             table_color = "table-warning"
           message_table += f"""\t<tr>
+          <td class="{table_color} text-center"><input type="checkbox" class="form-check-input existing-domain-check" name="selected_domains" value="{name}" form="bulkDeleteExistingForm"></td>
           <th scope="row" class="{table_color}">{i}&nbsp;<form class="d-inline" method="post" action="/cloudflare_domains/delete_domain/"><button class="btn btn-outline-danger delDomain-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити цей домен з аккаунту." name="buttonDelAccount" value="{name}" type="submit">❌</button>
             <input type="hidden" name="selected_account" value="{account}"></form>
           </th>
@@ -152,15 +153,20 @@ def show_existingDomains():
     domains_str = html.escape(", ".join(domain_list), quote=True)
     message = f"""
 <div class="container-fluid px-2">
-  <div class="mb-2 d-flex justify-content-center">
+  <form id="bulkDeleteExistingForm" action="/cloudflare_domains/delete_domains_bulk/" method="POST">
+    <input type="hidden" name="selected_account" value="{account}">
+  </form>
+  <div class="mb-2 d-flex justify-content-center gap-2 flex-wrap">
     <button type="button" class="btn btn-outline-primary" id="copyAllDomainsBtn" data-domains="{domains_str}" onclick="copyAllDomains()">📋 Скопіювати список доменів аккаунта {account}</button>
+    <button type="submit" form="bulkDeleteExistingForm" class="btn btn-outline-danger" id="bulkDeleteDomainsBtn" disabled>🗑 Видалити обрані (<span id="bulkDeleteCount">0</span>)</button>
   </div>
   <div class="table-responsive">
     <table class="table table-bordered table-hover">
       <thead>
           <tr>
-            <th scope="col" style="width: 15%;">#</th>
-            <th scope="col" style="width: 50%;">Домен:</th>
+            <th scope="col" style="width: 5%;"><input type="checkbox" class="form-check-input" id="selectAllExistingDomains" data-bs-toggle="tooltip" data-bs-placement="top" title="Обрати всі"></th>
+            <th scope="col" style="width: 12%;">#</th>
+            <th scope="col" style="width: 48%;">Домен:</th>
             <th scope="col" style="width: 20%;">Тариф:</th>
             <th scope="col" style="width: 15%;">Статус:</th>
           </tr>
@@ -226,6 +232,64 @@ def del_existingDomain():
   except Exception as err:
     logging.error(f"del_existingDomain(): POST process error by {current_user.realname}: {err}")
     flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
+    return redirect(f"/cloudflare_domains/",302)
+
+@cloudflare_domains_bp.route("/cloudflare_domains/delete_domains_bulk/", methods=['POST'])
+@login_required
+def delete_domains_bulk():
+  """POST request processor: deletes every selected domain from the selected Cloudflare account in one request"""
+  try:
+    account = request.form.get("selected_account", "")
+    domains = request.form.getlist("selected_domains")
+    logging.info(f"-----------------------Starting bulk domain deletion from Cloudflare account {account} by {current_user.realname}: domains={domains}-----------------------")
+    if not account or not domains:
+      flash('Помилка! Не обрано жодного домену для видалення!','alert alert-danger')
+      logging.error(f"delete_domains_bulk(): some of the important parameters has not been received!")
+      return redirect(f"/cloudflare_domains/",302)
+    tkn = Cloudflare.query.filter_by(account=account).first()
+    if not tkn:
+      logging.error(f"delete_domains_bulk(): Token for CF account {account} is not found in DB!")
+      flash(f'Помилка! Токен для аккаунту {account} не знайдено в базі!','alert alert-danger')
+      return redirect(f"/cloudflare_domains/",302)
+    headers = {
+      "X-Auth-Email": account,
+      "X-Auth-Key": tkn.token,
+      "Content-Type": "application/json"
+    }
+    results = []
+    success_count = 0
+    error_count = 0
+    for domain in domains:
+      url_zone_id = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
+      result_zone_id = requests.get(url_zone_id, headers=headers).json()
+      if not (result_zone_id.get("success") and result_zone_id.get("result")):
+        logging.error(f"delete_domains_bulk(): Error retreiving zone_id for domain {domain}!")
+        results.append(f"❌ {domain}: не вдалося отримати ID зони")
+        error_count += 1
+        continue
+      zone_id = result_zone_id["result"][0]["id"]
+      url_del_domain = f"https://api.cloudflare.com/client/v4/zones/{zone_id}"
+      result_del_domain = requests.delete(url_del_domain, headers=headers).json()
+      if result_del_domain.get("success") and result_del_domain.get("result"):
+        logging.info(f"delete_domains_bulk(): Domain {domain} successfully deleted from Cloudflare account {account} by {current_user.realname}")
+        results.append(f"✅ {domain}: успішно видалено")
+        success_count += 1
+      else:
+        error_msg = (result_del_domain.get("errors", [{}])[0].get("message", "Unknown error"))
+        logging.error(f"delete_domains_bulk(): Error deleting domain {domain} from account {account}: {result_del_domain}")
+        results.append(f"❌ {domain}: {error_msg}")
+        error_count += 1
+    results_html = "<br>".join(results)
+    if error_count == 0:
+      flash(f"Успішно видалено {success_count} доменів з аккаунту {account}!<br>{results_html}",'alert alert-success')
+    elif success_count == 0:
+      flash(f"Помилки при видаленні всіх {error_count} доменів з аккаунту {account}!<br>{results_html}",'alert alert-danger')
+    else:
+      flash(f"Видалено: {success_count} успішно, {error_count} з помилками.<br>{results_html}",'alert alert-warning')
+    return redirect(f"/cloudflare_domains/",302)
+  except Exception as err:
+    logging.error(f"delete_domains_bulk(): general error by {current_user.realname}: {err}")
+    flash('Неочікувана помилка при масовому видаленні доменів, дивіться логи!','alert alert-danger')
     return redirect(f"/cloudflare_domains/",302)
 
 @cloudflare_domains_bp.route("/cloudflare_domains/zones/", methods=['GET'])
