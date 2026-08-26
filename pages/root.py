@@ -1,28 +1,41 @@
 import logging
-import os
-import re
-from flask import render_template,Blueprint,current_app,flash,make_response
+import math
+from urllib.parse import urlencode
+from flask import render_template,Blueprint,current_app,flash,make_response,request,jsonify
 from flask_login import login_required,current_user
-from functions.site_actions import count_redirects, is_admin, is_mail_admin
-from functions.pages_forms import getSiteOwner,getSiteCreated,getSiteLocale,getSiteHrefHistory,load_cf_active_zones
-from db.database import Domain_account,User,Messages,Cloudflare,SitesShowRestricions,CloudflareEmailsStatus
+from functions.site_actions import is_admin, is_mail_admin
+from db.database import Messages,User,Cloudflare,SitesShowRestricions
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
 from functions.cache_func import page_cache
-
-#allows to sort with natural keys - when after 10 goes 11, not 20
-def natural_key(s):
-  return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+from functions.root_func import PAGE_SIZE,get_cached_site_index,filter_by_restrictions,apply_search_filters,build_page_html_data
 
 root_bp = Blueprint("root", __name__)
+
+def _is_ajax_request() -> bool:
+  return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
 @root_bp.route("/", methods=['GET'])
 @login_required
 def index():
-  """Main function: generates root page /."""
+  """Main function: generates root page /. Server-side paginated (PAGE_SIZE sites per page) - the heavy
+  per-site work (sqlite/JSON/text file reads) is only ever done for the current page's sites, while
+  filtering/search/pagination/counters operate on a lightweight, briefly-cached index of ALL sites."""
   CACHE_KEY = f"user:{current_user.realname}"
+  ajax = _is_ajax_request()
+  page_arg = request.args.get("page")
+  search = (request.args.get("search") or "").strip()
+  owner_filter = (request.args.get("owner") or "").strip()
+  account_filter = (request.args.get("account") or "").strip()
+  errors_only = request.args.get("errors") == "1"
+  export_list = request.args.get("export_list") == "1"
+  #the "default view" (bare "/", no page/filter/export params) is the only one still eligible for the
+  #old whole-page-HTML cache - every other combination is cheap enough now to just compute fresh every time
+  is_default_view = not (page_arg or search or owner_filter or account_filter or errors_only or export_list)
   try:
-    cached = page_cache.get(CACHE_KEY)
-    if cached:
+    if is_default_view and not ajax:
+      cached = page_cache.get(CACHE_KEY)
+      if cached:
         response = make_response(cached)
         response.headers["X-Cache"] = "HIT"
         response.set_cookie("x_cache", "HIT")
@@ -30,125 +43,50 @@ def index():
     web_folder = current_app.config.get("WEB_FOLDER","")
     if web_folder == "":
       logging.error(f"index(): root page generate function ERROR! - web_folder variable is empty!")
+      if ajax or export_list:
+        return jsonify({"error": "WEB_FOLDER is empty"}), 500
       return "index(): root page generate function ERROR!", 500
-    sites_list = []
-    html_data = []
-    users_list = []
-    cf_accounts_list = []
-    sites_list = [
-      name for name in os.listdir(web_folder)
-      if os.path.isdir(os.path.join(web_folder, name)) and not name.startswith('.')
-    ]
+    #shared (not per-user), briefly-cached lightweight index of ALL sites
+    index_rows = get_cached_site_index(web_folder)
     #checking SitesShowRestricions table - hide a site from the current user if it has restrictions and the user is not listed in showforuser
     restrictions = {
       r.domain: [u.strip() for u in r.showforuser.split(',')]
       for r in SitesShowRestricions.query.all()
     }
-    sites_list = [
-      name for name in sites_list
-      if name not in restrictions or current_user.realname in restrictions[name]
-    ]
-    #gathering all list of available users to put them into user filter list
-    ul = User.query.order_by(User.username).all()
-    for i, s in enumerate(ul, 1):
-      users_list.append(f'<option value="{s.realname}">{s.realname}</option>')
+    visible_rows = filter_by_restrictions(index_rows, restrictions, current_user.realname)
+    total_count = len(visible_rows)
+    has_cf_errors = any(r["is_error"] for r in visible_rows)
+    if export_list:
+      #lightweight full (unpaginated) domain+owner list, used by the CSV Href-history export which needs
+      #every site the user can see, not just the currently displayed page
+      return jsonify({"sites": [{"domain": r["domain"], "owner": r["owner_realname"]} for r in visible_rows]})
+    filtered_rows = apply_search_filters(visible_rows, search, owner_filter, account_filter, errors_only)
+    filtered_count = len(filtered_rows)
+    total_pages = max(1, math.ceil(filtered_count / PAGE_SIZE))
+    try:
+      page = int(page_arg) if page_arg else 1
+    except ValueError:
+      page = 1
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * PAGE_SIZE
+    page_rows = filtered_rows[start:start + PAGE_SIZE]
+    html_data = build_page_html_data(page_rows, web_folder, start + 1, restrictions, current_user.realname)
+    if ajax:
+      rows_html = render_template("template-main-rows.html", html_data=html_data, mail_admin=is_mail_admin())
+      return jsonify({
+        "rows_html": rows_html,
+        "page": page,
+        "total_pages": total_pages,
+        "filtered_count": filtered_count,
+        "total_count": total_count,
+        "has_cf_errors": has_cf_errors
+      })
+    #gathering all list of available users to put them into user filter list (marks the active one as selected)
+    users_list = [f'<option value="{s.realname}"{" selected" if s.realname == owner_filter else ""}>{s.realname}</option>' for s in User.query.order_by(User.username).all()]
     #gathering all list of available Cloudflare accounts to put them into accounts filter list
-    ac = Cloudflare.query.order_by(Cloudflare.account).all()
-    for ii, a in enumerate(ac, 1):
-      cf_accounts_list.append(f'<option value="{a.account}">{a.account}</option>')
-    #load all zones from all Cloudflare accounts once before the loop
-    cf_zones = load_cf_active_zones()
-    #checking CloudflareEmailsStatus table - to show the email routing status icon for each site
-    email_routing_status = {r.domain: r.routing_enabled for r in CloudflareEmailsStatus.query.all()}
-    has_cf_errors = False
-    #starting main procedure
-    for i, s in enumerate(sorted(sites_list, key=natural_key), 1):
-      #general check all Nginx sites-available, sites-enabled folder + php pool.d/ are available
-      #variable with full path to nginx sites-enabled symlink to the site
-      ngx_site = os.path.join(current_app.config["NGX_SITES_PATHEN"],s)
-      #check robots.txt for existance and change its button color
-      if os.path.exists(os.path.join(web_folder,s,"public","robots.txt")):
-        robots_button = "btn-primary"
-      else:
-        robots_button = "btn-light"
-      #check if the account has domain linked to its cloudflare account in DB
-      acc = Domain_account.query.filter_by(domain=s).first()
-      if not acc:
-        dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary disabled dropdown-item" type="submit" name="validation" value="{s}" style="margin-top: 5px;">📮DNS валідація</a><br>'
-        cf_account = "⌛нема інформації"
-      else:
-        dnsValidation_button = f'<a href="/dns_validation?domain={s}" class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="validation" value="{s}" onclick="showLoading()" style="margin-top: 5px;" title="Керування CNAME записами для валідації домену для пошукових систем.">📮DNS валідація</a>'
-        cf_account = acc.account
-      #If everything is ok, main view:
-      #build Cloudflare status suffix for site_status field
-      if s not in cf_zones:
-        cf_status_html = '❌Домен відсутній у Cloudflare'
-        table_class = "table-danger"
-      elif cf_zones[s] != "active":
-        cf_status_html = f'⚠️CF статус: {cf_zones[s]}'
-        table_class = "table-danger"
-      else:
-        cf_status_html = '✅Статус сайту OK'
-        table_class = "table-success"
-      if cf_status_html != '✅Статус сайту OK':
-        has_cf_errors = True
-      cf_error_attr = ' data-cf-error="1"' if cf_status_html != '✅Статус сайту OK' else ''
-      #read locale value from the site's own DB (seo_metas.extra_fileds, e.g. {"locale": "fr"}) to use as html_lang
-      html_lang = getSiteLocale(s, web_folder)
-      #read the current clone's slug/hreflang from the site's clones-history.json to use as input placeholders
-      current_clone = getSiteHrefHistory(s, web_folder)
-      #site owner's realname; if it matches the current user, show the eye button to let them hide/unhide the site for others
-      site_owner = getSiteOwner(s)
-      if site_owner == current_user.realname:
-        if s in restrictions:
-          eye_button = f'&nbsp;<button class="btn btn-sm btn-outline-secondary eye-btn p-0" type="submit" value="{s}" name="unhideSite" form="main_form" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Сайт прихований від інших користувачів. Натисніть, щоб знову показати його всім.">🙈</button>'
-        else:
-          eye_button = f'&nbsp;<button class="btn btn-sm btn-outline-secondary eye-btn p-0" type="submit" value="{s}" name="hideSite" form="main_form" onclick="showLoading()" data-bs-toggle="tooltip" data-bs-placement="top" title="Приховати цей сайт від інших користувачів (бачити його будете тільки ви).">👁️</button>'
-      else:
-        eye_button = ""
-      #email routing status icon
-      email_icon = '&nbsp;<span style="font-size: 1.4em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Email Routing увімкнено на Cloudflare для цього домену">📧</span>' if email_routing_status.get(s, False) else ''
-      if os.path.islink(ngx_site):
-        html_data.append({
-          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}{email_icon}</th>',
-          "button_2": f'<button class="btn btn-warning dropdown-item" type="submit" value="{s}" name="disable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Тимчасово вимкнути сайт - він не будет оброблятися при запитах зовні,але фізично залишається на сервері.">🚧Вимкнути</button>',
-          "site_name": s,
-          "table_type2": f'<td class="{table_class}">',
-          "count_redirects": count_redirects(s),
-          "getSiteCreated": getSiteCreated(s),
-          "id": i,
-          "accordeon_path": os.path.join(web_folder,s),
-          "getSiteOwner": site_owner,
-          "site_status": cf_status_html,
-          "robots_button": robots_button,
-          "dns_validation": dnsValidation_button,
-          "cf_account": cf_account,
-          "html_lang": html_lang,
-          "site_slug": current_clone["slug"],
-          "site_hreflang": current_clone["hreflang"]
-        })
-      elif not os.path.islink(ngx_site):
-        if table_class == "table-success":
-          table_class = "table-warning"
-        html_data.append({
-          "table_type": f'<tr data-owner="{site_owner}" data-account="{cf_account}"{cf_error_attr}>\n<th scope="row" class="{table_class}">{i}{eye_button}{email_icon}</th>',
-          "button_2": f'<button class="btn btn-success dropdown-item" type="submit" value="{s}" name="enable" data-bs-toggle="tooltip" data-bs-placement="top" form="main_form" onclick="showLoading()" title="Активувати сайт - він буде оброблятися при запитах ззовні.">🏃Активувати</button>',
-          "site_name": s,
-          "table_type2": f'<td class="{table_class}">',
-          "count_redirects": count_redirects(s),
-          "getSiteCreated": getSiteCreated(s),
-          "id": i,
-          "accordeon_path": os.path.join(web_folder,s),
-          "getSiteOwner": site_owner,
-          "site_status": f'🚧Сайт вимкнено<br>{cf_status_html}',
-          "robots_button": robots_button,
-          "dns_validation": dnsValidation_button,
-          "cf_account": cf_account,
-          "html_lang": html_lang,
-          "site_slug": current_clone["slug"],
-          "site_hreflang": current_clone["hreflang"]
-        })
-    #getting into DB and checking is there any messages for the current user
+    cf_accounts_list = [f'<option value="{a.account}"{" selected" if a.account == account_filter else ""}>{a.account}</option>' for a in Cloudflare.query.order_by(Cloudflare.account).all()]
+    #getting into DB and checking is there any messages for the current user (only meaningful on a full
+    #page render - the flash modal isn't part of the AJAX row fragment, so this must not run for AJAX requests)
     messages = Messages.query.filter_by(foruserid=current_user.id).all()
     if len(messages) != 0:
       logging.info(f"index(): Some messages found for user {current_user.realname} - {len(messages)} of them...")
@@ -163,8 +101,32 @@ def index():
       db.session.commit()
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
-    response = make_response(render_template("template-main.html",html_data=html_data,admin_panel=is_admin(),mail_admin=is_mail_admin(),users_list=users_list,cf_accounts_list=cf_accounts_list,has_cf_errors=has_cf_errors,version=current_app.config.get("VERSION","")))
-    if not current_app.debug:
+    extra_params = {}
+    if search: extra_params["search"] = search
+    if owner_filter: extra_params["owner"] = owner_filter
+    if account_filter: extra_params["account"] = account_filter
+    if errors_only: extra_params["errors"] = "1"
+    filter_qs = ("&" + urlencode(extra_params)) if extra_params else ""
+    response = make_response(render_template(
+      "template-main.html",
+      html_data=html_data,
+      admin_panel=is_admin(),
+      mail_admin=is_mail_admin(),
+      users_list=users_list,
+      cf_accounts_list=cf_accounts_list,
+      has_cf_errors=has_cf_errors,
+      total_count=total_count,
+      filtered_count=filtered_count,
+      page=page,
+      total_pages=total_pages,
+      prev_page=max(1, page-1),
+      next_page=min(total_pages, page+1),
+      filter_qs=filter_qs,
+      search_value=search,
+      errors_value=errors_only,
+      version=current_app.config.get("VERSION","")
+    ))
+    if is_default_view and not current_app.debug:
       page_cache.set(CACHE_KEY, response.get_data(), timeout=300)
       response.headers["X-Cache"] = "MISS"
       response.set_cookie("x_cache", "MISS")
@@ -173,4 +135,6 @@ def index():
     logging.error(f"Error in index(/): {msg}")
     send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:")
     page_cache.delete(CACHE_KEY)
+    if ajax or export_list:
+      return jsonify({"error": str(msg)}), 500
     return "index(): root page generate function ERROR!", 500

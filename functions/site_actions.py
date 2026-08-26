@@ -673,6 +673,9 @@ def clearCache() -> bool:
   try:
     CACHE_KEY = f"user:{current_user.realname}"
     page_cache.delete(CACHE_KEY)
+    #also drop the shared root-page site index (functions/root_func.py) so any site/CF/DB change made by
+    #this action is immediately reflected on / for every user, not just after its 60s TTL expires
+    page_cache.delete("root_site_index")
     return True
   except Exception as err:
     logging.error(f"clearCache(): general error by {current_user.realname}: {err}")

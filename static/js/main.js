@@ -6,9 +6,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-document.querySelectorAll(".delete-btn").forEach(btn => {
-  btn.addEventListener("click", e => {
-    const mainSite = btn.dataset.site;
+// ── Delete / git pull confirm dialogs (delegated - rows can be swapped in via AJAX pagination) ──
+
+document.addEventListener("click", function (e) {
+  const delBtn = e.target.closest(".delete-btn");
+  if (delBtn) {
+    const mainSite = delBtn.dataset.site;
     const selectedSites = Array.from(
       document.querySelectorAll(".selected-site:checked")
     ).map(chk => chk.value);
@@ -20,12 +23,11 @@ document.querySelectorAll(".delete-btn").forEach(btn => {
       e.preventDefault();
       hideLoading();
     }
-  });
-});
-
-document.querySelectorAll(".gitpull-btn").forEach(btn => {
-  btn.addEventListener("click", e => {
-    const mainSite = btn.dataset.site;
+    return;
+  }
+  const gitBtn = e.target.closest(".gitpull-btn");
+  if (gitBtn) {
+    const mainSite = gitBtn.dataset.site;
     const selectedSites = Array.from(
       document.querySelectorAll(".selected-site:checked")
     ).map(chk => chk.value);
@@ -36,8 +38,8 @@ document.querySelectorAll(".gitpull-btn").forEach(btn => {
     if (!confirm(`Оновити код до актуального на наступних сайтах?\n\n${sitesList}`)) {
       e.preventDefault();
       hideLoading();
-      }
-    });
+    }
+  }
 });
 
 document.addEventListener('show.bs.collapse', async function (event) {
@@ -77,39 +79,43 @@ window.addEventListener("pageshow", function (event) {
   }
 });
 
-const checkboxes = document.querySelectorAll('.chk');
+// ── Shift-click range select for row checkboxes (delegated - rows can be swapped in via AJAX pagination) ──
+
 let lastChecked = null;
-checkboxes.forEach(chk => {
-  chk.addEventListener('click', function (e) {
-  if (e.shiftKey && lastChecked) {
+document.addEventListener("click", function (e) {
+  if (!e.target.classList.contains("chk")) return;
+  const allChecks = Array.from(document.querySelectorAll(".chk"));
+  if (e.shiftKey && lastChecked && allChecks.includes(lastChecked)) {
     let inRange = false;
-    checkboxes.forEach(box => {
-    if (box === this || box === lastChecked) {
-      inRange = !inRange;
-    }
-    if (inRange) {
-      box.checked = lastChecked.checked;
-    }
+    allChecks.forEach(box => {
+      if (box === e.target || box === lastChecked) {
+        inRange = !inRange;
+      }
+      if (inRange) {
+        box.checked = lastChecked.checked;
+      }
     });
   }
-  lastChecked = this;
-  });
+  lastChecked = e.target;
 });
 
 function checkAll(bx) {
   document.querySelectorAll("tbody tr").forEach(row => {
-    if (row.style.display !== "none") {
-      row.querySelectorAll("input[type=checkbox]").forEach(cb => {
-        cb.checked = bx.checked;
-      });
-    }
+    row.querySelectorAll("input[type=checkbox]").forEach(cb => {
+      cb.checked = bx.checked;
+    });
   });
 }
 
-var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl)
-})
+function initTooltips() {
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (tooltipTriggerEl) {
+    const existing = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+    if (existing) existing.dispose();
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initTooltips);
 
 let errorsOnly = false;
 
@@ -158,77 +164,154 @@ function saveEditor() {
   });
 }
 
-document.querySelectorAll(".buttonSetHref").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const slugInput = document.getElementById(btn.dataset.slugId);
-    const hreflangInput = document.getElementById(btn.dataset.hreflangId);
-    const slug = slugInput.value.trim();
-    const hreflang = hreflangInput.value.trim();
+// ── Slug/hreflang "OK" button (delegated - rows can be swapped in via AJAX pagination) ──
 
-    slugInput.classList.toggle("is-invalid", slug === "");
-    hreflangInput.classList.toggle("is-invalid", hreflang === "");
-    if (slug === "" || hreflang === "") {
-      return;
+document.addEventListener("click", function (e) {
+  const btn = e.target.closest(".buttonSetHref");
+  if (!btn) return;
+  const slugInput = document.getElementById(btn.dataset.slugId);
+  const hreflangInput = document.getElementById(btn.dataset.hreflangId);
+  const slug = slugInput.value.trim();
+  const hreflang = hreflangInput.value.trim();
+
+  slugInput.classList.toggle("is-invalid", slug === "");
+  hreflangInput.classList.toggle("is-invalid", hreflang === "");
+  if (slug === "" || hreflang === "") {
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("slug", slug);
+  formData.append("hreflang", hreflang);
+  formData.append("action", "page_clone_home");
+
+  fetch(`https://${btn.dataset.site}/api/`, {
+    method: "POST",
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-
-    const formData = new FormData();
-    formData.append("slug", slug);
-    formData.append("hreflang", hreflang);
-    formData.append("action", "page_clone_home");
-
-    fetch(`https://${btn.dataset.site}/api/`, {
-      method: "POST",
-      body: formData
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      alert("Збережено");
-    })
-    .catch(err => {
-      alert("Помилка надсилання запиту");
-      console.error(err);
-    });
+    alert("Збережено");
+  })
+  .catch(err => {
+    alert("Помилка надсилання запиту");
+    console.error(err);
   });
 });
 
-const btn = document.getElementById("scrollTopBtn");
+const scrollTopBtn = document.getElementById("scrollTopBtn");
 window.addEventListener("scroll", () => {
   if (window.scrollY > 300) {
-    btn.style.display = "block";
+    scrollTopBtn.style.display = "block";
   } else {
-    btn.style.display = "none";
+    scrollTopBtn.style.display = "none";
   }
 });
 
-btn.addEventListener("click", () => {
+scrollTopBtn.addEventListener("click", () => {
   window.scrollTo({
     top: 0,
     behavior: "smooth"
   });
 });
 
-function applyFilters() {
-  const owner = document.getElementById("ownerFilter").value.toLowerCase();
-  const account = document.getElementById("accountFilter").value.toLowerCase();
-  const text = (document.getElementById("siteFilter")?.value || "").toLowerCase();
-  document.querySelectorAll("tbody tr").forEach(row => {
-    const rowOwners = (row.dataset.owner || "").toLowerCase().split(/\s+/);
-    const rowAccounts = (row.dataset.account || "").toLowerCase().split(/\s+/);
-    const rowText = row.innerText.toLowerCase();
-    const matchOwner = !owner || rowOwners.includes(owner);
-    const matchAccount = !account || rowAccounts.includes(account);
-    const matchText = !text || rowText.includes(text);
-    const matchErrors = !errorsOnly || row.dataset.cfError === "1";
-    row.style.display =
-      (matchOwner && matchAccount && matchText && matchErrors) ? "" : "none";
+// ── Backend-driven pagination + filtering (replaces the old client-side row-hiding filter) ──────
+
+function currentFilterParams() {
+  const params = new URLSearchParams();
+  const search = (document.getElementById("siteFilter")?.value || "").trim();
+  const owner = document.getElementById("ownerFilter")?.value || "";
+  const account = document.getElementById("accountFilter")?.value || "";
+  if (search) params.set("search", search);
+  if (owner) params.set("owner", owner);
+  if (account) params.set("account", account);
+  if (errorsOnly) params.set("errors", "1");
+  return params;
+}
+
+function updatePaginationUI(page, totalPages, filteredCount, totalCount) {
+  const info = document.getElementById("paginationInfo");
+  if (info) info.textContent = `Сторінка ${page} з ${totalPages} (${filteredCount} сайтів)`;
+  const totalBadge = document.getElementById("headerTotalSitesBadge");
+  if (totalBadge) totalBadge.textContent = totalCount;
+  const jumpInput = document.getElementById("pageJumpInput");
+  if (jumpInput) jumpInput.max = totalPages;
+  const params = currentFilterParams();
+  const targets = { first: 1, prev: Math.max(1, page - 1), next: Math.min(totalPages, page + 1), last: totalPages };
+  document.querySelectorAll(".page-nav-btn").forEach(navBtn => {
+    const targetPage = targets[navBtn.dataset.target];
+    const p = new URLSearchParams(params);
+    p.set("page", targetPage);
+    navBtn.href = "/?" + p.toString();
+    navBtn.dataset.page = targetPage;
   });
+}
+
+function loadSitesPage(page) {
+  const params = currentFilterParams();
+  params.set("page", page);
+  showLoading();
+  fetch("/?" + params.toString(), { headers: { "X-Requested-With": "XMLHttpRequest" } })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      const tbody = document.querySelector("table.table tbody");
+      if (tbody) tbody.innerHTML = data.rows_html;
+      updatePaginationUI(data.page, data.total_pages, data.filtered_count, data.total_count);
+      const cfErrorIcon = document.getElementById("cfErrorIcon");
+      if (cfErrorIcon) cfErrorIcon.style.display = data.has_cf_errors ? "inline-block" : "none";
+      initTooltips();
+      hideLoading();
+    })
+    .catch(err => {
+      console.error("loadSitesPage() error:", err);
+      hideLoading();
+    });
+}
+
+document.addEventListener("click", function (e) {
+  const navBtn = e.target.closest(".page-nav-btn");
+  if (!navBtn) return;
+  e.preventDefault();
+  const targetPage = parseInt(navBtn.dataset.page, 10) || 1;
+  loadSitesPage(targetPage);
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const jumpBtn = document.getElementById("pageJumpBtn");
+  const jumpInput = document.getElementById("pageJumpInput");
+  if (jumpBtn && jumpInput) {
+    jumpBtn.addEventListener("click", function () {
+      const val = parseInt(jumpInput.value, 10);
+      if (val && val > 0) loadSitesPage(val);
+    });
+    jumpInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        jumpBtn.click();
+      }
+    });
+  }
+});
+
+let filterDebounceTimer = null;
+
+function applyFilters() {
+  loadSitesPage(1);
+}
+
+function scheduleApplyFilters() {
+  clearTimeout(filterDebounceTimer);
+  filterDebounceTimer = setTimeout(applyFilters, 300);
 }
 
 document.getElementById("ownerFilter").addEventListener("change", applyFilters);
 document.getElementById("accountFilter").addEventListener("change", applyFilters);
-document.getElementById("siteFilter").addEventListener("input", applyFilters);
+document.getElementById("siteFilter").addEventListener("input", scheduleApplyFilters);
 
 function clearFilters() {
   const siteFilter  = document.getElementById("siteFilter");
@@ -244,6 +327,9 @@ function clearFilters() {
 document.addEventListener("DOMContentLoaded", function () {
   const cfErrorIcon = document.getElementById("cfErrorIcon");
   if (cfErrorIcon) {
+    //restore errors-only state from the server-rendered URL (?errors=1), so a direct/bookmarked link
+    //shows the icon/title correctly without needing a click first
+    errorsOnly = cfErrorIcon.dataset.active === "true";
     cfErrorIcon.addEventListener("click", function () {
       errorsOnly = !errorsOnly;
       cfErrorIcon.style.opacity = errorsOnly ? "0.5" : "1";
@@ -290,10 +376,11 @@ document.addEventListener("DOMContentLoaded", function () {
     exportBtn.disabled = true;
     showLoading();
     try {
-      const sites = Array.from(document.querySelectorAll(".accordion-path[data-path]")).map(btn => ({
-        domain: btn.dataset.path,
-        owner: btn.closest("tr")?.dataset.owner || ""
-      }));
+      //full (unpaginated) list of every site visible to this user - the table itself only ever holds
+      //the current page's rows, so we can't scrape the DOM for this anymore
+      const listResponse = await fetch("/?export_list=1", { headers: { "X-Requested-With": "XMLHttpRequest" } });
+      const listData = await listResponse.json();
+      const sites = (listData.sites || []).map(s => ({ domain: s.domain, owner: s.owner || "" }));
 
       const results = await Promise.all(sites.map(async ({ domain, owner }) => {
         try {

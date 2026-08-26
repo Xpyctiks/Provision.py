@@ -1,0 +1,80 @@
+{% for site in html_data %}
+{{site.table_type|safe}}
+<form method="post" action="/action/" id="main_form"></form>
+<form method="post" action="/redirects_manager/" id="redirect_form{{site.site_name|safe}}"></form>
+{{site.table_type2|safe}}
+  <div class="dropdown mx-auto">
+    <a class="btn btn-outline-danger dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" data-bs-display="static">⚙ Можливі дії:</a>
+    <ul class="dropdown-menu">
+      {% if not mail_admin %}
+      <li><button class="btn btn-danger delete-btn dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" data-site="{{site.site_name|safe}}" name="delete" form="main_form" onclick="showLoading()" title="Повне та невозвратне видалення сайту та його конфігурації з серверу.">❌Видалити</button></li>
+      <li><hr class="dropdown-divider"></li>
+      <li>{{site.button_2|safe}}</li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="btn btn-success dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" name="clone" onclick="showLoading()" href="/clone?source_site={{site.site_name|safe}}" style="width: 139px;" title="Взяти за основу даний сайт та зробити копію для іншого домену.">🚻Клонувати</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><button class="btn btn-primary gitpull-btn dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" value="{{site.site_name|safe}}" id="gitPullButton" name="gitPull" form="main_form" onclick="showLoading()" style="margin-top: 5px;" title="Зробити пул із репозиторію для оновлення коду сайту до актуального">♻Оновити код</button></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><button class="btn btn-outline-primary dropdown-item" data-bs-toggle="modal" data-bs-target="#dropUploadModal" onclick="openDropUpload('{{site.site_name|safe}}')" title="Завантажити ZIP/TAR.GZ архів, який розпакується у public/drop цього сайту (папка drop буде повністю очищена перед розпакуванням).">📦Завантажити архив в drop</button></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="btn btn-info dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" type="submit" name="manager" href="/redirects_manager?site={{site.site_name|safe}}" value="{{site.site_name|safe}}" style="margin-top: 5px; width: 236px;" title="Керування 301-ми редіректами для цього сайту.">🚥Редіректи (~{{site.count_redirects|safe}} шт. вже є)</a></li>
+      <li><hr class="dropdown-divider"></li>
+      {% endif %}
+      <li>{{site.dns_validation|safe}}</li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="btn btn-secondary dropdown-item" data-bs-toggle="tooltip" data-bs-placement="top" href="/cloudflare_email/manage?domain={{site.site_name|safe}}" style="margin-top: 5px;" title="Перегляд та керування Email Routing на Cloudflare для цього домену.">📧Керування Email</a></li>
+    </ul>
+  <input type="hidden" name="sitename" value="{{site.site_name|safe}}">
+  <div>
+    <u>Сайт розгорнут: {{site.getSiteCreated|safe}}</u>
+  </div>
+  {{site.table_type2|safe}}
+  <div class="d-flex flex-column">
+  <div>
+    <input class="selected-site form-check-input chk" type="checkbox" name="selected" value="{{site.site_name|safe}}" form="main_form">
+    <a href="https://{{site.site_name|safe}}" target="blank">{{site.site_name|safe}}</a>
+  </div>
+  {% if not mail_admin %}
+  <div class="mt-2">
+    <button class="btn {{site.robots_button|safe}}" data-bs-toggle="modal" data-bs-target="#editorModal" onclick="openEditor('{{site.site_name|safe}}')">✏️ редагувати robots.txt</button>
+  </div>
+  {% endif %}
+</td>
+{{site.table_type2|safe}} {{site.html_lang|safe}}</td>
+{{site.table_type2|safe}}
+{% if not mail_admin %}
+<div class="accordion" id="folderAccordion{{site.id|safe}}">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingOne{{site.id|safe}}">
+      <button class="accordion-button collapsed accordion-path" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne{{site.id|safe}}" aria-expanded="false" aria-controls="collapseOne{{site.id|safe}}" data-path="{{site.site_name|safe}}">
+        + Дивитись історию змін Href
+      </button>
+    </h2>
+    <div id="collapseOne{{site.id|safe}}" class="accordion-collapse collapse" aria-labelledby="headingOne{{site.id|safe}}" data-bs-parent="#folderAccordion{{site.id|safe}}">
+      <div class="accordion-body">
+        Заватажую...
+      </div>
+    </div>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <div class="flex-fill">
+      <div class="input-group">
+        <span class="input-group-text">Slug=</span>
+        <input type="text" id="siteSlug{{site.id|safe}}" class="form-control siteSlug" placeholder="{{site.site_slug|safe}}">
+      </div>
+    </div>
+    <div class="flex-fill">
+      <div class="input-group">
+        <span class="input-group-text">Hreflang=</span>
+        <input type="text" id="siteHreflang{{site.id|safe}}" class="form-control siteHreflang" placeholder="{{site.site_hreflang|safe}}">
+      </div>
+    </div>
+    <input type="button" id="buttonSetHref{{site.id|safe}}" name="buttonSetHref" value="OK✅" class="btn btn-outline-secondary buttonSetHref" data-site="{{site.site_name|safe}}" data-slug-id="siteSlug{{site.id|safe}}" data-hreflang-id="siteHreflang{{site.id|safe}}" style="width: 65px;">
+  </div>
+</div>
+{% endif %}
+</td>
+{{site.table_type2|safe}}{{site.getSiteOwner}}<br>{{site.site_status|safe}}</td>
+{{site.table_type2|safe}}{{site.cf_account|safe}}</td>
+</tr>
+{% endfor %}
