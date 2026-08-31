@@ -13,10 +13,12 @@ def try_authelia_login():
   remote_user = request.headers.get(REMOTE_USER_HEADER)
   if not remote_user:
     return
+  ip = request.remote_addr
+  real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
   user = User.query.filter_by(username=remote_user).first()
   if not user:
-    logging.warning(f"try_authelia_login(): Authelia identified '{remote_user}' but no matching local account exists - denying access")
+    logging.warning(f"try_authelia_login(): Authelia identified '{remote_user}' but no matching local account exists - denying access. IP:{ip}, Real-IP:{real_ip}")
     flash('Ваш облiковий запис підтверджено через Authelia, але він не зареєстрований у цій системі. Зверніться до адміністратора.', 'alert alert-danger')
     return render_template("template-login.html"), 403
   login_user(user, remember=True, duration=timedelta(hours=8))
-  logging.info(f"try_authelia_login(): User {user.realname} auto-logged in via Authelia header")
+  logging.info(f"try_authelia_login(): User {user.realname} auto-logged in via Authelia header. IP:{ip}, Real-IP:{real_ip}")

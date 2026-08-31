@@ -1,5 +1,33 @@
 import os
+import re
+import logging
+import subprocess
 from flask import current_app
+
+#since nginx 1.25.1, the 'http2' listen parameter is deprecated in favor of a separate 'http2 on;' directive
+NGINX_HTTP2_DIRECTIVE_MIN_VERSION = (1, 25, 1)
+
+def _get_nginx_version() -> tuple:
+  """Returns the installed nginx version as a (major, minor, patch) tuple, or None if it can't be detected."""
+  try:
+    result = subprocess.run(["sudo","nginx","-v"], capture_output=True, text=True, timeout=10)
+    match = re.search(r"nginx/(\d+)\.(\d+)\.(\d+)", (result.stderr or "") + (result.stdout or ""))
+    if not match:
+      logging.error(f"_get_nginx_version(): could not parse nginx version from output: {result.stderr or result.stdout}")
+      return None
+    return tuple(int(part) for part in match.groups())
+  except Exception as err:
+    logging.error(f"_get_nginx_version(): error detecting nginx version: {err}")
+    return None
+
+def _nginx_supports_http2_directive() -> bool:
+  """True if the installed nginx is >= 1.25.1 (separate 'http2 on;' directive instead of the 'listen ... http2;'
+  parameter). Defaults to False (old-style, 'listen ... http2;') when the version can't be detected - this
+  matches the behavior the project always had before this check existed."""
+  version = _get_nginx_version()
+  if version is None:
+    return False
+  return version >= NGINX_HTTP2_DIRECTIVE_MIN_VERSION
 
 def create_nginx_config(filename: str,has_subdomain: str = "---") -> str:
   """Template. Function which creates an Nginx configuration for a site, taken from filename parameter."""
@@ -8,14 +36,20 @@ def create_nginx_config(filename: str,has_subdomain: str = "---") -> str:
     crt_filename = filename
   else:
     crt_filename = has_subdomain
+  bind_ip = current_app.config.get("NGX_BIND_IP_ADDR","")
+  #nginx >= 1.25.1: http2 moves off the listen line onto its own directive right below it
+  if _nginx_supports_http2_directive():
+    listen_ssl = f"listen {bind_ip}:443 ssl;\n  http2 on;"
+  else:
+    listen_ssl = f"listen {bind_ip}:443 ssl http2;"
   config = f"""server {{
-    listen 203.161.35.70:80;
+    listen {bind_ip}:80;
     server_name {filename} www.{filename};
     return 301 https://{filename}$request_uri;
 }}
 
 server {{
-  listen 203.161.35.70:443 ssl http2;
+  {listen_ssl}
   server_name www.{filename};
   ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
   ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
@@ -23,7 +57,7 @@ server {{
 }}
 
 server {{
-  listen 203.161.35.70:443 ssl http2;
+  {listen_ssl}
   server_name {filename};
   ssl_certificate /etc/nginx/ssl/{crt_filename}.crt;
   ssl_certificate_key /etc/nginx/ssl/{crt_filename}.key;
