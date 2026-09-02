@@ -4,7 +4,8 @@ import subprocess
 import re
 import shutil
 import idna
-from flask import current_app,flash,redirect
+from contextlib import contextmanager
+from flask import current_app,flash,redirect,g
 from functions.send_to_telegram import send_to_telegram
 from functions.config_templates import create_nginx_config
 from flask_login import current_user
@@ -13,6 +14,37 @@ from db.database import *
 from functions.cli_management import del_account,del_owner
 from functions.cache_func import page_cache
 from functions.rights_required import MAIL_ADMIN_RIGHTS
+
+@contextmanager
+def bulk_nginx_reload():
+  """Wrap a loop of multiple site actions (bulk clone/delete/deploy) in this to avoid reloading Nginx
+  once per site. Every individual action still runs its own 'nginx -t' immediately, so a config error
+  is still caught right away, per site - only the actual 'nginx -s reload' is deferred, and happens
+  exactly once, after the whole block finishes. Safe to nest/ignore: code that doesn't run inside this
+  context manager just sees g.suppress_nginx_reload as unset (False) and reloads immediately as before.
+  Also safe if nested inside another bulk_nginx_reload() - only the outermost call manages suppression
+  and performs the final flush, an inner one is a no-op so it can't cancel the outer one's pending flag."""
+  if getattr(g, "suppress_nginx_reload", False):
+    yield
+    return
+  g.suppress_nginx_reload = True
+  g.nginx_reload_pending = False
+  try:
+    yield
+  finally:
+    pending = getattr(g, "nginx_reload_pending", False)
+    g.suppress_nginx_reload = False
+    g.nginx_reload_pending = False
+    if pending:
+      result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
+      if re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
+        result2 = subprocess.run(["sudo","nginx","-s","reload"], text=True, capture_output=True)
+        if re.search(r".*started.*",result2.stderr):
+          logging.info(f"bulk_nginx_reload(): Nginx reloaded once after the bulk operation. Result: {result2.stderr.strip()}")
+        else:
+          logging.error(f"bulk_nginx_reload(): Final Nginx reload after the bulk operation failed! {result2.stderr}")
+      else:
+        logging.error(f"bulk_nginx_reload(): Final Nginx config test after the bulk operation failed! {result1.stderr}")
 
 def delete_site(sitename: str) -> bool:
   """Site action: full delete selected site. Requires "sitename" as a parameter"""
@@ -44,12 +76,16 @@ def delete_site(sitename: str) -> bool:
       logging.info(f"delete_site(): Nginx {ngx_av} is already deleted")
     result1 = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result1.stderr) and re.search(r".*syntax is ok.*",result1.stderr):
-      result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
-      if  re.search(r".*started.*",result2.stderr):
-        logging.info(f"delete_site(): Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+      if getattr(g, "suppress_nginx_reload", False):
+        g.nginx_reload_pending = True
+        logging.info(f"delete_site(): Nginx config test passed - reload deferred (bulk operation in progress)")
       else:
-        logging.error(f"delete_site(): Nginx reload failed!. {result2.stderr}")
-        error_message += f"Error while reloading Nginx: {result1.stderr.strip()}\n"
+        result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
+        if  re.search(r".*started.*",result2.stderr):
+          logging.info(f"delete_site(): Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+        else:
+          logging.error(f"delete_site(): Nginx reload failed!. {result2.stderr}")
+          error_message += f"Error while reloading Nginx: {result1.stderr.strip()}\n"
     else:
       logging.error(f"delete_site(): Error while Nginx config test: {result1.stderr.strip()}")
       error_message += f"Помилка тестування конфігурації Nginx: {result1.stderr.strip()}\n"
@@ -136,14 +172,16 @@ def del_selected_sites(sitename: str,delArray: list) -> bool:
     logging.info(f"-----------------------Bunch sites deletion by {current_user.realname}-----------------")
     logging.info(delArray)
     message = ""
-    #starting deletion procedure one by one
-    for i, curr_site in enumerate(delArray,1):
-      if delete_site(curr_site):
-        message += f"[✅] Cайт {curr_site} успішно видалено!\n"
-        logging.info(f"del_selected_sites(): Site {curr_site} deleted successfully!")
-      else:
-        message += f"[❌] Помилка при видаленні {curr_site} - дивіться логи.\n"
-        logging.error(f"del_selected_sites(): Site {curr_site} deletion error!")
+    #starting deletion procedure one by one - Nginx is reloaded once, after every site is processed,
+    #instead of once per site (see bulk_nginx_reload())
+    with bulk_nginx_reload():
+      for i, curr_site in enumerate(delArray,1):
+        if delete_site(curr_site):
+          message += f"[✅] Cайт {curr_site} успішно видалено!\n"
+          logging.info(f"del_selected_sites(): Site {curr_site} deleted successfully!")
+        else:
+          message += f"[❌] Помилка при видаленні {curr_site} - дивіться логи.\n"
+          logging.error(f"del_selected_sites(): Site {curr_site} deletion error!")
     flash(message,'alert alert-info')
     logging.info(f"-----------------------Bunch sites deletion by {current_user.realname} is done!-----------------")
     return True

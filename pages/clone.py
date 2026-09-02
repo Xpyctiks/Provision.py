@@ -2,7 +2,7 @@ from flask import redirect,Blueprint,request,render_template,flash,current_app
 from flask_login import login_required,current_user
 from functions.pages_forms import *
 from functions.clone_func import *
-from functions.site_actions import normalize_domain,is_admin,clearCache
+from functions.site_actions import normalize_domain,is_admin,clearCache,bulk_nginx_reload
 from functions.provision_func import finishJob
 from functions.rights_required import block_mail_admin
 import os
@@ -64,27 +64,29 @@ def doClone():
       succeeded = []
       failed = []
       counter = 1
-      for raw_domain in domains_to_clone:
-        normalized = normalize_domain(raw_domain)
-        if not isinstance(normalized, str):
-          logging.error(f"doClone(): bulk clone - invalid domain format skipped: {raw_domain}")
-          failed.append(f"{raw_domain} (невірний формат домену)")
-          continue
-        domain = normalized
-        finalPath = os.path.join(web_folder,domain)
-        if os.path.exists(finalPath):
-          logging.error(f"doClone(): bulk clone - site {domain} already exists! Skipping...")
-          failed.append(f"{domain} (вже існує)")
-          continue
-        logging.info(f"---------------------------Starting bulk clone for site (#{counter} from total {bulk_sites_total}) {domain} from the site {source_site} by {current_user.realname}----------------------------")
-        if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain):
-          logging.info(f"doClone(): bulk clone - site {source_site} sucessfully cloned into {domain} site!")
-          finishJob("",domain,selected_account,selected_server)
-          succeeded.append(domain)
-        else:
-          logging.error(f"doClone(): bulk clone - failed to clone {source_site} into {domain}!")
-          finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
-          failed.append(f"{domain} (помилка клонування)")
+      #Nginx is reloaded once, after every domain is processed, instead of once per domain (see bulk_nginx_reload())
+      with bulk_nginx_reload():
+        for raw_domain in domains_to_clone:
+          normalized = normalize_domain(raw_domain)
+          if not isinstance(normalized, str):
+            logging.error(f"doClone(): bulk clone - invalid domain format skipped: {raw_domain}")
+            failed.append(f"{raw_domain} (невірний формат домену)")
+            continue
+          domain = normalized
+          finalPath = os.path.join(web_folder,domain)
+          if os.path.exists(finalPath):
+            logging.error(f"doClone(): bulk clone - site {domain} already exists! Skipping...")
+            failed.append(f"{domain} (вже існує)")
+            continue
+          logging.info(f"---------------------------Starting bulk clone for site (#{counter} from total {bulk_sites_total}) {domain} from the site {source_site} by {current_user.realname}----------------------------")
+          if start_clone(domain,source_site,selected_account,selected_server,current_user.realname,web_folder,its_not_a_subdomain):
+            logging.info(f"doClone(): bulk clone - site {source_site} sucessfully cloned into {domain} site!")
+            finishJob("",domain,selected_account,selected_server)
+            succeeded.append(domain)
+          else:
+            logging.error(f"doClone(): bulk clone - failed to clone {source_site} into {domain}!")
+            finishJob("",domain,selected_account,selected_server,emerg_shutdown=True)
+            failed.append(f"{domain} (помилка клонування)")
       clearCache()
       if succeeded:
         flash(f"Сайт {source_site} успішно клоновано на {len(succeeded)} домен(ів): {', '.join(succeeded)}",'alert alert-success')

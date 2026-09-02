@@ -5,7 +5,7 @@ import requests
 from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
 from db.database import Cloudflare,DomainRegistrator,Provision_templates
-from functions.site_actions import is_admin,is_mail_admin,clearCache
+from functions.site_actions import is_admin,is_mail_admin,clearCache,bulk_nginx_reload
 from functions.rights_required import rights_required,ADMIN_RIGHTS
 from functions.pages_forms import loadTemplatesList,loadServersList
 from functions.clone_func import start_clone
@@ -197,48 +197,50 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
   appends its own note to the domain's DomainPurchase.message running log instead of overwriting it."""
   web_folder = current_app.config.get("WEB_FOLDER","")
   results = []
-  for domain in domains:
-    row = get_purchase_row(domain)
-    if not row or row.stage != "ready_to_setup":
-      results.append((domain, False, "Домен не має статусу 'готовий до розгортання', пропущено"))
-      continue
-    cf_account = row.cloudflare_account
-    if not cf_account:
-      results.append((domain, False, "У домену не вказано аккаунт Cloudflare, пропущено"))
-      continue
-    finalPath = os.path.join(web_folder, domain)
-    if os.path.exists(finalPath):
-      results.append((domain, False, "Сайт з такою назвою вже існує на сервері, розгортання пропущено"))
-      continue
-    logging.info(f"-----------------------Starting deploy for domain {domain} (account {cf_account}, server {selected_server}) by {realname}-----------------------")
-    if selected_clone_source:
-      deployed = start_clone(domain, selected_clone_source, cf_account, selected_server, realname, web_folder, its_not_a_subdomain=True)
-      #start_clone() does not register the DB records itself - the caller (like pages/clone.py) must call finishJob()
-      if deployed:
-        finishJob("",domain,cf_account,selected_server)
-      else:
-        finishJob("",domain,cf_account,selected_server,emerg_shutdown=True)
-    else:
-      repo = Provision_templates.query.filter_by(name=selected_template).first()
-      if not repo:
-        results.append((domain, False, "Шаблон не знайдено в базі"))
+  #Nginx is reloaded once, after every domain is processed, instead of once per domain (see bulk_nginx_reload())
+  with bulk_nginx_reload():
+    for domain in domains:
+      row = get_purchase_row(domain)
+      if not row or row.stage != "ready_to_setup":
+        results.append((domain, False, "Домен не має статусу 'готовий до розгортання', пропущено"))
         continue
-      #start_autoprovision() already calls finishJob() internally on both success and failure
-      deployed = start_autoprovision(domain, cf_account, selected_server, repo.repository, realname, its_not_a_subdomain=True)
-    if not deployed:
-      logging.error(f"_deploy_and_setup_email(): Deploy failed for domain {domain}")
-      results.append((domain, False, "Помилка розгортання сайту, дивіться логи"))
-      continue
-    clearCache()
-    #the running message log only ever gets a note on SUCCESS of a step - failures are logged and shown
-    #in the flash summary for this request, but never written to DomainPurchase.message
-    append_purchase_message(row, "Сайт розгорнуто", stage="ready_to_email")
-    ok, msg = _setup_email_for_domain(domain, cf_account, destination_email, email_alias, realname)
-    if not ok:
-      results.append((domain, False, f"Сайт розгорнуто, але помилка Email Routing: {msg}"))
-      continue
-    append_purchase_message(row, "Email Routing активовано", stage="done")
-    results.append((domain, True, "Сайт розгорнуто, Email Routing активовано"))
+      cf_account = row.cloudflare_account
+      if not cf_account:
+        results.append((domain, False, "У домену не вказано аккаунт Cloudflare, пропущено"))
+        continue
+      finalPath = os.path.join(web_folder, domain)
+      if os.path.exists(finalPath):
+        results.append((domain, False, "Сайт з такою назвою вже існує на сервері, розгортання пропущено"))
+        continue
+      logging.info(f"-----------------------Starting deploy for domain {domain} (account {cf_account}, server {selected_server}) by {realname}-----------------------")
+      if selected_clone_source:
+        deployed = start_clone(domain, selected_clone_source, cf_account, selected_server, realname, web_folder, its_not_a_subdomain=True)
+        #start_clone() does not register the DB records itself - the caller (like pages/clone.py) must call finishJob()
+        if deployed:
+          finishJob("",domain,cf_account,selected_server)
+        else:
+          finishJob("",domain,cf_account,selected_server,emerg_shutdown=True)
+      else:
+        repo = Provision_templates.query.filter_by(name=selected_template).first()
+        if not repo:
+          results.append((domain, False, "Шаблон не знайдено в базі"))
+          continue
+        #start_autoprovision() already calls finishJob() internally on both success and failure
+        deployed = start_autoprovision(domain, cf_account, selected_server, repo.repository, realname, its_not_a_subdomain=True)
+      if not deployed:
+        logging.error(f"_deploy_and_setup_email(): Deploy failed for domain {domain}")
+        results.append((domain, False, "Помилка розгортання сайту, дивіться логи"))
+        continue
+      clearCache()
+      #the running message log only ever gets a note on SUCCESS of a step - failures are logged and shown
+      #in the flash summary for this request, but never written to DomainPurchase.message
+      append_purchase_message(row, "Сайт розгорнуто", stage="ready_to_email")
+      ok, msg = _setup_email_for_domain(domain, cf_account, destination_email, email_alias, realname)
+      if not ok:
+        results.append((domain, False, f"Сайт розгорнуто, але помилка Email Routing: {msg}"))
+        continue
+      append_purchase_message(row, "Email Routing активовано", stage="done")
+      results.append((domain, True, "Сайт розгорнуто, Email Routing активовано"))
   return results
 
 @domain_purchase_bp.route("/domain_purchase/step2/", methods=['POST'])

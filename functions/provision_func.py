@@ -12,12 +12,12 @@ import requests
 from functions.config_templates import create_nginx_config
 from functions.send_to_telegram import send_to_telegram
 from functions.certificates import cloudflare_certificate
-from flask import current_app,flash
+from flask import current_app,flash,g
 from flask_login import current_user
 import functions.variables
 from db.database import Ownership,User
 from db.db import db
-from functions.site_actions import link_domain_and_account
+from functions.site_actions import link_domain_and_account,bulk_nginx_reload
 from functions.mail_domains_func import provision_mail_domain
 from pathlib import Path
 from functions.tld import tld
@@ -246,13 +246,17 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
     logging.info(f"setupNginx(): Nginx config {os.path.join(path_en,filename)} symlink created")
     result = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True)
     if  re.search(r".*test is successful.*",result.stderr) and re.search(r".*syntax is ok.*",result.stderr):
-      logging.info(f"setupNginx(): Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
-      result = subprocess.run(["sudo","nginx","-s","reload"], text=True, capture_output=True)
-      if  re.search(r".*started.*",result.stderr):
-        logging.info(f"setupNginx(): Nginx reloaded successfully. Result: {result.stderr.strip()}")
+      if getattr(g, "suppress_nginx_reload", False):
+        g.nginx_reload_pending = True
+        logging.info(f"setupNginx(): Nginx config test passed successfully: {result.stderr.strip()}. Reload deferred (bulk operation in progress)")
       else:
-        logging.error(f"setupNginx(): Error while reloading Nginx: {result.stderr.strip()}")
-        return False
+        logging.info(f"setupNginx(): Nginx config test passed successfully: {result.stderr.strip()}. Reloading Nginx...")
+        result = subprocess.run(["sudo","nginx","-s","reload"], text=True, capture_output=True)
+        if  re.search(r".*started.*",result.stderr):
+          logging.info(f"setupNginx(): Nginx reloaded successfully. Result: {result.stderr.strip()}")
+        else:
+          logging.error(f"setupNginx(): Error while reloading Nginx: {result.stderr.strip()}")
+          return False
       if not setupPHP(file):
         logging.error("setupNginx(): setupPHP() function returned an error!")
         return False
@@ -332,10 +336,12 @@ def findZip_1(selected_account: str, selected_server: str, realname: str) -> boo
       return False
     path = Path(__file__).resolve().parents[1]
     files = glob.glob(os.path.join(path, "*.zip"))
-    for file in files:
-      if not checkZip_2(file,selected_account,selected_server,realname):
-        logging.error("findZip_1(): checkZip_2() function returned an error!")
-        return False
+    #Nginx is reloaded once, after every uploaded archive is processed, instead of once per archive
+    with bulk_nginx_reload():
+      for file in files:
+        if not checkZip_2(file,selected_account,selected_server,realname):
+          logging.error("findZip_1(): checkZip_2() function returned an error!")
+          return False
     return True
   except Exception as msg:
     logging.error(f"findZip_1(): general error! {msg}")
