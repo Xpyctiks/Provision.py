@@ -7,7 +7,6 @@ from functions.pages_forms import load_cf_active_zones, getSiteLocale, getSiteHr
 from functions.site_actions import count_redirects
 from functions.cache_func import page_cache
 
-PAGE_SIZE = 50
 SITE_INDEX_CACHE_KEY = "root_site_index"
 SITE_INDEX_CACHE_TTL = 60
 
@@ -98,7 +97,7 @@ def apply_search_filters(rows: list, search_text: str, owner: str, account: str,
 
 def build_page_html_data(page_rows: list, web_folder: str, start_index: int, restrictions: dict, realname: str) -> list:
   """Computes the heavy per-site detail (sqlite/JSON/text file I/O, filesystem checks) - only for the
-  given page slice of the index (up to PAGE_SIZE sites), not for the whole site list."""
+  given page slice of the index (as many sites as the user chose per page), not for the whole site list."""
   html_data = []
   ngx_sites_pathen = current_app.config.get("NGX_SITES_PATHEN", "")
   for offset, row in enumerate(page_rows):

@@ -4,13 +4,13 @@ import os
 from urllib.parse import urlencode
 from flask import render_template,Blueprint,current_app,flash,make_response,request,jsonify,redirect
 from flask_login import login_required,current_user
-from functions.site_actions import is_admin, is_mail_admin
+from functions.site_actions import is_admin, is_mail_admin, PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE
 from functions.rights_required import ADMIN_RIGHTS
 from db.database import Messages,User,Cloudflare,SitesShowRestricions
 from functions.send_to_telegram import send_to_telegram
 from db.db import db
 from functions.cache_func import page_cache
-from functions.root_func import PAGE_SIZE,get_cached_site_index,filter_by_restrictions,apply_search_filters,build_page_html_data
+from functions.root_func import get_cached_site_index,filter_by_restrictions,apply_search_filters,build_page_html_data
 
 root_bp = Blueprint("root", __name__)
 
@@ -23,7 +23,6 @@ def index():
   """Main function: generates root page /. Server-side paginated (PAGE_SIZE sites per page) - the heavy
   per-site work (sqlite/JSON/text file reads) is only ever done for the current page's sites, while
   filtering/search/pagination/counters operate on a lightweight, briefly-cached index of ALL sites."""
-  CACHE_KEY = f"user:{current_user.realname}"
   ajax = _is_ajax_request()
   page_arg = request.args.get("page")
   search = (request.args.get("search") or "").strip()
@@ -31,6 +30,13 @@ def index():
   account_filter = (request.args.get("account") or "").strip()
   errors_only = request.args.get("errors") == "1"
   export_list = request.args.get("export_list") == "1"
+  #"sites per page" choice: explicit ?per_page= wins, otherwise fall back to the user's saved cookie
+  #(so a plain "/" with no query params still honors what they picked last time), defaulting to 50
+  per_page = (request.args.get("per_page") or request.cookies.get("site_page_size") or DEFAULT_PAGE_SIZE).strip()
+  if per_page not in PAGE_SIZE_OPTIONS:
+    per_page = DEFAULT_PAGE_SIZE
+  #the whole-page cache has one entry per "sites per page" choice - see PAGE_SIZE_OPTIONS/clearCache()
+  CACHE_KEY = f"user:{current_user.realname}:pp{per_page}"
   #the "default view" (bare "/", no page/filter/export params) is the only one still eligible for the
   #old whole-page-HTML cache - every other combination is cheap enough now to just compute fresh every time
   is_default_view = not (page_arg or search or owner_filter or account_filter or errors_only or export_list)
@@ -68,14 +74,21 @@ def index():
       return jsonify({"sites": [{"domain": r["domain"], "owner": r["owner_realname"]} for r in visible_rows]})
     filtered_rows = apply_search_filters(visible_rows, search, owner_filter, account_filter, errors_only)
     filtered_count = len(filtered_rows)
-    total_pages = max(1, math.ceil(filtered_count / PAGE_SIZE))
-    try:
-      page = int(page_arg) if page_arg else 1
-    except ValueError:
+    if per_page == "all":
       page = 1
-    page = max(1, min(page, total_pages))
-    start = (page - 1) * PAGE_SIZE
-    page_rows = filtered_rows[start:start + PAGE_SIZE]
+      total_pages = 1
+      page_rows = filtered_rows
+      start = 0
+    else:
+      page_size = int(per_page)
+      total_pages = max(1, math.ceil(filtered_count / page_size))
+      try:
+        page = int(page_arg) if page_arg else 1
+      except ValueError:
+        page = 1
+      page = max(1, min(page, total_pages))
+      start = (page - 1) * page_size
+      page_rows = filtered_rows[start:start + page_size]
     html_data = build_page_html_data(page_rows, web_folder, start + 1, restrictions, current_user.realname)
     if ajax:
       rows_html = render_template("template-main-rows.html", html_data=html_data, mail_admin=is_mail_admin())
@@ -107,12 +120,17 @@ def index():
       db.session.commit()
       flash(msg,'alert alert-info')
       logging.info(f"index(): Flash popup windows is ready for the user {current_user.realname}...")
-    extra_params = {}
+    extra_params = {"per_page": per_page}
     if search: extra_params["search"] = search
     if owner_filter: extra_params["owner"] = owner_filter
     if account_filter: extra_params["account"] = account_filter
     if errors_only: extra_params["errors"] = "1"
-    filter_qs = ("&" + urlencode(extra_params)) if extra_params else ""
+    filter_qs = "&" + urlencode(extra_params)
+    page_size_labels = {"50": "50", "250": "250", "500": "500", "all": "Показати всі"}
+    page_size_options = "".join(
+      f'<option value="{value}"{" selected" if value == per_page else ""}>{label}</option>'
+      for value, label in page_size_labels.items()
+    )
     response = make_response(render_template(
       "template-main.html",
       html_data=html_data,
@@ -130,6 +148,8 @@ def index():
       filter_qs=filter_qs,
       search_value=search,
       errors_value=errors_only,
+      per_page=per_page,
+      page_size_options=page_size_options,
       version=current_app.config.get("VERSION","")
     ))
     if is_default_view and not current_app.debug:

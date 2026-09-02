@@ -107,6 +107,18 @@ function checkAll(bx) {
   });
 }
 
+function checkProblematic() {
+  document.querySelectorAll("tbody tr").forEach(row => {
+    const isProblematic = row.dataset.cfError === "1";
+    row.querySelectorAll("input[type=checkbox]").forEach(cb => {
+      cb.checked = isProblematic;
+    });
+  });
+  //the "select all" checkbox no longer reflects reality (only some rows got checked) - uncheck it
+  const selectAll = document.getElementById("checkbox");
+  if (selectAll) selectAll.checked = false;
+}
+
 function initTooltips() {
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (tooltipTriggerEl) {
     const existing = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
@@ -219,15 +231,27 @@ scrollTopBtn.addEventListener("click", () => {
 
 // ── Backend-driven pagination + filtering (replaces the old client-side row-hiding filter) ──────
 
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function currentFilterParams() {
   const params = new URLSearchParams();
   const search = (document.getElementById("siteFilter")?.value || "").trim();
   const owner = document.getElementById("ownerFilter")?.value || "";
   const account = document.getElementById("accountFilter")?.value || "";
+  const perPage = document.getElementById("pageSizeSelect")?.value || "50";
   if (search) params.set("search", search);
   if (owner) params.set("owner", owner);
   if (account) params.set("account", account);
   if (errorsOnly) params.set("errors", "1");
+  params.set("per_page", perPage);
   return params;
 }
 
@@ -312,6 +336,16 @@ function scheduleApplyFilters() {
 document.getElementById("ownerFilter").addEventListener("change", applyFilters);
 document.getElementById("accountFilter").addEventListener("change", applyFilters);
 document.getElementById("siteFilter").addEventListener("input", scheduleApplyFilters);
+
+document.addEventListener("DOMContentLoaded", function () {
+  const pageSizeSelect = document.getElementById("pageSizeSelect");
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener("change", function () {
+      setCookie("site_page_size", pageSizeSelect.value, 365);
+      applyFilters();
+    });
+  }
+});
 
 function clearFilters() {
   const siteFilter  = document.getElementById("siteFilter");

@@ -15,6 +15,11 @@ from functions.cli_management import del_account,del_owner
 from functions.cache_func import page_cache
 from functions.rights_required import MAIL_ADMIN_RIGHTS
 
+#root page pagination: allowed "sites per page" choices (also used to size the per-user whole-page cache
+#below, since each choice gets its own cache entry) - "all" means no pagination at all
+PAGE_SIZE_OPTIONS = ("50", "250", "500", "all")
+DEFAULT_PAGE_SIZE = "50"
+
 @contextmanager
 def bulk_nginx_reload():
   """Wrap a loop of multiple site actions (bulk clone/delete/deploy) in this to avoid reloading Nginx
@@ -709,8 +714,10 @@ def unhide_site(sitename: str) -> bool:
 def clearCache() -> bool:
   """GET request: clears web page cache"""
   try:
-    CACHE_KEY = f"user:{current_user.realname}"
-    page_cache.delete(CACHE_KEY)
+    #the root page's whole-page cache has one entry per "sites per page" choice (see pages/root.py) -
+    #drop every variant, since we don't know here which one(s) this user has selected
+    for page_size in PAGE_SIZE_OPTIONS:
+      page_cache.delete(f"user:{current_user.realname}:pp{page_size}")
     #also drop the shared root-page site index (functions/root_func.py) so any site/CF/DB change made by
     #this action is immediately reflected on / for every user, not just after its 60s TTL expires
     page_cache.delete("root_site_index")
