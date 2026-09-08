@@ -253,7 +253,7 @@ def admin_panel_cloudflare():
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт із бази.">❌</button>    
+    <button type="submit" class="btn btn-outline-warning DeleteCloudflare-btn" name="buttonDeleteCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт із бази.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.account}</td>
     <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.token}</details></td>
@@ -310,14 +310,14 @@ def admin_panel_owners():
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-      <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnership" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт та власника.">❌</button>    
+      <button type="submit" class="btn btn-outline-warning DeleteOwnership-btn" name="buttonDeleteOwnership" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний аккаунт та власника.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.domain}</td>
     <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
     <td class="table-success cname-cell" >{datetime.strftime(s.created,"%d.%m.%Y %H:%M:%S")}</td>
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.cloned}
-      <button type="submit" class="btn btn-outline-warning" name="buttonDeleteOwnershipClone" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити інформацію що цей сайт клонований.">❌</button>
+      <button type="submit" class="btn btn-outline-warning DeleteOwnershipClone-btn" name="buttonDeleteOwnershipClone" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити інформацію що цей сайт клонований.">❌</button>
     </td></form>
   </tr>"""
     html_data += """
@@ -366,7 +366,7 @@ def admin_panel_servers():
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний сервер.">❌</button>    
+    <button type="submit" class="btn btn-outline-warning DeleteServer-btn" name="buttonDeleteServer" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний сервер.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.name}</td>
     <td class="table-success cname-cell" >{s.ip}</td>
@@ -431,7 +431,7 @@ def admin_panel_links():
   <tr class="table-success" data-owner="{s.account}">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteLink" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>    
+    <button type="submit" class="btn btn-outline-warning DeleteLink-btn" name="buttonDeleteLink" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.domain}</td>
     <td class="table-success cname-cell" >{s.account}</td>
@@ -500,7 +500,7 @@ def admin_panel_accounts():
   <tr class="table-success" data-owner="{s.owner}">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteAccount" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>    
+    <button type="submit" class="btn btn-outline-warning DeleteAccount-btn" name="buttonDeleteAccount" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити данну прив'язку.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.account}</td>
     <td class="table-success cname-cell" >ID: {s.owner} ({username})</td>
@@ -554,7 +554,7 @@ def admin_panel_restrictions():
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteRestriction" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити дане обмеження.">❌</button>
+    <button type="submit" class="btn btn-outline-warning DeleteRestriction-btn" name="buttonDeleteRestriction" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити дане обмеження.">❌</button>
     </td></form>
     <td class="table-success cname-cell" >{s.domain}</td>
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
@@ -652,7 +652,7 @@ def admin_panel_registrators():
   <tr class="table-success">
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.id}
-    <button type="submit" class="btn btn-outline-warning" name="buttonDeleteRegistrator" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний реєстратор із бази.">❌</button>    
+    <button type="submit" class="btn btn-outline-warning DeleteRegistrator-btn" name="buttonDeleteRegistrator" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити даний реєстратор із бази.">❌</button>    
     </td></form>
     <td class="table-success cname-cell" >{s.name}</td>
     <td class="table-success cname-cell" >{s.provider}</td>

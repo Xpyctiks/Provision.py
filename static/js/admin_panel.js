@@ -33,6 +33,78 @@ document.querySelectorAll(".DeleteTemplate-btn").forEach(btn => {
   });
 });
 
+document.querySelectorAll(".DeleteCloudflare-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити цей аккаунт Cloudflare?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteOwnership-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити цей аккаунт та власника?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteOwnershipClone-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити інформацію про клонування цього сайту?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteServer-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити цей сервер?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteLink-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити цю прив'язку домену до аккаунту?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteAccount-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити цю прив'язку?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteRestriction-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити це обмеження показу сайту?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
+document.querySelectorAll(".DeleteRegistrator-btn").forEach(btn => {
+  btn.addEventListener("click", e => {
+  if (!confirm(`Видалити цей реєстратор доменів?`)) {
+    e.preventDefault();
+    hideLoading();
+    }
+  });
+});
+
 document.querySelectorAll(".DefaultTemplate-btn").forEach(btn => {
   btn.addEventListener("click", e => {
     if (!confirm(`Зробити обраний шаблон за замовчуванням?`)) {
