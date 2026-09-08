@@ -1,10 +1,11 @@
-from flask import flash
+from flask import flash,current_app
 from flask_login import current_user
 import logging
 import requests
 from db.database import *
 from werkzeug.security import generate_password_hash
 from functions.rights_required import rights_required,MAIL_ADMIN_RIGHTS,ADMIN_RIGHTS,USER_RIGHTS
+from functions.load_config import load_config
 
 @rights_required(255)
 def handler_settings(form):
@@ -19,6 +20,10 @@ def handler_settings(form):
       t = Settings(**data)
       db.session.merge(t)
     db.session.commit()
+    #without this, the running app keeps using whatever was in current_app.config at startup - the DB
+    #row gets updated, but nothing actually changes until a restart, even though the flash below claims
+    #the new values are already applied
+    load_config(current_app)
     logging.info(f"Admin {current_user.realname}>Saving global settings done---------------------------")
     flash('Нові параметри збережено та застосовано!','alert alert-success')
   except Exception as err:
