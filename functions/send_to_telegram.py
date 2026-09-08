@@ -24,3 +24,13 @@ def send_to_telegram(message: str, subject: str = "Provision"):
   chatid = current_app.config.get("TELEGRAM_CHATID","")
   token = current_app.config.get("TELEGRAM_TOKEN","")
   threading.Thread(target=send_to_telegram_func,args=(message, subject, chatid, token),daemon=True).start()
+
+def send_job_report(message: str, subject: str = "Provision"):
+  """Same as send_to_telegram(), but only actually sends when Settings.sendJobDoneReports is enabled
+  (default True). Use this only for routine "job finished successfully" progress reports - errors,
+  security warnings and failed logins must always go through send_to_telegram() directly, regardless
+  of this setting."""
+  if not current_app.config.get("SEND_JOB_DONE_REPORTS", True):
+    logging.info(f"send_job_report(): sendJobDoneReports is disabled - suppressing report: {subject} {message}")
+    return
+  send_to_telegram(message, subject)

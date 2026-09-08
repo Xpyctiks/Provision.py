@@ -10,6 +10,7 @@ def help_set() -> None:
   print (f"""
 Possible completion:
   chat             <telegram_chat_id>   
+  jobreports       <on|off>
   log              <path_and_filename>
   nginxAddConfDir  <full_path>
   nginxCrtPath     <full_path>
@@ -100,6 +101,25 @@ def set_webFolder(data: str) -> None:
   except Exception as err:
     logging.error(f"cli>Root web folder \"{data}\" set error: {err}")
     print(f"Root web folder \"{data}\" set error: {err}")
+    quit(1)
+
+def set_sendJobDoneReports(state: str) -> None:
+  """CLI only function: enables/disables routine 'job finished' Telegram reports in database.
+  Errors, security warnings and failed logins are unaffected and always sent regardless of this setting."""
+  logging.info("-----------------------Starting CLI functions: set_sendJobDoneReports")
+  try:
+    value = "true" if state.strip().lower() == "on" else "false"
+    t = Settings(id=1,sendJobDoneReports=value)
+    db.session.merge(t)
+    db.session.commit()
+    load_config(current_app)
+    updated = db.session.get(Settings, 1)
+    print(f"Job-done Telegram reports {'enabled' if updated.sendJobDoneReports == 'true' else 'disabled'} successfully")
+    logging.info(f"cli>Job-done Telegram reports set to \"{updated.sendJobDoneReports}\"")
+    quit(0)
+  except Exception as err:
+    logging.error(f"cli>Job-done Telegram reports set error: {err}")
+    print(f"Job-done Telegram reports set error: {err}")
     quit(1)
 
 def set_nginxCrtPath(data: str) -> None:
@@ -284,6 +304,7 @@ Nginx conf. main dir:    {current_app.config["NGX_PATH"]}
 Nginx add. configs dir:  {current_app.config["NGX_ADD_CONF_DIR"]}
 Php Pool.d folder:       {current_app.config["PHP_POOL"]}
 Php-fpm executable:      {current_app.config["PHPFPM_PATH"]}
+Job-done reports:        {"on" if current_app.config["SEND_JOB_DONE_REPORTS"] else "off"}
 key:                     {current_app.secret_key}
   """)
   quit(0)

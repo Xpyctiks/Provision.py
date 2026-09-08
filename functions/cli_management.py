@@ -61,6 +61,13 @@ def nginxpath(path):
   """Set nginx main config path"""
   set_nginxPath(path)
 
+@set.command()
+@click.argument("state", type=click.Choice(["on", "off"], case_sensitive=False))
+@with_app_context
+def jobreports(state):
+  """Enable/disable routine 'job finished' Telegram reports (errors/security warnings are always sent)"""
+  set_sendJobDoneReports(state)
+
 # USER
 @show_cli.group()
 def user():

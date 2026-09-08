@@ -10,7 +10,7 @@ import re
 import logging
 import requests
 from functions.config_templates import create_nginx_config
-from functions.send_to_telegram import send_to_telegram
+from functions.send_to_telegram import send_to_telegram,send_job_report
 from functions.certificates import cloudflare_certificate
 from flask import current_app,flash,g
 from flask_login import current_user
@@ -97,14 +97,14 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
         if not link_domain_and_account(os.path.basename(file)[:-4],selected_account):
           return False
         _trigger_mail_provisioning(os.path.basename(file)[:-4],selected_account)
-        send_to_telegram(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):")
+        send_job_report(f"Provision jobs are finished. Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁Provision job finish ({functions.variables.JOB_ID}):")
         logging.info(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
         #quit only if we use zip files. if web provision - not to interrupt flow
         if functions.variables.JOB_ID != f"Autoprovision":
           return True
       else:
         logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
-        send_to_telegram(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:")
+        send_job_report(f"JOB #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} finished successfully",f"Provision job {functions.variables.JOB_ID}:")
         functions.variables.JOB_COUNTER += 1
         #writing site owner info to the database
         if not setSiteOwner(os.path.basename(file)[:-4]):
@@ -137,7 +137,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
           logging.info(f'Symlink from {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} to {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/providers")} already exists!')
       else:
         logging.info(f'The folder {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")} or {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} is not exists! Skipping creation of symlink...')
-      send_to_telegram(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:")
+      send_job_report(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:")
       logging.info(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
       return True
     #the function was called after emergency exit from some other place
@@ -302,7 +302,7 @@ def unZip_3(file: str, selected_account: str, selected_server: str, realname: st
 def checkZip_2(file: str, selected_account: str, selected_server: str, realname: str) -> bool:
   """Step2: Checks zip file for it content"""
   logging.info(f">>>Start processing of archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} total - {file}")
-  send_to_telegram(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL}: {file}",f"🎢Provisoin job start({functions.variables.JOB_ID}):")
+  send_job_report(f"Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL}: {file}",f"🎢Provisoin job start({functions.variables.JOB_ID}):")
   try:
     #Preparing full path + "public" folder
     found = 0
