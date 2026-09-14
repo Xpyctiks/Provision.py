@@ -13,7 +13,7 @@ def do_login():
     ip = request.remote_addr
     real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
     if current_user.is_authenticated:
-      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>POST request: User {current_user.username} IP:{request.remote_addr} is already logged in. Redirecting to the main page.")
+      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>POST request: User {current_user.username} IP: {request.remote_addr} is already logged in. Redirecting to the main page.")
       return redirect('/',301)
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "").strip()
@@ -23,11 +23,11 @@ def do_login():
       session.permanent = True
       session.permanent_session_lifetime = timedelta(hours=8)
       login_user(user, remember=True, duration=timedelta(hours=8))
-      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {user.realname} logged in successfully. IP:{ip}, Real-IP:{real_ip}")
+      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {user.realname} logged in successfully. IP: {ip}, Real-IP: {real_ip}")
       return redirect("/",302)
     else:
-      logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Login: Wrong password \"{password}\" for user \"{username}\", IP:{ip}, Real-IP:{real_ip}")
-      send_to_telegram(f"Login error! Wrong password for user \"{username}\", IP:{request.remote_addr}, Real-IP:{real_ip}",f"🚷")
+      logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Login: Wrong password \"{password}\" for user \"{username}\", IP: {ip}, Real-IP: {real_ip}")
+      send_to_telegram(f"Login error! Wrong password for user \"{username}\", IP: {request.remote_addr}, Real-IP: {real_ip}",f"🚷")
       flash('Невірний юзер або пароль!', 'alert alert-danger')
       return redirect("/login/",302)
   except Exception as err:
@@ -43,7 +43,7 @@ def show_login_page():
     ip = request.remote_addr
     real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
     if current_user.is_authenticated:
-      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>GET request: User {current_user.username} IP:{ip}, Real-IP:{real_ip} is already logged in. Redirecting to the main page.")
+      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>GET request: User {current_user.username} IP: {ip}, Real-IP: {real_ip} is already logged in. Redirecting to the main page.")
       return redirect('/',302)
     else:
       return render_template("template-login.html",version=current_app.config.get("VERSION",""))
@@ -63,9 +63,9 @@ def login_via_authelia():
     ip = request.remote_addr
     real_ip = request.headers.get('X-Real-IP', '-.-.-.-')
     if current_user.is_authenticated:
-      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {current_user.realname} logged in via Authelia. IP:{ip}, Real-IP:{real_ip}")
+      logging.info(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>User {current_user.realname} logged in via Authelia. IP: {ip}, Real-IP: {real_ip}")
       return redirect('/',302)
-    logging.warning(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>login_via_authelia(): Reached without a valid Remote-User header. IP:{ip}, Real-IP:{real_ip}")
+    logging.warning(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>login_via_authelia(): Reached without a valid Remote-User header. IP: {ip}, Real-IP: {real_ip}")
     flash('Не вдалося увійти через Authelia. Перевірте налаштування reverse-proxy.', 'alert alert-danger')
     return redirect('/login/',302)
   except Exception as err:

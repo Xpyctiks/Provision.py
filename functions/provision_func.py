@@ -137,7 +137,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
           logging.info(f'Symlink from {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} to {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media/providers")} already exists!')
       else:
         logging.info(f'The folder {os.path.join(current_app.config.get("WEB_FOLDER"),domain,"public/media")} or {os.path.join(current_app.config.get("WEB_FOLDER"),".media/providers")} is not exists! Skipping creation of symlink...')
-      send_job_report(f"Autoprovision job by {current_user.realname} is finished! ",f"🏁AutoProvision job for {domain}:")
+      send_job_report(f"Autoprovision job for {domain} by {current_user.realname} is finished! ",f"🏁")
       logging.info(f"----------------------------------------End of Autorpovison JOB--------------------------------------------")
       return True
     #the function was called after emergency exit from some other place
