@@ -16,7 +16,7 @@ def rights_required(min_level):
     def wrapper(*args, **kwargs):
       if current_user.rights < min_level:
         logging.warning(f"rights_required(): Attempt to get into admin panel functions by not privileged user {current_user.realname}")
-        send_to_telegram(f"Attempt to get into admin panel functions by not privileged user {current_user.realname}",f"🚒Provision warning:")
+        send_to_telegram(f"Attempt to get into admin panel functions by not privileged user {current_user.realname}",f"🚒")
         flash('У вас немає прав тут бути!', 'alert alert-danger')
         return redirect("/",301)
       return func(*args, **kwargs)

@@ -159,7 +159,7 @@ def index():
     return response
   except Exception as msg:
     logging.error(f"Error in index(/): {msg}")
-    send_to_telegram(f"Root page render general error: {msg}",f"🚒Provision error by {current_user.realname}:")
+    send_to_telegram(f"Root page render general error by {current_user.realname}: {msg}",f"🚒")
     page_cache.delete(CACHE_KEY)
     if ajax or export_list:
       return jsonify({"error": str(msg)}), 500

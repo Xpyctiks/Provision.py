@@ -1,6 +1,5 @@
 import logging
 import re
-import time
 import idna
 import requests
 from db.db import db

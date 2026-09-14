@@ -565,14 +565,14 @@ def makePull(domain: str, pullArray: list = []) -> bool:
           logging.info(f"makePull(): Successfully got into {path}")
           result_pre = subprocess.run(["sudo","git","stash"], capture_output=True, text=True)
           if result_pre.returncode != 0:
-            logging.error(f"makePull(): Git stash for {domain} returned error: {result.stderr}")
+            logging.error(f"makePull(): Git stash for {domain} returned error: {result.stderr} by {current_user.realname}")
             message += f"[❌] Помилка stash перед оновленням коду для {curr_domain}\n"
           else:
             logging.info(f"makePull(): Git stash done...")
           result = subprocess.run(["sudo","git","pull"], capture_output=True, text=True)
           if result.returncode != 0:
-            logging.error(f"makePull(): Git pull for {domain} returned error: {result.stderr}")
-            send_to_telegram(f"Git pull error for site {curr_domain}: {result.stderr}",f"🚒Provision pull by {current_user.realname}:")
+            logging.error(f"makePull(): Git pull for {domain} returned error: {result.stderr} by {current_user.realname}")
+            send_to_telegram(f"Git pull error for site {curr_domain} by {current_user.realname}: {result.stderr}",f"🚒")
             message += f"[❌] Помилка оновлення коду для {curr_domain}\n"
           else:
             message += f"[✅] Код {curr_domain} успішно оновлено!\n"
@@ -587,10 +587,10 @@ def makePull(domain: str, pullArray: list = []) -> bool:
                 logging.info(f"makePull(): DB migration for {curr_domain} done successfully!")
               else:
                 logging.error(f"makePull(): DB migration error: {result3.stderr}")
-                send_to_telegram(f"DB migration for {curr_domain} error,check logs!",f"🚒Provision pull by {current_user.realname}:")
+                send_to_telegram(f"DB migration for {curr_domain} by {current_user.realname} error,check logs!",f"🚒")
             else:
-              logging.error(f"makePull(): DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}")
-              send_to_telegram(f"DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir}",f"🚒Provision pull by {current_user.realname}:")
+              logging.error(f"makePull(): DB migration error for {curr_domain}: bin/ folder not found. we are in {os.curdir} by {current_user.realname}")
+              send_to_telegram(f"DB migration error for {curr_domain} by {current_user.realname}: bin/ folder not found. we are in {os.curdir}",f"🚒")
       flash(message,'alert alert-info')
       logging.info(f"-----------------------Bunch git pull by {current_user.realname} is done!-----------------")
       return True
@@ -622,8 +622,8 @@ def link_domain_and_account(domain: str, account: str) -> bool:
     #Check if the account with given email exists
     acc = Cloudflare.query.filter_by(account=account).first()
     if not acc:
-      logging.error(f"link_domain_and_account(): Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible!")
-      send_to_telegram(f"link_domain_and_account(): Cloudflare account with the given email {account} is not exists in our database! But this is not possible!",f"🚒Provision error by {current_user.realname}:")
+      logging.error(f"link_domain_and_account(): Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible! by {current_user.realname}")
+      send_to_telegram(f"link_domain_and_account(): Cloudflare account with the given email {account} is not exists in our database! But this is not possible! by {current_user.realname}",f"🚒")
       return False
     #Check if the given account is already linked with the given domain
     check = Domain_account.query.filter_by(domain=domain).all()

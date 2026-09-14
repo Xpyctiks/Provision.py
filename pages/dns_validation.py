@@ -30,7 +30,7 @@ def dns_validation():
       account = res.account
     else:
       logging.error(f"dns_validation(): Account for domain {domain} is not found in DB! Dunno how did you get into this page...")
-      send_to_telegram(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...",f"🚒Provision error by {current_user.realname}:")
+      send_to_telegram(f"Account for domain {domain} is not found in DB! Dunno how did you get into this page...by {current_user.realname}",f"🚒")
       flash(f"Аккаунт для домена {domain} не знайден в базі! Як ви взагалі опинилсь на цій сторінці...", 'alert alert-danger')
       return redirect("/",302)
     tkn = Cloudflare.query.filter_by(account=account).first()
@@ -38,7 +38,7 @@ def dns_validation():
       token = tkn.token
     else:
       logging.error(f"dns_validation(): Token for account {account} is not found in DB! Strange error...")
-      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
+      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...by {current_user.realname}",f"🚒")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",302)
     #Getting zoneID for the given domain
@@ -109,7 +109,7 @@ def dns_del_cname():
       token = tkn.token
     else:
       logging.error(f"-----------------------dns_del_cname(): Token for account {account} is not found in DB! Strange error...-----------------------")
-      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
+      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...by {current_user.realname}",f"🚒")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",301)
     #Getting zoneID for the given domain
@@ -172,7 +172,7 @@ def dns_add_cname():
       token = tkn.token
     else:
       logging.error(f"-----------------------dns_add_cname(): Token for account {account} is not found in DB! Strange error...-----------------------")
-      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...",f"🚒Provision error by {current_user.realname}:")
+      send_to_telegram(f"Token for account {account} is not found in DB! Strange error...by {current_user.realname}",f"🚒")
       flash(f"API токен для аккаунту {account} не знайден в базі! Фігня якась...", 'alert alert-danger')
       return redirect("/",302)
     #Getting zoneID for the given domain

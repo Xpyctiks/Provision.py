@@ -2,7 +2,6 @@ import os
 import logging
 import string
 import random
-from sqlalchemy import inspect, text
 from db.db import db
 from db.database import Settings
 

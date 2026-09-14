@@ -26,7 +26,7 @@ def do_logout():
     return redirect("/login/",302)
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>do_login(): general error: {err}")
-    send_to_telegram(f"do_login(): general error: {err}",f"🚒Provision login error:")
+    send_to_telegram(f"do_login(): general error: {err}",f"🚒")
     flash(f"Неочікувана помилка при POST запиту на сторінці /login! Дивіться логи!", 'alert alert-danger')
     return redirect("/login/",302)
 
@@ -42,6 +42,6 @@ def show_logout():
     return redirect("/",302)
   except Exception as err:
     logging.error(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>show_logout(): general error: {err}")
-    send_to_telegram(f"show_logout(): general error: {err}",f"🚒Provision logout error:")
+    send_to_telegram(f"show_logout(): general error: {err}",f"🚒")
     flash(f"Неочікувана помилка при GET запиту на сторінці /logout! Дивіться логи!", 'alert alert-danger')
     return redirect("/",302)

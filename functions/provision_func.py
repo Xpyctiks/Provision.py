@@ -31,7 +31,7 @@ def setSiteOwner(domain: str) -> bool:
       owner = users.id
     else:
       logging.error(f"setSiteOwner(): can not find info in DB about user {current_app.realname}!")
-      send_to_telegram(f"setSiteOwner(): can not find info in DB about user {current_app.realname}",f"🚒Provision job error({functions.variables.JOB_ID}):")
+      send_to_telegram(f"setSiteOwner(): can not find info in DB about user {current_app.realname}",f"🚒")
       return False
     logging.info(f"setSiteOwner(): Setting site {domain} owner to user {current_user.realname} with ID {owner}")
     #check if the current user is already an owner of the given domain
@@ -148,7 +148,7 @@ def finishJob(file: str = "", domain: str = "", selected_account: str = "", sele
       if os.path.exists(filename):
         os.remove(filename)
       logging.error(f"finishJob(): Archive #{functions.variables.JOB_COUNTER} of {functions.variables.JOB_TOTAL} - {filename} removed")
-      send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🚒🏁Provision job finish ({functions.variables.JOB_ID}):")
+      send_to_telegram(f"Provision jobs are interrupted due to errors! Total {functions.variables.JOB_TOTAL} done by {current_user.realname}.",f"🏁")
       logging.error(f"----------------------------------------End of JOB ID:{functions.variables.JOB_ID}--------------------------------------------")
       return True
     elif file == "" and domain != "" and emerg_shutdown == True:
@@ -170,7 +170,7 @@ def setupPHP(file: str) -> bool:
     php_path = current_app.config.get("PHPFPM_PATH","")
     if not php_path or not php_pool:
       logging.error("setupPHP(): Some important variable to start the function is empty!")
-      send_to_telegram("setupPHP(): Some important variable to start the function is empty!",f"🚒Provision job error({functions.variables.JOB_ID}):")
+      send_to_telegram("setupPHP(): Some important variable to start the function is empty!",f"🚒")
       return False
     filename = os.path.basename(file)[:-4]
     config = create_php_config(filename)
@@ -208,7 +208,7 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
     path_en = current_app.config.get("NGX_SITES_PATHEN","")
     if not crt_path or not www_user or not www_group or not web_folder or not path_av or not path_en:
       logging.error("setupNginx(): Some important variable to start the function is empty!")
-      send_to_telegram("setupNginx(): Some important variable to start the function is empty!",f"🚒Provision job error({functions.variables.JOB_ID}):")
+      send_to_telegram("setupNginx(): Some important variable to start the function is empty!",f"🚒")
       return False
     #if we get a TLD - use standart file name
     if has_subdomain == "---":
@@ -232,7 +232,7 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
       logging.info(f"setupNginx(): File for redirects {redirect_file} created successfully!")
     else:
       logging.error(f"setupNginx(): Folder /etc/nginx/additional-configs is not exists!")
-      send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒Provision job warning({functions.variables.JOB_ID}):")
+      send_to_telegram(f"Folder /etc/nginx/additional-configs is not exists!",f"🚒")
     #running template config according to our domain or its subdomain for crtificates
     if has_subdomain == "---":
       config = create_nginx_config(filename,"---")
@@ -314,7 +314,7 @@ def checkZip_2(file: str, selected_account: str, selected_server: str, realname:
         logging.info("checkZip_2(): public/ folder found!")
     if found < 1:
       logging.error(f"Looks like public/ folder is absent in {file}!")
-      send_to_telegram(f"Job #{functions.variables.JOB_COUNTER} error: Looks like public/ folder is absent in {file}",f"🚒Provision job error:")
+      send_to_telegram(f"Job #{functions.variables.JOB_COUNTER} error: Looks like public/ folder is absent in {file}",f"🚒")
       logging.info(f">>>End of JOB #{functions.variables.JOB_COUNTER}")
       return False
     else:

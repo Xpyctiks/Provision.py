@@ -19,20 +19,20 @@ def upload_file():
   try:
     if 'fileUpload[]' not in request.files:
       logging.error(f"upload_file(): Upload by {current_user.realname}: No <fileUpload> name in the request fields")
-      send_to_telegram(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields",f"🚒Provision upload page:")
+      send_to_telegram(f"Upload by {current_user.realname}: No <fileUpload> name in the request fields",f"🚒")
       flash('Завантаження: Файлу <fileUpload> немає в заголовках запиту', 'alert alert-danger')
       return redirect("/",302)
     #check if we have all necessary data received
     elif not request.form.get('selected_server') or not request.form.get('selected_account') or not request.form.get('buttonSubmit'):
       flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
       logging.error(f"upload_file(): error! some of important parameters has not been sent!")
-      send_to_telegram(f"upload_file(): some of the important parameters has not been received!",f"🚒Provision upload page:")
+      send_to_telegram(f"upload_file(): some of the important parameters has not been received!",f"🚒")
       return redirect("/",302)
     #starts main provision actions
     else:
       if not request.form.get("selected_account") or not request.form.get("selected_server"):
         logging.error(f"upload_file(): selected_account or selected_server has not been received in request!")
-        send_to_telegram(f"upload_file(): selected_account or selected_server has not been received in request!",f"🚒Provision job error({functions.variables.JOB_ID}):")
+        send_to_telegram(f"upload_file(): selected_account or selected_server has not been received in request! ({functions.variables.JOB_ID})",f"🚒")
         flash('Загальна помилки: деякі важливі параметри не були отримані сервером! Дивіться логи.', 'alert alert-danger')
         return redirect("/",302)
       selected_account = request.form.get("selected_account")
