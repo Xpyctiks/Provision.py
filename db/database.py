@@ -35,6 +35,7 @@ class Settings(db.Model):
   mailServerApiUrl = db.Column(db.String(512), nullable=True, default="")
   mailServerApiSecret = db.Column(db.String(256), nullable=True, default="")
   sendJobDoneReports = db.Column(db.String(10), nullable=True, default="true")
+  provisionServerHostname = db.Column(db.String(256), nullable=True, default="")
 
 class Provision_templates(db.Model):
   id = db.Column(db.Integer, primary_key=True)

@@ -3,7 +3,7 @@ import httpx
 import threading
 from flask import current_app
 
-def send_to_telegram_func(message: str, subject: str = "Provision", chatid: str = "", token: str = "" ) -> None:
+def send_to_telegram_func(message: str, subject: str = f"Provision {current_app.config.get('PROVISION_SERVER_HOSTNAME', '')})", chatid: str = "", token: str = "" ) -> None:
   """Sends messages via Telegram if TELEGRAM_CHATID and TELEGRAM_TOKEN are both set. Requires "message" parameters and can accept "subject" """
   try:
     if not chatid or not token:
@@ -20,12 +20,12 @@ def send_to_telegram_func(message: str, subject: str = "Provision", chatid: str 
   except Exception as err:
     logging.error(f"Error while sending message to Telegram: {err}")
 
-def send_to_telegram(message: str, subject: str = "Provision"):
+def send_to_telegram(message: str, subject: str = f"Provision {current_app.config.get('PROVISION_SERVER_HOSTNAME', '')})"):
   chatid = current_app.config.get("TELEGRAM_CHATID","")
   token = current_app.config.get("TELEGRAM_TOKEN","")
   threading.Thread(target=send_to_telegram_func,args=(message, subject, chatid, token),daemon=True).start()
 
-def send_job_report(message: str, subject: str = "Provision"):
+def send_job_report(message: str, subject: str = f"Provision {current_app.config.get('PROVISION_SERVER_HOSTNAME', '')})"):
   """Same as send_to_telegram(), but only actually sends when Settings.sendJobDoneReports is enabled
   (default True). Use this only for routine "job finished successfully" progress reports - errors,
   security warnings and failed logins must always go through send_to_telegram() directly, regardless
