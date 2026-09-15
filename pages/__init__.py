@@ -2,6 +2,7 @@ from flask import Blueprint
 from .action import action_bp
 from .admin_panel import admin_panel_bp
 from .clone import clone_bp
+from .cloudflare_cache import cloudflare_cache_bp
 from .cloudflare_domains import cloudflare_domains_bp
 from .cloudflare_email import cloudflare_email_bp
 from .cloudflare_email_bulk import cloudflare_email_bulk_bp
@@ -28,6 +29,7 @@ blueprint = Blueprint("main", __name__)
 blueprint.register_blueprint(action_bp)
 blueprint.register_blueprint(admin_panel_bp)
 blueprint.register_blueprint(clone_bp)
+blueprint.register_blueprint(cloudflare_cache_bp)
 blueprint.register_blueprint(cloudflare_domains_bp)
 blueprint.register_blueprint(cloudflare_email_bp)
 blueprint.register_blueprint(cloudflare_email_bulk_bp)

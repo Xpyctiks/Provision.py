@@ -30,69 +30,64 @@
           <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
           <li><hr class="dropdown-divider"></li>
           {% if not mail_admin %}
-          <li><a class="dropdown-item" href="/upload/" class="btn btn-success">💾Додати новий сайт вручну</a></li>
+          <li><a class="dropdown-item" href="/upload" class="btn btn-success">💾Додати новий сайт вручну</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/provision/" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
+          <li><a class="dropdown-item" href="/provision" class="btn btn-success">💽Розгорнути сайт автоматично</a></li>
           <li><hr class="dropdown-divider"></li>
           {% endif %}
-          <li><a class="dropdown-item" href="/logs/" class="btn btn-secondary">📩Лог роботи програми</a></li>
+          <li><a class="dropdown-item" href="/logs" class="btn btn-secondary">📩Лог роботи програми</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_domains/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/cloudflare_cache/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Очистка кешу CloudFlare</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/cloudflare_email_dstaddresses/" class="btn btn-secondary">📧Адреси призначення Email Routing</a></li>
+          <li><a class="dropdown-item active" href="/cloudflare_cache/" class="btn btn-secondary"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Очистка кешу CloudFlare</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_dashboard/" class="btn btn-secondary">📊Дашборд Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="/cloudflare_email_bulk/" class="btn btn-secondary">📮Bulk Email Routing</a></li>
           <li><hr class="dropdown-divider"></li>
+          {% if not mail_admin %}
           <li><a class="dropdown-item" href="/redirects_bulk/" class="btn btn-secondary">🔀Bulk редіректи</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item active" href="/redirects_dashboard/" class="btn btn-secondary">📈Дашборд редіректів</a></li>
+          <li><a class="dropdown-item" href="/redirects_dashboard/" class="btn btn-secondary">📈Дашборд редіректів</a></li>
           <li><hr class="dropdown-divider"></li>
+          {% endif %}
           {{admin_panel|safe}}
         </ul>
       </div>
       <div class="ms-auto d-flex align-items-center">
-        <form class="d-flex" action="/logout/" method="POST">
+        <form class="d-flex" action="/logout" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
       </div>
     </div>
   </nav>
 </div>
-<div class="container-fluid px-2">
+<div class="container">
   <div class="row justify-content-center">
-    <div class="col-12">
-      <div class="card mx-auto mb-3" style="margin-top: -40px;">
+    <div class="col-12 col-md-12 col-lg-10 col-xl-10">
+      <div class="card mx-auto">
         <div class="card-header">
-          <h4 style="text-align: center;">📈 Дашборд 301 редіректів по всіх доменах</h4>
+          <h4 style="text-align: center;">Очистка кешу Cloudflare:</h4>
         </div>
         <div class="card-body">
-          <div class="d-flex justify-content-end mb-3">
-            <select id="accountFilter" class="form-select form-select" style="max-width: 320px;">
-              <option value="">🌏 Усі аккаунти Cloudflare</option>
-              {{cf_accounts_list|safe}}
-            </select>
+          <h5 class="card-title">Оберіть аккаунт CloudFlare:</h5>
+          <div class="row g-2">
+            <div class="col-12 col-md-8">
+              <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="Account" data-bs-toggle="dropdown" aria-expanded="false">{{first_cf|safe}}</button>
+              <ul class="dropdown-menu">
+                {{cf_list|safe}}
+              </ul>
+            </div>
+            <div class="col-12 col-md-4">
+              <button class="btn btn-warning w-100" type="button" id="buttonShowCacheDomains">Показати домени</button>
+            </div>
+            <input type="hidden" name="selected_account" id="selected_account" value="{{first_cf|safe}}" required>
           </div>
-          <div class="table-responsive">
-            <table class="table table-bordered table-hover" id="redirectsDashboardTable">
-              <thead>
-                <tr class="table-warning">
-                  <th scope="col" style="width: 5%;">#</th>
-                  <th scope="col" style="width: 22%;" class="sortable" data-sort-type="text">Домен:</th>
-                  <th scope="col" style="width: 17%;" class="sortable" data-sort-type="text">Cloudflare акаунт:</th>
-                  <th scope="col" style="width: 34%;">Редіректи:</th>
-                  <th scope="col" style="width: 14%;" class="sortable" data-sort-type="date">Оновлено:</th>
-                  <th scope="col" style="width: 8%;">Дії:</th>
-                </tr>
-              </thead>
-              <tbody>
-                {{rows_html|safe}}
-              </tbody>
-            </table>
-          </div>
+        </div>
+      </div>
+      <div class="card mx-auto mt-3" id="cacheDomainsCard" style="display:none;">
+        <div class="card-body">
+          <div id="cacheDomainsContainer"></div>
         </div>
       </div>
     </div>
@@ -122,7 +117,7 @@
 </div>
 {% endif %}
 {% endwith %}
-<script src="{{ url_for('static', filename='js/redirects_dashboard.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/cloudflare_cache.js') }}" defer></script>
 </main>
 </body>
 </html>
