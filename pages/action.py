@@ -60,10 +60,12 @@ def do_action():
     elif (request.form.get("gitPull") and not request.form.get("selected")):
       if deny_mail_admin_action(): return redirect("/",302)
       makePull(request.form["gitPull"].strip())
+      clearCache()
     elif (request.form.get("gitPull") and request.form.get("selected")):
       if deny_mail_admin_action(): return redirect("/",302)
       pullArray = request.form.getlist("selected")
       makePull(request.form.get("gitPull","").strip(),pullArray)
+      clearCache()
     return redirect("/",302)
   except Exception as err:
     logging.error(f"do_action(): general error by {current_user.realname}: {err}")
