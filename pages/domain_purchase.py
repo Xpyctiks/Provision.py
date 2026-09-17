@@ -150,9 +150,11 @@ def show_domain_purchase_step2():
     flash("Неочікувана помилка на сторінці купівлі доменів, дивіться логи!", 'alert alert-danger')
     return redirect("/",302)
 
-def _setup_email_for_domain(domain: str, account_email: str, destination: str, alias: str, realname: str):
-  """Enables Email Routing (if needed) and creates a forwarding rule alias@domain -> destination for one domain.
-  Mirrors the per-domain logic in pages/cloudflare_email.py / pages/cloudflare_email_bulk.py."""
+def _setup_email_for_domain(domain: str, account_email: str, destination: str, alias: str, realname: str, catchall: bool = False):
+  """Enables Email Routing (if needed) and creates a forwarding rule for one domain: either a specific
+  alias@domain -> destination rule, or, if catchall=True, a catch-all rule forwarding ALL mail sent to the
+  domain to destination (alias is ignored in that case). Mirrors the per-domain logic in
+  pages/cloudflare_email.py / pages/cloudflare_email_bulk.py."""
   try:
     acc = Cloudflare.query.filter_by(account=account_email).first()
     if not acc:
@@ -169,6 +171,21 @@ def _setup_email_for_domain(domain: str, account_email: str, destination: str, a
         return False, (enable_result.get("errors") or [{}])[0].get("message","Помилка активації Email Routing")
       routing_enabled = True
       logging.info(f"_setup_email_for_domain(): Email Routing enabled for {domain} by {realname}")
+    if catchall:
+      rule_data = {
+        "name": "Catch-all rule",
+        "enabled": True,
+        "matchers": [{"type": "all"}],
+        "actions": [{"type": "forward", "value": [destination]}]
+      }
+      rule_result = requests.put(f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules/catch_all", headers=headers, json=rule_data, timeout=10).json()
+      _sync_status_to_db(domain, routing_enabled, realname)
+      if not rule_result.get("success"):
+        error_msg = (rule_result.get("errors") or [{}])[0].get("message", "Помилка створення catchall правила")
+        logging.error(f"_setup_email_for_domain(): Failed to create catchall rule for {domain}: {rule_result.get('errors')}")
+        return False, error_msg
+      logging.info(f"_setup_email_for_domain(): Catchall rule -> {destination} created for {domain} by {realname}")
+      return True, "OK"
     matcher = f"{alias}@{domain}"
     rule_data = {
       "name": matcher,
@@ -190,11 +207,12 @@ def _setup_email_for_domain(domain: str, account_email: str, destination: str, a
     logging.error(f"_setup_email_for_domain(): error for domain {domain}: {err}")
     return False, str(err)
 
-def _deploy_and_setup_email(domains: list, selected_server: str, selected_template: str, selected_clone_source: str, destination_email: str, email_alias: str, realname: str):
+def _deploy_and_setup_email(domains: list, selected_server: str, selected_template: str, selected_clone_source: str, destination_email: str, email_alias: str, realname: str, catchall: bool = False):
   """For each selected (ready_to_setup) domain: deploys it (clone an existing site, or provision from a template -
   reusing functions/clone_func.start_clone / functions/provision_func.start_autoprovision exactly like
-  pages/clone.py and pages/provision.py do), then activates Email Routing + a forwarding rule. Every step
-  appends its own note to the domain's DomainPurchase.message running log instead of overwriting it."""
+  pages/clone.py and pages/provision.py do), then activates Email Routing + a forwarding rule (specific
+  alias, or a catchall rule if catchall=True). Every step appends its own note to the domain's
+  DomainPurchase.message running log instead of overwriting it."""
   web_folder = current_app.config.get("WEB_FOLDER","")
   results = []
   #Nginx is reloaded once, after every domain is processed, instead of once per domain (see bulk_nginx_reload())
@@ -235,7 +253,7 @@ def _deploy_and_setup_email(domains: list, selected_server: str, selected_templa
       #the running message log only ever gets a note on SUCCESS of a step - failures are logged and shown
       #in the flash summary for this request, but never written to DomainPurchase.message
       append_purchase_message(row, "Сайт розгорнуто", stage="ready_to_email")
-      ok, msg = _setup_email_for_domain(domain, cf_account, destination_email, email_alias, realname)
+      ok, msg = _setup_email_for_domain(domain, cf_account, destination_email, email_alias, realname, catchall=catchall)
       if not ok:
         results.append((domain, False, f"Сайт розгорнуто, але помилка Email Routing: {msg}"))
         continue
@@ -254,15 +272,16 @@ def do_domain_purchase_step2():
     selected_template = (request.form.get("selected_template") or "").strip()
     selected_clone_source = (request.form.get("selected_clone_source") or "").strip()
     destination_email = (request.form.get("destination_email") or "").strip()
-    email_alias = (request.form.get("email_alias") or "support").strip() or "support"
-    logging.info(f"-----------------------Domain setup form submitted by {current_user.realname}: domains={selected_domains}, server={selected_server}, template={selected_template}, clone_source={selected_clone_source}, destination={destination_email}, alias={email_alias}-----------------------")
+    catchall = request.form.get("catchall") == "on"
+    email_alias = "" if catchall else ((request.form.get("email_alias") or "support").strip() or "support")
+    logging.info(f"-----------------------Domain setup form submitted by {current_user.realname}: domains={selected_domains}, server={selected_server}, template={selected_template}, clone_source={selected_clone_source}, destination={destination_email}, alias={email_alias}, catchall={catchall}-----------------------")
     if not selected_domains or not selected_server or not destination_email:
       flash("Помилка! Оберіть хоча б один домен зі статусом 'готовий до розгортання', сервер та адресу призначення для пошти!", 'alert alert-danger')
       return redirect("/domain_purchase/step2/",302)
     if not selected_clone_source and not selected_template:
       flash("Помилка! Оберіть шаблон для розгортання, або сайт для клонування!", 'alert alert-danger')
       return redirect("/domain_purchase/step2/",302)
-    results = _deploy_and_setup_email(selected_domains,selected_server,selected_template,selected_clone_source,destination_email,email_alias,current_user.realname)
+    results = _deploy_and_setup_email(selected_domains,selected_server,selected_template,selected_clone_source,destination_email,email_alias,current_user.realname,catchall=catchall)
     lines = []
     ok_count = 0
     for domain, ok, msg in results:

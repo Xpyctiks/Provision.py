@@ -199,6 +199,27 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// ── Крок 2: catchall checkbox - disables the alias field and persists its state ──
+
+document.addEventListener('DOMContentLoaded', function () {
+  const catchallField = document.getElementById('catchall');
+  const aliasField = document.getElementById('email_alias');
+  if (catchallField && aliasField) {
+    function applyCatchallState() {
+      aliasField.disabled = catchallField.checked;
+    }
+    const saved = getCookie('domain_purchase_catchall');
+    if (saved === '1') {
+      catchallField.checked = true;
+    }
+    applyCatchallState();
+    catchallField.addEventListener('change', function () {
+      setCookie('domain_purchase_catchall', this.checked ? '1' : '0', 365);
+      applyCatchallState();
+    });
+  }
+});
+
 // ── Loading spinner (shared behavior with other pages) ───────────────────────
 
 function showLoading() {
