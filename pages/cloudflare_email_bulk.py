@@ -62,10 +62,11 @@ def do_bulk_email():
   """POST: bulk-create Email Routing rules for all selected domains in the chosen Cloudflare account"""
   account_email = (request.form.get("account") or "").strip()
   destination   = (request.form.get("destination") or "").strip()
-  login         = (request.form.get("login") or "").strip()
+  catchall      = request.form.get("catchall") == "on"
+  login         = "" if catchall else (request.form.get("login") or "").strip()
   selected_domains = request.form.getlist("domains")
-  logging.info(f"do_bulk_email(): New bulk task received from {current_user.realname} - account: {account_email}, destination email: {destination}, login: {login}, domains: {selected_domains}")
-  if not account_email or not destination or not login or not selected_domains:
+  logging.info(f"do_bulk_email(): New bulk task received from {current_user.realname} - account: {account_email}, destination email: {destination}, login: {login}, catchall: {catchall}, domains: {selected_domains}")
+  if not account_email or not destination or not selected_domains or (not catchall and not login):
     flash("Не всі обов'язкові поля заповнені!", "alert alert-warning")
     return redirect("/cloudflare_email_bulk/", 302)
   acc = Cloudflare.query.filter_by(account=account_email).first()
@@ -90,7 +91,7 @@ def do_bulk_email():
     if not domain:
       domains_left_counter += 1
       continue
-    matcher = f"{login}@{domain}"
+    matcher = f"{login}@{domain}" if not catchall else "catchall"
     try:
       # Locate the zone for this domain within the selected account
       url = f"https://api.cloudflare.com/client/v4/zones?name={domain}"
@@ -116,18 +117,30 @@ def do_bulk_email():
           results.append(f"❌ {domain}: помилка активації Email Routing: {err_msg}")
           error_count += 1
           continue
-      # Create the forwarding rule  login@domain → destination
-      rule_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules"
-      rule_data = {
-        "name": matcher,
-        "enabled": True,
-        "matchers": [{"type": "literal", "field": "to", "value": matcher}],
-        "actions":  [{"type": "forward", "value": [destination]}]
-      }
-      rule_result = requests.post(rule_url, headers=headers, json=rule_data, timeout=10).json()
+      # Create the forwarding rule: either login@domain -> destination, or (if catchall) every address on
+      # the domain -> destination, via Cloudflare's dedicated (one per zone) catch-all rule endpoint
+      if catchall:
+        rule_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules/catch_all"
+        rule_data = {
+          "name": "Catch-all rule",
+          "enabled": True,
+          "matchers": [{"type": "all"}],
+          "actions":  [{"type": "forward", "value": [destination]}]
+        }
+        rule_result = requests.put(rule_url, headers=headers, json=rule_data, timeout=10).json()
+      else:
+        rule_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules"
+        rule_data = {
+          "name": matcher,
+          "enabled": True,
+          "matchers": [{"type": "literal", "field": "to", "value": matcher}],
+          "actions":  [{"type": "forward", "value": [destination]}]
+        }
+        rule_result = requests.post(rule_url, headers=headers, json=rule_data, timeout=10).json()
       if rule_result.get("success"):
-        logging.info(f"do_bulk_email(): Rule {matcher} -> {destination} created for {domain} by {current_user.realname}")
-        results.append(f"✅ {domain}: правило {matcher} → {destination} створено")
+        rule_label = "catchall правило" if catchall else f"правило {matcher}"
+        logging.info(f"do_bulk_email(): {rule_label} -> {destination} created for {domain} by {current_user.realname}")
+        results.append(f"✅ {domain}: {rule_label} → {destination} створено")
         success_count += 1
       else:
         err_msg = (rule_result.get("errors") or [{}])[0].get("message", "Unknown error")

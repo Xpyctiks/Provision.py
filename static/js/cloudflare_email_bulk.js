@@ -13,6 +13,7 @@
   const selectAllBtn      = document.getElementById('selectAllBtn');
   const deselectAllBtn    = document.getElementById('deselectAllBtn');
   const loginInput        = document.getElementById('loginInput');
+  const catchallCheckbox  = document.getElementById('catchallCheckbox');
   const emailPreview      = document.getElementById('emailPreview');
   const submitBtn         = document.getElementById('submitBtn');
   const domainCountBadge  = document.getElementById('domainCountBadge');
@@ -137,18 +138,34 @@
   // ── Login preview ──────────────────────────────────────────────────────────
 
   loginInput.addEventListener('input', function () {
-    const login = this.value.trim();
-    emailPreview.textContent = login ? login + '@домен → адреса призначення' : 'login@домен';
+    updateEmailPreview();
     updateSubmitState();
   });
 
   destinationSelect.addEventListener('change', updateSubmitState);
 
+  // ── Catchall checkbox - disables the login field, bypasses its requirement ──
+
+  catchallCheckbox.addEventListener('change', function () {
+    loginInput.disabled = this.checked;
+    updateEmailPreview();
+    updateSubmitState();
+  });
+
   // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function updateEmailPreview() {
+    if (catchallCheckbox.checked) {
+      emailPreview.textContent = 'Усі листи на домен → адреса призначення (catchall)';
+      return;
+    }
+    const login = loginInput.value.trim();
+    emailPreview.textContent = login ? login + '@домен → адреса призначення' : 'login@домен';
+  }
 
   function updateSubmitState() {
     const hasDestination = destinationSelect.value !== '';
-    const hasLogin       = loginInput.value.trim() !== '';
+    const hasLogin       = catchallCheckbox.checked || loginInput.value.trim() !== '';
     const hasChecked     = domainsContainer.querySelectorAll('.domain-check:checked').length > 0;
     submitBtn.disabled   = !(hasDestination && hasLogin && hasChecked);
   }
