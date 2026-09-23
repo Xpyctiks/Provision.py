@@ -10,7 +10,7 @@ from functions.provision_func import setSiteOwner
 from functions.dynadot_func import dynadot_register_domain, dynadot_set_ns
 from functions.spaceship_func import spaceship_register_domain, spaceship_set_ns
 
-CF_ACCOUNT_DOMAIN_LIMIT = 50
+CF_ACCOUNT_DOMAIN_LIMIT = 300
 DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
 
 def _clean_domain(raw: str):
