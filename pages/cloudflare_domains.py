@@ -5,8 +5,9 @@ import html
 from flask import render_template,request,redirect,flash,Blueprint,jsonify,current_app
 from flask_login import login_required,current_user
 from db.database import Cloudflare
-from functions.site_actions import normalize_domain,is_admin, is_mail_admin
+from functions.site_actions import is_admin, is_mail_admin
 from functions.pages_forms import loadClodflareAccounts,_load_zones_for_account
+from functions.domain_purchase_func import parse_domain_textarea
 
 cloudflare_domains_bp = Blueprint("cloudflare_domains", __name__)
 @cloudflare_domains_bp.route("/cloudflare_domains/", methods=['GET'])
@@ -25,18 +26,24 @@ def show_cloudflareDomains():
 @cloudflare_domains_bp.route("/cloudflare_domains/", methods=['POST'])
 @login_required
 def add_cloudflareDomain():
-  """POST request processor: adds new domain to the selected Cloudflare account"""
+  """POST request processor: adds new domain(s) - one per line - to the selected Cloudflare account"""
   try:
     #Handle buttonAddZone action
     if 'buttonAddZone' in request.form:
-      logging.info(f"-----------------------Starting new domain addition to Cloudflare account {request.form.get('selected_account', '')} by {current_user.realname}")
+      logging.info(f"-----------------------Starting new domain(s) addition to Cloudflare account {request.form.get('selected_account', '')} by {current_user.realname}")
       #check if we have all necessary data received
       if not request.form.get('selected_account') or not request.form.get('domain'):
         flash('Помилка! Якісь важливі параметри не передані серверу!','alert alert-danger')
         logging.error(f"add_cloudflareDomain(): some of the important parameters has not been received!")
         return redirect(f"/cloudflare_domains/",302)
       account = request.form.get("selected_account", "")
-      domain = normalize_domain(request.form.get("domain", ""))
+      domains, invalid_tokens = parse_domain_textarea(request.form.get("domain", ""))
+      if invalid_tokens:
+        flash(f"Увага! Наступні записи не є коректними доменами і були проігноровані: {', '.join(invalid_tokens)}", 'alert alert-warning')
+      if not domains:
+        flash('Помилка! У списку немає жодного коректного домену!','alert alert-danger')
+        logging.error("add_cloudflareDomain(): no valid domains found in the submitted list!")
+        return redirect(f"/cloudflare_domains/",302)
       #preparing account token by the selected account
       tkn = Cloudflare.query.filter_by(account=account).first()
       if not tkn:
@@ -50,7 +57,7 @@ def add_cloudflareDomain():
         "X-Auth-Key": token,
         "Content-Type": "application/json"
       }
-      #getting account ID which is needed for future domain addition
+      #getting account ID which is needed for future domain addition (the same for every domain in this batch)
       url_id = "https://api.cloudflare.com/client/v4/accounts"
       result_id = requests.get(url_id, headers=headers).json()
       if result_id.get("success") and result_id.get("result"):
@@ -61,34 +68,36 @@ def add_cloudflareDomain():
         flash(f'Помилка! Чомусь ID аккаунту {account} не був отриман! Далі продовжити не можу!','alert alert-danger')
         return redirect(f"/cloudflare_domains/",302)
       url_add_zone = "https://api.cloudflare.com/client/v4/zones"
-      data = {
-        "name": f"{domain}",
-        "account": {
-          "id": f"{account_id}"
-          },
-        "type": "full"
-      }
-      result_add_domain = requests.post(url_add_zone, headers=headers, json=data).json()
-      if result_add_domain.get("success"):
-        ns = result_add_domain["result"]["name_servers"]
-        message = f"""Новий домен {domain} успішно додано до аккаунту {account}!
-        <strong>Встановіть наступні NS сервери в регістраторі домену:</strong>
-        <div>
-          <code id="ns1">{ns[0]}</code>
-          <button class="btn btn-outline-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="Скопіювати в буфер" onclick="copyText('ns1')">📋</button>
-        </div>
-        <div>
-          <code  id="ns2">{ns[1]}</code>
-          <button class="btn btn-outline-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="Скопіювати в буфер" onclick="copyText('ns2')">📋</button>
-        </div>"""
-        logging.info(f"add_cloudflareDomain(): New domain {domain} successfully added to Cloudflare account {account}. NS: {ns[0]} and {ns[1]}")
-        flash(message,'alert alert-success')
-        return redirect(f"/cloudflare_domains/",302)
+      results = []
+      success_count = 0
+      error_count = 0
+      for domain in domains:
+        data = {
+          "name": f"{domain}",
+          "account": {
+            "id": f"{account_id}"
+            },
+          "type": "full"
+        }
+        result_add_domain = requests.post(url_add_zone, headers=headers, json=data).json()
+        if result_add_domain.get("success"):
+          ns = result_add_domain["result"]["name_servers"]
+          logging.info(f"add_cloudflareDomain(): New domain {domain} successfully added to Cloudflare account {account}. NS: {ns[0]} and {ns[1]}")
+          results.append(f"✅ {domain}: додано! Встановіть NS сервери: {ns[0]}, {ns[1]}")
+          success_count += 1
+        else:
+          error_msg = (result_add_domain.get("errors", [{}])[0].get("message", "Unknown error"))
+          logging.error(f"add_cloudflareDomain(): Add new domain {domain} to account {account} error! Result: {result_add_domain}")
+          results.append(f"❌ {domain}: {error_msg}")
+          error_count += 1
+      results_html = "<br>".join(results)
+      if error_count == 0:
+        flash(f"Успішно додано {success_count} домен(ів) до аккаунту {account}!<br>{results_html}",'alert alert-success')
+      elif success_count == 0:
+        flash(f"Помилки при додаванні всіх {error_count} домен(ів) до аккаунту {account}!<br>{results_html}",'alert alert-danger')
       else:
-        error_msg = (result_add_domain.get("errors", [{}])[0].get("message", "Unknown error"))
-        logging.error(f"add_cloudflareDomain(): Add new domain {domain} to account {account} error! Result: {result_add_domain}")
-        flash(f'Якась помилка при додаванні нового домену {domain} до аккаунту {account}: <strong>{error_msg}</strong>!','alert alert-danger')
-        return redirect(f"/cloudflare_domains/",302)
+        flash(f"Додано: {success_count} успішно, {error_count} з помилками.<br>{results_html}",'alert alert-warning')
+      return redirect(f"/cloudflare_domains/",302)
   except Exception as err:
     logging.error(f"add_cloudflareDomain(): POST general error by {current_user.realname}: {err}")
     flash(f"Неочікувана помилка на сторінці, дивіться логи!", 'alert alert-danger')

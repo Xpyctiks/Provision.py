@@ -65,17 +65,16 @@
     <div class="col-12 col-md-12 col-lg-12 col-xl-12">
       <div class="card mx-auto">
         <div class="card-header">
-          <h4 style="text-align: center;">Додати новий домен до аккаунту Cloudflare:</h4>
+          <h4 style="text-align: center;">Додати нові домени до аккаунту Cloudflare:</h4>
         </div>
         <div class="card-body">
           <form action="/cloudflare_domains/" method="POST" id="postform" class="needs-validation" novalidate>
             {% if not mail_admin %}
-            <h5 class="card-title">Вкажіть домен який буде додано під аккаунт:</h5>
-            <div class="input-group mb-3">
-              <span class="input-group-text">https://</span>
-              <input type="text" class="form-control" id="domain" name="domain" autofocus required>
+            <h5 class="card-title">Список доменів для додавання (кожен домен з нового рядка):</h5>
+            <div class="mb-3">
+              <textarea class="form-control font-monospace" id="domain" name="domain" rows="6" placeholder="example1.com&#10;example2.com&#10;example3.com" autofocus required></textarea>
               <div class="invalid-feedback">
-                Вкажіть домен.
+                Вкажіть хоча б один домен.
               </div>
             </div>
             {% endif %}
@@ -98,7 +97,7 @@
             </div>
             {% if not mail_admin %}
             <div class="d-grid mt-2 col-12 col-md-4 mx-auto">
-              <button type="submit" class="btn btn-info w-100" name="buttonAddZone" value="Submit" onclick="showLoading()">Додати новий домен</button>
+              <button type="submit" class="btn btn-info w-100" name="buttonAddZone" value="Submit" onclick="showLoading()">Додати домени</button>
             </div>
             {% endif %}
           </form>
