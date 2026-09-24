@@ -11,7 +11,13 @@ cloudflare_email_bp = Blueprint("cloudflare_email", __name__)
 
 def _format_rule(rule: dict) -> str:
   """Builds a short human-readable description of a single Cloudflare Email Routing rule"""
-  matchers = ", ".join(str(m.get("value", m.get("type",""))) for m in rule.get("matchers", []))
+  matcher_parts = []
+  for m in rule.get("matchers", []):
+    if m.get("type") == "all":
+      matcher_parts.append("УСІ адреси (catch-all)")
+    else:
+      matcher_parts.append(str(m.get("value", m.get("type",""))))
+  matchers = ", ".join(matcher_parts)
   actions = []
   for a in rule.get("actions", []):
     value = a.get("value", [])
@@ -68,6 +74,26 @@ def _get_routing_rules(zone_id: str, headers: dict) -> list:
     if page >= r.get("result_info", {}).get("total_pages", 1):
       break
     page += 1
+  return rules
+
+def _get_catchall_rule(zone_id: str, headers: dict):
+  """Queries the zone's catch-all Email Routing rule - a separate Cloudflare API resource from the regular
+  rules list, so _get_routing_rules() never returns it. Returns the rule dict if one is configured, or
+  None if there isn't one / the request fails."""
+  url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules/catch_all"
+  r = requests.get(url, headers=headers, timeout=10).json()
+  if r.get("success") and r.get("result"):
+    return r["result"]
+  return None
+
+def _combine_rules_for_db(rules: list, zone_id: str, headers: dict) -> list:
+  """Given the regular rules already fetched via _get_routing_rules(), appends the catch-all rule (if
+  one is configured) - for CloudflareEmailsRules/dashboard purposes only. Do NOT use this list to render
+  the interactive per-rule edit/delete table (see manage_email()) - the catch-all entry has no regular
+  rule id and can't be deleted through the normal per-rule delete endpoint."""
+  catchall = _get_catchall_rule(zone_id, headers)
+  if catchall:
+    return rules + [catchall]
   return rules
 
 def _get_destination_addresses(account_id, headers: dict) -> list:
@@ -149,7 +175,7 @@ def update_emails_status():
             routing_enabled = _get_routing_status(zone_id, headers)
             _sync_status_to_db(domain, routing_enabled, "cron job")
             rules = _get_routing_rules(zone_id, headers)
-            _sync_rules_to_db(domain, rules)
+            _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
             processed += 1
           except Exception as err:
             logging.error(f"update_emails_status(): Error while processing domain {domain}: {err}")
@@ -181,9 +207,11 @@ def manage_email():
     rules = _get_routing_rules(zone_id, headers)
     account_id = _get_account_id(headers)
     addresses = _get_destination_addresses(account_id, headers)
-    #keep the DB in sync with what we just saw live on Cloudflare
+    #keep the DB in sync with what we just saw live on Cloudflare - includes the catch-all rule (if any)
+    #for DB/dashboard purposes, even though it's excluded from `rules` above (the interactive table below
+    #can't edit/delete it like a normal rule, so it must not appear there)
     _sync_status_to_db(domain, routing_enabled, current_user.realname)
-    _sync_rules_to_db(domain, rules)
+    _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
     #------------------------- status block -------------------------
     if routing_enabled:
       status_html = '<span class="badge bg-success fs-6">✅ Email Routing увімкнено</span>'
@@ -331,7 +359,7 @@ def catch_manage_email():
     routing_enabled = _get_routing_status(zone_id, headers)
     _sync_status_to_db(domain, routing_enabled, current_user.realname)
     rules = _get_routing_rules(zone_id, headers)
-    _sync_rules_to_db(domain, rules)
+    _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
     return redirect(f"/cloudflare_email/manage?domain={domain}",302)
   except Exception as err:
     logging.error(f"catch_manage_email(): general error by {current_user.realname} for domain {domain}: {err}")

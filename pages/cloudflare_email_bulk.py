@@ -6,7 +6,7 @@ from db.database import Cloudflare
 from functions.site_actions import is_admin,is_mail_admin
 from pages.cloudflare_email import (
   _get_account_id, _get_routing_status, _get_routing_rules,
-  _get_destination_addresses, _sync_status_to_db, _sync_rules_to_db
+  _get_destination_addresses, _sync_status_to_db, _sync_rules_to_db, _combine_rules_for_db
 )
 
 cloudflare_email_bulk_bp = Blueprint("cloudflare_email_bulk", __name__)
@@ -149,10 +149,11 @@ def do_bulk_email():
         error_count += 1
         _sync_status_to_db(domain, routing_enabled, current_user.realname)
         continue
-      # Keep DB in sync after successful rule creation
+      # Keep DB in sync after successful rule creation - includes the catch-all rule itself when
+      # catchall=True, since Cloudflare exposes it via a separate endpoint from the regular rules list
       _sync_status_to_db(domain, routing_enabled, current_user.realname)
       rules = _get_routing_rules(zone_id, headers)
-      _sync_rules_to_db(domain, rules)
+      _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
       domains_left_counter += 1
     except Exception as err:
       logging.error(f"do_bulk_email(): Unexpected error for domain {domain}: {err}")
