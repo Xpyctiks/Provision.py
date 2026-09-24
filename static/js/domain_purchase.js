@@ -184,6 +184,52 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// ── Крок 2: bulk "delete from this list" checkboxes (select all / button state / confirm) ────
+
+function updateBulkDeleteActionableState() {
+  const checkedCount = document.querySelectorAll('#setupDomainsContainer .delete-domain-check:checked').length;
+  const btn = document.getElementById('bulkDeleteActionableBtn');
+  const countSpan = document.getElementById('bulkDeleteActionableCount');
+  if (btn) btn.disabled = checkedCount === 0;
+  if (countSpan) countSpan.textContent = checkedCount;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const selectAll = document.getElementById('selectAllActionableDelete');
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      //only touches domains currently visible under the account filter above, same convention as
+      //other bulk "select all" pickers in this project
+      document.querySelectorAll('#setupDomainsContainer .setup-domain-item').forEach(function (item) {
+        if (item.style.display === 'none') return;
+        const cb = item.querySelector('.delete-domain-check');
+        if (cb) cb.checked = selectAll.checked;
+      });
+      updateBulkDeleteActionableState();
+    });
+  }
+});
+
+document.addEventListener('change', function (e) {
+  if (e.target.classList.contains('delete-domain-check')) {
+    if (!e.target.checked) {
+      const selectAll = document.getElementById('selectAllActionableDelete');
+      if (selectAll) selectAll.checked = false;
+    }
+    updateBulkDeleteActionableState();
+  }
+});
+
+document.addEventListener('submit', function (e) {
+  const btn = e.submitter;
+  if (btn && btn.id === 'bulkDeleteActionableBtn') {
+    const count = document.querySelectorAll('#setupDomainsContainer .delete-domain-check:checked').length;
+    if (!confirm(`⚠Видалити ${count} обран(их) домен(ів) з цього списку?\n\nСам домен, його реєстрація і налаштування на Cloudflare НЕ будуть змінені - зникне лише запис у цьому списку.`)) {
+      e.preventDefault();
+    }
+  }
+});
+
 // ── Крок 2: email alias persistence (defaults to "support") ──────────────────
 
 document.addEventListener('DOMContentLoaded', function () {

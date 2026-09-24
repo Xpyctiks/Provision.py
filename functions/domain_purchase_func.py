@@ -119,7 +119,10 @@ def distinct_actionable_accounts(rows: list) -> list:
   return seen
 
 def render_actionable_domains(rows: list) -> str:
-  """Builds the Крок 2 checkbox list: one entry per domain, only ready_to_setup domains get an enabled checkbox."""
+  """Builds the Крок 2 checkbox list: one entry per domain. The "setup" checkbox (deploy action) is only
+  enabled for ready_to_setup domains, same as before. Every row also gets a separate "delete" checkbox
+  (always enabled, regardless of stage) tied to the bulk "remove from this list" action - see
+  pages/domain_purchase.py::delete_actionable_domains()."""
   if not rows:
     return '<div class="text-muted text-center py-2">Немає доменів, що очікують налаштування</div>'
   stage_labels = {
@@ -140,6 +143,7 @@ def render_actionable_domains(rows: list) -> str:
     {checkbox}
     <label class="form-check-label flex-grow-1" for="setup-dom-{i}">{row.domain}</label>
     {label}
+    <input class="form-check-input delete-domain-check" type="checkbox" name="delete_domains" value="{row.domain}" id="del-dom-{i}" form="bulkDeleteActionableForm" data-bs-toggle="tooltip" data-bs-placement="top" title="Обрати для видалення зі списку">
   </div>
   <div class="text-muted small ms-4">{account or '—'}</div>
 </div>\n"""

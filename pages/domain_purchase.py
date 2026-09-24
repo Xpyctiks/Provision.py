@@ -4,7 +4,8 @@ import json
 import requests
 from flask import render_template,request,redirect,flash,Blueprint,current_app
 from flask_login import login_required,current_user
-from db.database import Cloudflare,DomainRegistrator,Provision_templates
+from db.db import db
+from db.database import Cloudflare,DomainRegistrator,Provision_templates,DomainPurchase
 from functions.site_actions import is_admin,is_mail_admin,clearCache,bulk_nginx_reload
 from functions.rights_required import rights_required,ADMIN_RIGHTS
 from functions.pages_forms import loadTemplatesList,loadServersList
@@ -300,6 +301,30 @@ def do_domain_purchase_step2():
   except Exception as err:
     logging.error(f"do_domain_purchase_step2(): general error by {current_user.realname}: {err}")
     flash("Неочікувана помилка при розгортанні доменів, дивіться логи!", 'alert alert-danger')
+    return redirect("/domain_purchase/step2/",302)
+
+@domain_purchase_bp.route("/domain_purchase/step2/delete_domains/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def delete_actionable_domains():
+  """POST request processor: removes the selected domains from the DomainPurchase table entirely, so they
+  stop appearing in the Крок 2 actionable list. This is a pure DB bookkeeping cleanup only - it does NOT
+  call Cloudflare or any registrator API, and does not touch the domain's zone/DNS/registration in any way -
+  the domain itself is left completely untouched, only our own purchase-tracking record disappears."""
+  try:
+    domains = request.form.getlist("delete_domains")
+    logging.info(f"-----------------------Removing {len(domains)} domain(s) from the domain-purchase actionable list by {current_user.realname}: {domains}-----------------------")
+    if not domains:
+      flash("Помилка! Не обрано жодного домену для видалення зі списку!", 'alert alert-danger')
+      return redirect("/domain_purchase/step2/",302)
+    deleted_count = DomainPurchase.query.filter(DomainPurchase.domain.in_(domains)).delete(synchronize_session=False)
+    db.session.commit()
+    logging.info(f"delete_actionable_domains(): Removed {deleted_count} DomainPurchase record(s) by {current_user.realname}: {domains}")
+    flash(f"Видалено зі списку {deleted_count} домен(ів): {', '.join(domains)}", 'alert alert-success')
+    return redirect("/domain_purchase/step2/",302)
+  except Exception as err:
+    logging.error(f"delete_actionable_domains(): general error by {current_user.realname}: {err}")
+    flash("Неочікувана помилка при видаленні доменів зі списку, дивіться логи!", 'alert alert-danger')
     return redirect("/domain_purchase/step2/",302)
 
 @domain_purchase_bp.route("/domain_purchase/history/", methods=['GET'])
