@@ -2,6 +2,7 @@ import logging
 import requests
 import json
 import html
+from datetime import datetime
 from flask import render_template,request,redirect,flash,Blueprint,jsonify,current_app
 from flask_login import login_required,current_user
 from db.database import Cloudflare
@@ -144,18 +145,28 @@ def show_existingDomains():
           domain_list.append(name)
           plan_name = zone["plan"]["name"]
           status = zone.get("status")
+          #Cloudflare returns created_on as an ISO 8601 UTC timestamp, e.g. "2014-01-01T05:20:00.123456Z"
+          created_on = zone.get("created_on") or ""
+          if created_on:
+            try:
+              created_display = datetime.fromisoformat(created_on.replace("Z", "+00:00")).strftime("%d-%m-%Y %H:%M")
+            except ValueError:
+              created_display = created_on
+          else:
+            created_display = ""
           if status == "active":
             table_color = "table-success"
           else:
             table_color = "table-warning"
           message_table += f"""\t<tr>
           <td class="{table_color} text-center"><input type="checkbox" class="form-check-input existing-domain-check" name="selected_domains" value="{name}" form="bulkDeleteExistingForm"></td>
-          <th scope="row" class="{table_color}">{i}&nbsp;<form class="d-inline" method="post" action="/cloudflare_domains/delete_domain/"><button class="btn btn-outline-danger delDomain-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити цей домен з аккаунту." name="buttonDelAccount" value="{name}" type="submit">❌</button>
+          <th scope="row" class="{table_color}"><span class="row-num">{i}</span>&nbsp;<form class="d-inline" method="post" action="/cloudflare_domains/delete_domain/"><button class="btn btn-outline-danger delDomain-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Видалити цей домен з аккаунту." name="buttonDelAccount" value="{name}" type="submit">❌</button>
             <input type="hidden" name="selected_account" value="{account}"></form>
           </th>
           <td class="{table_color}">{name}</td>
           <td class="{table_color}">{plan_name}</td>
           <td class="{table_color}">{status}</td>
+          <td class="{table_color}">{created_display}</td>
       </tr>\n"""
           i = i + 1
         pages = pages + 1
@@ -170,14 +181,15 @@ def show_existingDomains():
     <button type="submit" form="bulkDeleteExistingForm" class="btn btn-outline-danger" id="bulkDeleteDomainsBtn" disabled>🗑 Видалити обрані (<span id="bulkDeleteCount">0</span>)</button>
   </div>
   <div class="table-responsive">
-    <table class="table table-bordered table-hover">
+    <table class="table table-bordered table-hover" id="existingDomainsTable">
       <thead>
           <tr>
             <th scope="col" style="width: 5%;"><input type="checkbox" class="form-check-input" id="selectAllExistingDomains" data-bs-toggle="tooltip" data-bs-placement="top" title="Обрати всі"></th>
-            <th scope="col" style="width: 12%;">#</th>
-            <th scope="col" style="width: 48%;">Домен:</th>
-            <th scope="col" style="width: 20%;">Тариф:</th>
-            <th scope="col" style="width: 15%;">Статус:</th>
+            <th scope="col" style="width: 7%;">#</th>
+            <th scope="col" style="width: 30%;" class="sortable" data-sort-type="text">Домен:</th>
+            <th scope="col" style="width: 15%;">Тариф:</th>
+            <th scope="col" style="width: 13%;">Статус:</th>
+            <th scope="col" style="width: 30%;" class="sortable" data-sort-type="date">Дата додавання:</th>
           </tr>
       </thead>
       <tbody>

@@ -537,3 +537,54 @@ document.addEventListener("change", function (e) {
     updateBulkDeleteDomainsState();
   }
 });
+
+// ── Existing domains modal: click-to-sort table (Домен: / Дата додавання:) ──
+// The table is injected into #modalResultBody dynamically, so sorting uses event
+// delegation instead of binding directly to the headers (same reasoning as the
+// bulk-selection handlers above).
+
+function parseExistingDomainsSortDate(text) {
+  const match = text.trim().match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/);
+  if (!match) {
+    return 0;
+  }
+  const [, day, month, year, hours, minutes] = match;
+  return new Date(year, month - 1, day, hours, minutes).getTime();
+}
+
+document.addEventListener("click", function (e) {
+  const header = e.target.closest("#existingDomainsTable th.sortable");
+  if (!header) {
+    return;
+  }
+  const table = header.closest("table");
+  const headers = table.querySelectorAll("th.sortable");
+  const realIndex = Array.from(header.parentElement.children).indexOf(header);
+  const sortType = header.dataset.sortType || "text";
+  const isAscending = !header.classList.contains("sort-asc");
+  headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
+  header.classList.add(isAscending ? "sort-asc" : "sort-desc");
+
+  const tbody = table.querySelector("tbody");
+  const rows = Array.from(tbody.querySelectorAll("tr")).filter(row => row.children.length > realIndex);
+
+  rows.sort((rowA, rowB) => {
+    const cellA = rowA.children[realIndex].innerText.trim();
+    const cellB = rowB.children[realIndex].innerText.trim();
+    let result;
+    if (sortType === "date") {
+      result = parseExistingDomainsSortDate(cellA) - parseExistingDomainsSortDate(cellB);
+    } else {
+      result = cellA.localeCompare(cellB, "uk");
+    }
+    return isAscending ? result : -result;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+  tbody.querySelectorAll("tr").forEach((row, i) => {
+    const rowNum = row.querySelector(".row-num");
+    if (rowNum) {
+      rowNum.textContent = i;
+    }
+  });
+});
