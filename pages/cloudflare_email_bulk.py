@@ -3,7 +3,7 @@ import requests
 from flask import Blueprint,jsonify,render_template,request,flash,redirect,current_app
 from flask_login import login_required,current_user
 from db.database import Cloudflare
-from functions.site_actions import is_admin,is_mail_admin
+from functions.site_actions import is_admin,is_mail_admin,link_domain_and_account
 from pages.cloudflare_email import (
   _get_account_id, _get_routing_status, _get_routing_rules,
   _get_destination_addresses, _sync_status_to_db, _sync_rules_to_db, _combine_rules_for_db
@@ -154,6 +154,9 @@ def do_bulk_email():
       _sync_status_to_db(domain, routing_enabled, current_user.realname)
       rules = _get_routing_rules(zone_id, headers)
       _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+      # Domains set up here often haven't been through domain_purchase/provisioning, so Domain_account
+      # may have no row for them yet - without this, the dashboard shows "нема інформації" for the CF account
+      link_domain_and_account(domain, account_email)
       domains_left_counter += 1
     except Exception as err:
       logging.error(f"do_bulk_email(): Unexpected error for domain {domain}: {err}")

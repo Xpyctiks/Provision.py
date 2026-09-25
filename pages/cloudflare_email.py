@@ -5,7 +5,7 @@ from flask import Blueprint,current_app,jsonify,request,redirect,render_template
 from flask_login import login_required,current_user
 from db.database import Cloudflare,CloudflareEmailsStatus,CloudflareEmailsRules
 from db.db import db
-from functions.site_actions import is_admin,is_mail_admin
+from functions.site_actions import is_admin,is_mail_admin,link_domain_and_account
 
 cloudflare_email_bp = Blueprint("cloudflare_email", __name__)
 
@@ -212,6 +212,9 @@ def manage_email():
     #can't edit/delete it like a normal rule, so it must not appear there)
     _sync_status_to_db(domain, routing_enabled, current_user.realname)
     _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+    #domains reaching Email Routing without going through domain_purchase/provisioning first may have no
+    #Domain_account row yet - without this, dashboards show "нема інформації" for the CF account
+    link_domain_and_account(domain, acc.account)
     #------------------------- status block -------------------------
     if routing_enabled:
       status_html = '<span class="badge bg-success fs-6">✅ Email Routing увімкнено</span>'
@@ -360,6 +363,7 @@ def catch_manage_email():
     _sync_status_to_db(domain, routing_enabled, current_user.realname)
     rules = _get_routing_rules(zone_id, headers)
     _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+    link_domain_and_account(domain, acc.account)
     return redirect(f"/cloudflare_email/manage?domain={domain}",302)
   except Exception as err:
     logging.error(f"catch_manage_email(): general error by {current_user.realname} for domain {domain}: {err}")
