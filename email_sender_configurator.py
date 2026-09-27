@@ -58,7 +58,7 @@ from pathlib import Path
 import pymysql
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv(Path(__file__).resolve().parent / ".env.sender")
 
 API_KEY = os.environ.get("API_KEY", "")
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")

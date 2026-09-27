@@ -1,4 +1,3 @@
-import os
 import logging
 import string
 import random
@@ -40,10 +39,12 @@ def load_config(application):
       print(f"Load-config error: {msg}")
       quit(1)
 
-def generate_default_config(application,CONFIG_DIR: str,DB_FILE: str):
-  """Checks every application loads if the app's configuration exists. If not - creates DB file with default values.Takes application as app context, CONFIG_DIR as value where config DB located and DB_FILE as config DB name"""
+def generate_default_config(application):
+  """Checks every application loads if the app's configuration exists (a Settings row with id=1). If not -
+  creates the tables (idempotent, safe on an already-populated database) and inserts default values."""
   with application.app_context():
-    if not os.path.isfile(DB_FILE):
+    db.create_all()
+    if db.session.get(Settings, 1) is None:
       length = 32
       characters = string.ascii_letters + string.digits
       session_key = ''.join(random.choice(characters) for _ in range(length))
@@ -71,12 +72,9 @@ def generate_default_config(application,CONFIG_DIR: str,DB_FILE: str):
         provisionServerHostname = ""
         )
       try:
-        if not os.path.exists(CONFIG_DIR):
-          os.mkdir(CONFIG_DIR)
-        db.create_all()
         db.session.add(default_settings)
         db.session.commit()
-        print(f"First launch. Default database created in {DB_FILE}. You need to add telegram ChatID and Token if you want to get notifications")
+        print("First launch. Default settings created in the database. You need to add telegram ChatID and Token if you want to get notifications")
       except Exception as msg:
         print(f"Generate-default-config error: {msg}")
         quit(1)

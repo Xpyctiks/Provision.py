@@ -2,16 +2,17 @@
 
 import os
 import pathlib
+from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
 from datetime import timedelta
 from functions.cache_func import page_cache
+from db.mysql_uri import build_mysql_uri
 
-CONFIG_DIR = "/etc/provision/"
-DB_FILE = os.path.join(CONFIG_DIR,"provision.db")
+load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 application = Flask(__name__)
-application.config["VERSION"] = "2.10.9"
-application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + DB_FILE
+application.config["VERSION"] = "2.11.0"
+application.config["SQLALCHEMY_DATABASE_URI"] = build_mysql_uri()
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 28800
 application.config['SESSION_COOKIE_SECURE'] = False
@@ -25,7 +26,7 @@ from db.database import User
 db.init_app(application)
 application.config['SESSION_SQLALCHEMY'] = db
 from functions.load_config import load_config, generate_default_config
-generate_default_config(application,CONFIG_DIR,DB_FILE)
+generate_default_config(application)
 load_config(application)
 application.secret_key = application.config["SECRET_KEY"]
 login_manager = LoginManager()

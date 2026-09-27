@@ -8,3 +8,5 @@ gunicorn-provision.service
 *.pyc
 .*
 log/
+!.env.example
+!.env.sender.example
