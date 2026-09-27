@@ -8,8 +8,10 @@
   const accountErrorMsg   = document.getElementById('accountErrorMsg');
   const destinationSelect = document.getElementById('destinationSelect');
   const domainsContainer  = document.getElementById('domainsContainer');
+  const domainsLoadingMsg = document.getElementById('domainsLoadingMsg');
   const noDomainsMsg      = document.getElementById('noDomainsMsg');
   const domainSearch      = document.getElementById('domainSearch');
+  const noCatchallFilter  = document.getElementById('noCatchallFilter');
   const selectAllBtn      = document.getElementById('selectAllBtn');
   const deselectAllBtn    = document.getElementById('deselectAllBtn');
   const loginInput        = document.getElementById('loginInput');
@@ -31,29 +33,51 @@
     if (s) s.style.visibility = 'visible';
   };
 
-  // ── Account selection ──────────────────────────────────────────────────────
+  // ── Cookie helpers (persist the catchall filter per browser/user across reloads) ──
 
-  accountSelect.addEventListener('change', function () {
-    const account = this.value;
-    bulkSection.style.display = 'none';
+  function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+  }
+
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  // Checkbox defaults to checked (HTML attribute) - only override it when the cookie explicitly says "0"
+  if (getCookie('cf_email_bulk_no_catchall') === '0') {
+    noCatchallFilter.checked = false;
+  }
+
+  // ── Account selection / domains list loading ────────────────────────────────
+
+  function loadAccountData(account) {
+    const preserveDestination = destinationSelect.value;
+    const onlyNoCatchall = noCatchallFilter.checked;
     accountErrorMsg.style.display = 'none';
     accountErrorMsg.textContent = '';
-
-    if (!account) return;
-
     accountLoadingMsg.style.display = 'block';
+    domainsLoadingMsg.style.display = 'block';
+    domainsContainer.style.display = 'none';
+    noDomainsMsg.style.display = 'none';
 
-    fetch('/cloudflare_email_bulk/account_data?account=' + encodeURIComponent(account))
+    const url = '/cloudflare_email_bulk/account_data?account=' + encodeURIComponent(account) +
+                '&only_no_catchall=' + (onlyNoCatchall ? '1' : '0');
+
+    fetch(url)
       .then(function (r) { return r.json(); })
       .then(function (data) {
         accountLoadingMsg.style.display = 'none';
+        domainsLoadingMsg.style.display = 'none';
+        domainsContainer.style.display = '';
         if (data.error) {
           accountErrorMsg.textContent = 'Помилка: ' + data.error;
           accountErrorMsg.style.display = 'block';
           return;
         }
 
-        // Populate destination addresses
+        // Populate destination addresses (keep the previous selection if it's still available)
         destinationSelect.innerHTML = '<option value="">— Оберіть адресу —</option>';
         data.addresses.forEach(function (addr) {
           const opt = document.createElement('option');
@@ -61,13 +85,15 @@
           opt.textContent = addr.email;
           destinationSelect.appendChild(opt);
         });
+        if (preserveDestination) {
+          destinationSelect.value = preserveDestination;
+        }
 
         // Populate domains list
         domainsContainer.innerHTML = '';
         if (data.zones.length === 0) {
           noDomainsMsg.style.display = 'block';
         } else {
-          noDomainsMsg.style.display = 'none';
           data.zones.forEach(function (zone) {
             const col = document.createElement('div');
             col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 domain-item';
@@ -79,6 +105,7 @@
               '</div>';
             domainsContainer.appendChild(col);
           });
+          applyDomainSearchFilter();
         }
 
         domainCountBadge.textContent = data.zones.length;
@@ -86,19 +113,40 @@
         bulkSection.style.display = 'block';
         updateSubmitState();
         updateSelectedCount();
-        domainSearch.value = '';
       })
       .catch(function (err) {
         accountLoadingMsg.style.display = 'none';
+        domainsLoadingMsg.style.display = 'none';
+        domainsContainer.style.display = '';
         accountErrorMsg.textContent = 'Помилка завантаження: ' + err;
         accountErrorMsg.style.display = 'block';
       });
+  }
+
+  accountSelect.addEventListener('change', function () {
+    const account = this.value;
+    bulkSection.style.display = 'none';
+    accountErrorMsg.style.display = 'none';
+    accountErrorMsg.textContent = '';
+    domainSearch.value = '';
+
+    if (!account) return;
+
+    loadAccountData(account);
+  });
+
+  // Toggling the filter re-requests the domains list from Cloudflare for the currently selected account
+  noCatchallFilter.addEventListener('change', function () {
+    setCookie('cf_email_bulk_no_catchall', this.checked ? '1' : '0', 365);
+    if (accountSelect.value) {
+      loadAccountData(accountSelect.value);
+    }
   });
 
   // ── Domain search ──────────────────────────────────────────────────────────
 
-  domainSearch.addEventListener('input', function () {
-    const q = this.value.toLowerCase().trim();
+  function applyDomainSearchFilter() {
+    const q = domainSearch.value.toLowerCase().trim();
     const items = domainsContainer.querySelectorAll('.domain-item');
     let visible = 0;
     items.forEach(function (item) {
@@ -107,7 +155,9 @@
       if (match) visible++;
     });
     noDomainsMsg.style.display = (visible === 0) ? 'block' : 'none';
-  });
+  }
+
+  domainSearch.addEventListener('input', applyDomainSearchFilter);
 
   // ── Select / Deselect all (only visible) ──────────────────────────────────
 

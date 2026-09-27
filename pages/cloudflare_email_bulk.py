@@ -5,9 +5,14 @@ from flask_login import login_required,current_user
 from db.database import Cloudflare
 from functions.site_actions import is_admin,is_mail_admin,link_domain_and_account
 from pages.cloudflare_email import (
-  _get_account_id, _get_routing_status, _get_routing_rules,
+  _get_account_id, _get_routing_status, _get_routing_rules, _get_catchall_rule,
   _get_destination_addresses, _sync_status_to_db, _sync_rules_to_db, _combine_rules_for_db
 )
+
+def _has_enabled_catchall(zone_id: str, headers: dict) -> bool:
+  """True if the zone already has an enabled catch-all Email Routing rule"""
+  rule = _get_catchall_rule(zone_id, headers)
+  return bool(rule and rule.get("enabled"))
 
 cloudflare_email_bulk_bp = Blueprint("cloudflare_email_bulk", __name__)
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/", methods=['GET'])
@@ -20,8 +25,11 @@ def show_bulk_email_page():
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/account_data", methods=['GET'])
 @login_required
 def get_account_data():
-  """AJAX: returns all zones and verified destination addresses for the selected Cloudflare account"""
+  """AJAX: returns all zones and verified destination addresses for the selected Cloudflare account.
+  When only_no_catchall=1, zones that already have an enabled catch-all Email Routing rule are left out
+  (costs one extra Cloudflare API call per zone, so it's only paid when the filter is actually requested)."""
   account_email = (request.args.get("account") or "").strip()
+  only_no_catchall = request.args.get("only_no_catchall") == "1"
   if not account_email:
     return jsonify({"error": "Account not specified"}), 400
   acc = Cloudflare.query.filter_by(account=account_email).first()
@@ -46,6 +54,8 @@ def get_account_data():
       if page >= r.get("result_info", {}).get("total_pages", 1):
         break
       page += 1
+    if only_no_catchall:
+      zones = [z for z in zones if not _has_enabled_catchall(z["id"], headers)]
     addresses = _get_destination_addresses(account_id, headers)
     verified = [a for a in addresses if a.get("verified")]
     return jsonify({
