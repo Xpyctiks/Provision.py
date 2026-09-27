@@ -6,6 +6,7 @@ from db.db import db
 from db.database import Cloudflare, DomainRegistrator, DomainPurchase
 from functions.pages_forms import _load_zones_for_account
 from functions.site_actions import link_domain_and_account
+from functions.email_routing_status_func import seed_email_routing_domain_status
 from functions.provision_func import setSiteOwner
 from functions.dynadot_func import dynadot_register_domain, dynadot_set_ns
 from functions.spaceship_func import spaceship_register_domain, spaceship_set_ns
@@ -293,6 +294,7 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
         ns_ok, ns_msg = _set_ns(registrator, domain, ns)
         setSiteOwner(domain)
         link_domain_and_account(domain, acc.account)
+        seed_email_routing_domain_status(domain, acc.account)
         remaining_slots[acc.account] -= 1
         if ns_ok:
           logging.info(f"purchase_and_setup_domains(): Domain {domain} added to CF account {acc.account}, NS set, registered in DB")

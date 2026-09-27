@@ -19,6 +19,7 @@ from db.database import Ownership,User
 from db.db import db
 from functions.site_actions import link_domain_and_account,bulk_nginx_reload
 from functions.mail_domains_func import provision_mail_domain
+from functions.email_routing_status_func import seed_email_routing_domain_status
 from pathlib import Path
 from functions.tld import tld
 
@@ -61,7 +62,11 @@ def _trigger_mail_provisioning(domain: str, selected_account: str) -> None:
   """Best-effort hook called from every place a domain gets successfully registered in the project
   (finishJob() below covers manual zip upload, auto-provision and clone alike). Provisions the domain
   on the remote mail server (DKIM/DMARC/SPF + a mailbox login "order") if MAIL_SERVER_API_URL is
-  configured. Never raises/blocks the calling deployment flow - only logs on failure."""
+  configured, and seeds an EmailRoutingDomainStatus row (Cloudflare Email Routing status is unrelated
+  to the mail-server provisioning above, but the same "domain just became known to the project" moment
+  is exactly when it should first appear there too, if nobody has touched Email Routing for it yet).
+  Never raises/blocks the calling deployment flow - only logs on failure."""
+  seed_email_routing_domain_status(domain, selected_account)
   try:
     if not current_app.config.get("MAIL_SERVER_API_URL"):
       return

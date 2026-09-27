@@ -2,10 +2,11 @@ import logging
 import requests
 from flask import Blueprint,jsonify,render_template,request,flash,redirect,current_app
 from flask_login import login_required,current_user
-from db.database import Cloudflare
+from db.database import Cloudflare,EmailRoutingDomainStatus
 from functions.site_actions import is_admin,is_mail_admin,link_domain_and_account
+from functions.email_routing_status_func import sync_email_routing_domain_status
 from pages.cloudflare_email import (
-  _get_account_id, _get_routing_status, _get_routing_rules,
+  _get_account_id, _get_routing_status, _get_routing_rules, _get_catchall_rule,
   _get_destination_addresses, _sync_status_to_db, _sync_rules_to_db, _combine_rules_for_db
 )
 
@@ -20,8 +21,11 @@ def show_bulk_email_page():
 @cloudflare_email_bulk_bp.route("/cloudflare_email_bulk/account_data", methods=['GET'])
 @login_required
 def get_account_data():
-  """AJAX: returns all zones and verified destination addresses for the selected Cloudflare account"""
+  """AJAX: returns all zones and verified destination addresses for the selected Cloudflare account.
+  When only_no_catchall=1, zones already known (in EmailRoutingDomainStatus) to have an enabled catch-all
+  Email Routing rule are left out - a single indexed DB query, no per-zone Cloudflare API calls."""
   account_email = (request.args.get("account") or "").strip()
+  only_no_catchall = request.args.get("only_no_catchall") == "1"
   if not account_email:
     return jsonify({"error": "Account not specified"}), 400
   acc = Cloudflare.query.filter_by(account=account_email).first()
@@ -46,6 +50,13 @@ def get_account_data():
       if page >= r.get("result_info", {}).get("total_pages", 1):
         break
       page += 1
+    if only_no_catchall:
+      zone_names = [z["name"] for z in zones]
+      catchall_by_domain = {
+        row.domain: bool(row.has_catchall)
+        for row in EmailRoutingDomainStatus.query.filter(EmailRoutingDomainStatus.domain.in_(zone_names)).all()
+      }
+      zones = [z for z in zones if not catchall_by_domain.get(z["name"], False)]
     addresses = _get_destination_addresses(account_id, headers)
     verified = [a for a in addresses if a.get("verified")]
     return jsonify({
@@ -153,7 +164,11 @@ def do_bulk_email():
       # catchall=True, since Cloudflare exposes it via a separate endpoint from the regular rules list
       _sync_status_to_db(domain, routing_enabled, current_user.realname)
       rules = _get_routing_rules(zone_id, headers)
-      _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+      catchall_rule = _get_catchall_rule(zone_id, headers)
+      _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+      # Fast-lookup cache used by the "domains without catchall" filter above - kept in sync on every
+      # submit so it always reflects what was just done here
+      sync_email_routing_domain_status(domain, account_email, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), current_user.realname)
       # Domains set up here often haven't been through domain_purchase/provisioning, so Domain_account
       # may have no row for them yet - without this, the dashboard shows "нема інформації" for the CF account
       link_domain_and_account(domain, account_email)

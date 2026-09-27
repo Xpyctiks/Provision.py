@@ -7,6 +7,7 @@ from flask import render_template,request,redirect,flash,Blueprint,jsonify,curre
 from flask_login import login_required,current_user
 from db.database import Cloudflare
 from functions.site_actions import is_admin, is_mail_admin
+from functions.email_routing_status_func import seed_email_routing_domain_status
 from functions.pages_forms import loadClodflareAccounts,_load_zones_for_account
 from functions.domain_purchase_func import parse_domain_textarea
 
@@ -85,6 +86,7 @@ def add_cloudflareDomain():
           ns = result_add_domain["result"]["name_servers"]
           logging.info(f"add_cloudflareDomain(): New domain {domain} successfully added to Cloudflare account {account}. NS: {ns[0]} and {ns[1]}")
           results.append(f"✅ {domain}: додано! Встановіть NS сервери: {ns[0]}, {ns[1]}")
+          seed_email_routing_domain_status(domain, account)
           success_count += 1
         else:
           error_msg = (result_add_domain.get("errors", [{}])[0].get("message", "Unknown error"))

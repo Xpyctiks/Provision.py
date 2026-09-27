@@ -137,6 +137,21 @@ class DomainPurchase(db.Model):
   created = db.Column(db.DateTime, default=datetime.now)
   stage = db.Column(db.String(20), nullable=False, default="just_bought")
 
+class EmailRoutingDomainStatus(db.Model):
+  #fast-lookup cache of Cloudflare Email Routing status per domain, kept in sync separately from
+  #CloudflareEmailsStatus/CloudflareEmailsRules - exists so filters (e.g. "domains without a catchall
+  #rule" on cloudflare_email_bulk) can query it with plain SQL instead of hitting the Cloudflare API
+  #once per domain. Unrelated to MailServerDomainStatus (that one is the Postfix mailbox/DKIM/DMARC/SPF
+  #provisioning state machine for a different feature - /mail_domains/).
+  id = db.Column(db.Integer, primary_key=True)
+  domain = db.Column(db.String(256), nullable=False, unique=True)
+  cloudflare_account = db.Column(db.String(256), nullable=True)
+  routing_enabled = db.Column(db.Boolean(), nullable=True, default=False)
+  has_catchall = db.Column(db.Boolean(), nullable=True, default=False)
+  created = db.Column(db.DateTime, default=datetime.now)
+  updated = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+  updatedby = db.Column(db.String(256), nullable=True)
+
 class MailServerDomainStatus(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   #exactly one row per domain - every add/retry/delete action updates this same row in place instead of

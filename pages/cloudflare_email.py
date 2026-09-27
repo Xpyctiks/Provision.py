@@ -6,6 +6,7 @@ from flask_login import login_required,current_user
 from db.database import Cloudflare,CloudflareEmailsStatus,CloudflareEmailsRules
 from db.db import db
 from functions.site_actions import is_admin,is_mail_admin,link_domain_and_account
+from functions.email_routing_status_func import sync_email_routing_domain_status
 
 cloudflare_email_bp = Blueprint("cloudflare_email", __name__)
 
@@ -86,14 +87,15 @@ def _get_catchall_rule(zone_id: str, headers: dict):
     return r["result"]
   return None
 
-def _combine_rules_for_db(rules: list, zone_id: str, headers: dict) -> list:
+def _combine_rules_for_db(rules: list, catchall_rule) -> list:
   """Given the regular rules already fetched via _get_routing_rules(), appends the catch-all rule (if
-  one is configured) - for CloudflareEmailsRules/dashboard purposes only. Do NOT use this list to render
-  the interactive per-rule edit/delete table (see manage_email()) - the catch-all entry has no regular
-  rule id and can't be deleted through the normal per-rule delete endpoint."""
-  catchall = _get_catchall_rule(zone_id, headers)
-  if catchall:
-    return rules + [catchall]
+  one is configured, as an already-fetched dict from _get_catchall_rule() - passed in rather than fetched
+  here so callers can reuse the same fetch for EmailRoutingDomainStatus's has_catchall flag) - for
+  CloudflareEmailsRules/dashboard purposes only. Do NOT use this list to render the interactive per-rule
+  edit/delete table (see manage_email()) - the catch-all entry has no regular rule id and can't be
+  deleted through the normal per-rule delete endpoint."""
+  if catchall_rule:
+    return rules + [catchall_rule]
   return rules
 
 def _get_destination_addresses(account_id, headers: dict) -> list:
@@ -175,7 +177,9 @@ def update_emails_status():
             routing_enabled = _get_routing_status(zone_id, headers)
             _sync_status_to_db(domain, routing_enabled, "cron job")
             rules = _get_routing_rules(zone_id, headers)
-            _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+            catchall_rule = _get_catchall_rule(zone_id, headers)
+            _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+            sync_email_routing_domain_status(domain, acc.account, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), "cron job")
             processed += 1
           except Exception as err:
             logging.error(f"update_emails_status(): Error while processing domain {domain}: {err}")
@@ -211,7 +215,9 @@ def manage_email():
     #for DB/dashboard purposes, even though it's excluded from `rules` above (the interactive table below
     #can't edit/delete it like a normal rule, so it must not appear there)
     _sync_status_to_db(domain, routing_enabled, current_user.realname)
-    _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+    catchall_rule = _get_catchall_rule(zone_id, headers)
+    _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+    sync_email_routing_domain_status(domain, acc.account, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), current_user.realname)
     #domains reaching Email Routing without going through domain_purchase/provisioning first may have no
     #Domain_account row yet - without this, dashboards show "нема інформації" for the CF account
     link_domain_and_account(domain, acc.account)
@@ -362,7 +368,9 @@ def catch_manage_email():
     routing_enabled = _get_routing_status(zone_id, headers)
     _sync_status_to_db(domain, routing_enabled, current_user.realname)
     rules = _get_routing_rules(zone_id, headers)
-    _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+    catchall_rule = _get_catchall_rule(zone_id, headers)
+    _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+    sync_email_routing_domain_status(domain, acc.account, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), current_user.realname)
     link_domain_and_account(domain, acc.account)
     return redirect(f"/cloudflare_email/manage?domain={domain}",302)
   except Exception as err:

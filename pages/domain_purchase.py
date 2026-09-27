@@ -17,9 +17,10 @@ from functions.domain_purchase_func import (
   render_actionable_domains,get_purchase_row,append_purchase_message
 )
 from pages.cloudflare_email import (
-  _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,
+  _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,_get_catchall_rule,
   _sync_status_to_db,_sync_rules_to_db,_combine_rules_for_db
 )
+from functions.email_routing_status_func import sync_email_routing_domain_status
 
 domain_purchase_bp = Blueprint("domain_purchase", __name__)
 
@@ -188,7 +189,9 @@ def _setup_email_for_domain(domain: str, account_email: str, destination: str, a
       #keep CloudflareEmailsRules in sync too, so the catch-all rule shows up on the dashboard - it's a
       #separate Cloudflare API resource from the regular rules list, hence the explicit combine helper
       rules = _get_routing_rules(zone_id, headers)
-      _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+      catchall_rule = _get_catchall_rule(zone_id, headers)
+      _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+      sync_email_routing_domain_status(domain, account_email, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), realname)
       logging.info(f"_setup_email_for_domain(): Catchall rule -> {destination} created for {domain} by {realname}")
       return True, "OK"
     matcher = f"{alias}@{domain}"
@@ -205,7 +208,9 @@ def _setup_email_for_domain(domain: str, account_email: str, destination: str, a
       logging.error(f"_setup_email_for_domain(): Failed to create rule for {domain}: {rule_result.get('errors')}")
       return False, error_msg
     rules = _get_routing_rules(zone_id, headers)
-    _sync_rules_to_db(domain, _combine_rules_for_db(rules, zone_id, headers))
+    catchall_rule = _get_catchall_rule(zone_id, headers)
+    _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+    sync_email_routing_domain_status(domain, account_email, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), realname)
     logging.info(f"_setup_email_for_domain(): Rule {matcher} -> {destination} created for {domain} by {realname}")
     return True, "OK"
   except Exception as err:
