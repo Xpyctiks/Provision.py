@@ -20,6 +20,27 @@ from functions.rights_required import MAIL_ADMIN_RIGHTS
 PAGE_SIZE_OPTIONS = ("50", "250", "500", "all")
 DEFAULT_PAGE_SIZE = "50"
 
+def clear_nginx_cache() -> None:
+  """Best-effort: wipes the CONTENTS of the configured Nginx cache directory (not the directory itself -
+  nginx recreates its own cache-key subdirectories as needed). Called right after every successful
+  'nginx -s reload' in the project. No-op if NGX_CACHE_PATH isn't configured."""
+  cache_path = current_app.config.get("NGX_CACHE_PATH", "")
+  if not cache_path:
+    return
+  try:
+    if not os.path.isdir(cache_path):
+      logging.error(f"clear_nginx_cache(): configured path {cache_path} is not a directory, skipping")
+      return
+    for entry in os.listdir(cache_path):
+      full_path = os.path.join(cache_path, entry)
+      if os.path.isdir(full_path) and not os.path.islink(full_path):
+        shutil.rmtree(full_path)
+      else:
+        os.remove(full_path)
+    logging.info(f"clear_nginx_cache(): Cache directory {cache_path} cleared")
+  except Exception as err:
+    logging.error(f"clear_nginx_cache(): error clearing {cache_path}: {err}")
+
 @contextmanager
 def bulk_nginx_reload():
   """Wrap a loop of multiple site actions (bulk clone/delete/deploy) in this to avoid reloading Nginx
@@ -46,6 +67,7 @@ def bulk_nginx_reload():
         result2 = subprocess.run(["sudo","nginx","-s","reload"], text=True, capture_output=True)
         if re.search(r".*started.*",result2.stderr):
           logging.info(f"bulk_nginx_reload(): Nginx reloaded once after the bulk operation. Result: {result2.stderr.strip()}")
+          clear_nginx_cache()
         else:
           logging.error(f"bulk_nginx_reload(): Final Nginx reload after the bulk operation failed! {result2.stderr}")
       else:
@@ -88,6 +110,7 @@ def delete_site(sitename: str) -> bool:
         result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
         if  re.search(r".*started.*",result2.stderr):
           logging.info(f"delete_site(): Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+          clear_nginx_cache()
         else:
           logging.error(f"delete_site(): Nginx reload failed!. {result2.stderr}")
           error_message += f"Error while reloading Nginx: {result1.stderr.strip()}\n"
@@ -215,6 +238,7 @@ def disable_site(sitename: str) -> bool:
         result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
         if  re.search(r".*started.*",result2.stderr):
           logging.info(f"disable_site(): Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+          clear_nginx_cache()
         else:
           logging.error(f"disable_site(): Nginx reload failed!. {result2.stderr}")
           error_message += f"Помилка при перезавантаженні веб сервера Nginx: {result1.stderr.strip()}"
@@ -320,6 +344,7 @@ def enable_site(sitename: str) -> bool:
       result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
       if  re.search(r".*started.*",result2.stderr):
         logging.info(f"enable_site(): Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+        clear_nginx_cache()
       else:
         logging.error(f"enable_site(): Nginx reload failed!. {result2.stderr}")
         error_message += f"Помилка перезавантаження Nginx: {result2.stderr}"
@@ -472,6 +497,7 @@ def applyChanges(sitename: str) -> bool:
     result2 = subprocess.run(["sudo","nginx","-s", "reload"], text=True, capture_output=True)
     if  re.search(r".*started.*",result2.stderr):
       logging.info(f"applyChanges(): Nginx reloaded successfully. Result: {result2.stderr.strip()}")
+      clear_nginx_cache()
       flash(f"Нові зміни застосовані. Веб сервер Nginx перезавантажений.",'alert alert-success')
       logging.info(f"-----------------------Applying changes in Nginx finished-----------------")
       if os.path.exists("/tmp/provision.marker"):
