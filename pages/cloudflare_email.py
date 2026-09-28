@@ -1,6 +1,7 @@
 import logging
 import os
 import requests
+import threading
 from flask import Blueprint,current_app,jsonify,request,redirect,render_template,flash
 from flask_login import login_required,current_user
 from db.database import Cloudflare,CloudflareEmailsStatus,CloudflareEmailsRules
@@ -136,15 +137,41 @@ def _sync_rules_to_db(domain: str, rules: list) -> None:
     db.session.add(CloudflareEmailsRules(domain=domain, rule=_format_rule(rule)))
   db.session.commit()
 
+#prevents several update_emails_status() runs from working in parallel (e.g. cron fires again before the previous run has finished)
+_update_emails_status_lock = threading.Lock()
+
 @cloudflare_email_bp.route("/cloudflare_email/update_emails_status", methods=['GET'])
 def update_emails_status():
-  """GET request: queries Cloudflare Email Routing status and rules for every domain in every Cloudflare account stored in DB, and syncs CloudflareEmailsStatus/CloudflareEmailsRules tables. Meant to be triggered periodically by a cron job."""
+  """GET request: starts the Cloudflare Email Routing status sync in a background thread and answers immediately,
+  so the caller (cron job) doesn't have to wait for the whole run. See _update_emails_status_worker() for the actual work."""
+  web_folder = current_app.config.get("WEB_FOLDER","")
+  if web_folder == "":
+    logging.error("update_emails_status(): ERROR! - web_folder variable is empty!")
+    return jsonify({"status": "error", "message": "web_folder is empty"}), 500
+  if not _update_emails_status_lock.acquire(blocking=False):
+    logging.info("update_emails_status(): previous run is still in progress, new one is not started")
+    return jsonify({"status": "already running"}), 200
+  app = current_app._get_current_object()
+  try:
+    threading.Thread(target=_update_emails_status_worker, args=(app, web_folder), daemon=True).start()
+  except Exception as err:
+    _update_emails_status_lock.release()
+    logging.error(f"update_emails_status(): Failed to start background thread: {err}")
+    return jsonify({"status": "error", "message": str(err)}), 500
+  return jsonify({"status": "started"}), 200
+
+def _update_emails_status_worker(app, web_folder: str) -> None:
+  """Background worker: queries Cloudflare Email Routing status and catch-all rule for every domain in every Cloudflare account stored in DB and syncs EmailRoutingDomainStatus;
+  for domains hosted on this server additionally syncs CloudflareEmailsStatus/CloudflareEmailsRules tables. Releases _update_emails_status_lock when finished."""
+  try:
+    with app.app_context():
+      _update_emails_status_run(web_folder)
+  finally:
+    _update_emails_status_lock.release()
+
+def _update_emails_status_run(web_folder: str) -> None:
   try:
     logging.info("update_emails_status(): -----------------------Starting Cloudflare Email Routing status update-----------------------")
-    web_folder = current_app.config.get("WEB_FOLDER","")
-    if web_folder == "":
-      logging.error("update_emails_status(): ERROR! - web_folder variable is empty!")
-      return jsonify({"status": "error", "message": "web_folder is empty"}), 500
     #only the sites which are actually present on this server should be synced, not the whole Cloudflare account
     sites_list = [
       name for name in os.listdir(web_folder)
@@ -169,29 +196,28 @@ def update_emails_status():
           break
         for zone in r.get("result", []):
           domain = zone["name"]
-          #skip domains which are not actually hosted on this server
-          if domain not in sites_list:
-            continue
           zone_id = zone["id"]
           try:
             routing_enabled = _get_routing_status(zone_id, headers)
-            _sync_status_to_db(domain, routing_enabled, "cron job")
-            rules = _get_routing_rules(zone_id, headers)
             catchall_rule = _get_catchall_rule(zone_id, headers)
-            _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
+            #EmailRoutingDomainStatus covers every zone of every account (used by the bulk page filters)
             sync_email_routing_domain_status(domain, acc.account, routing_enabled, bool(catchall_rule and catchall_rule.get("enabled")), "cron job")
+            #full status/rules sync only for the domains which are actually hosted on this server
+            if domain in sites_list:
+              _sync_status_to_db(domain, routing_enabled, "cron job")
+              rules = _get_routing_rules(zone_id, headers)
+              _sync_rules_to_db(domain, _combine_rules_for_db(rules, catchall_rule))
             processed += 1
           except Exception as err:
             logging.error(f"update_emails_status(): Error while processing domain {domain}: {err}")
+            db.session.rollback()
             errors += 1
         if page >= r.get("result_info", {}).get("total_pages", 1):
           break
         page += 1
     logging.info(f"update_emails_status(): -----------------------Finished. Domains processed: {processed}, errors: {errors}-----------------------")
-    return jsonify({"status": "done", "processed": processed, "errors": errors}), 200
   except Exception as err:
     logging.error(f"update_emails_status(): Global error: {err}")
-    return jsonify({"status": "error", "message": str(err)}), 500
 
 @cloudflare_email_bp.route("/cloudflare_email/manage", methods=['GET'])
 @login_required
