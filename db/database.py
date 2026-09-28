@@ -28,6 +28,7 @@ class Settings(db.Model):
   nginxAddConfDir = db.Column(db.String(256), nullable=False)
   nginxPath = db.Column(db.String(256), nullable=False)
   ngxBindIpAddr = db.Column(db.String(45), nullable=True, default="")
+  nginxCachePath = db.Column(db.String(512), nullable=True, default="")
   phpPool = db.Column(db.String(512), nullable=False)
   phpFpmPath = db.Column(db.String(512), nullable=False)
   autheliaLogoutUrl = db.Column(db.String(512), nullable=True, default="")

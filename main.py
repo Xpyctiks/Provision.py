@@ -5,21 +5,19 @@ import pathlib
 from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
-from datetime import timedelta
 from functions.cache_func import page_cache
 from db.mysql_uri import build_mysql_uri
 
 load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 application = Flask(__name__)
-application.config["VERSION"] = "2.11.1"
+application.config["VERSION"] = "2.11.2"
 application.config["SQLALCHEMY_DATABASE_URI"] = build_mysql_uri()
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-application.config['PERMANENT_SESSION_LIFETIME'] = 28800
+application.config['PERMANENT_SESSION_LIFETIME'] = 86400
 application.config['SESSION_COOKIE_SECURE'] = False
 application.config['SESSION_COOKIE_HTTPONLY'] = True
 application.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 application.config['SESSION_USE_SIGNER'] = True
-application.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
 application.config['CACHE_TYPE'] = 'FileSystemCache'
 from db.db import db
 from db.database import User

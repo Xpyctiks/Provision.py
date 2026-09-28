@@ -17,7 +17,7 @@ from flask_login import current_user
 import functions.variables
 from db.database import Ownership,User
 from db.db import db
-from functions.site_actions import link_domain_and_account,bulk_nginx_reload
+from functions.site_actions import link_domain_and_account,bulk_nginx_reload,clear_nginx_cache
 from functions.mail_domains_func import provision_mail_domain
 from functions.email_routing_status_func import seed_email_routing_domain_status
 from pathlib import Path
@@ -259,6 +259,7 @@ def setupNginx(file: str,has_subdomain: str = "---") -> bool:
         result = subprocess.run(["sudo","nginx","-s","reload"], text=True, capture_output=True)
         if  re.search(r".*started.*",result.stderr):
           logging.info(f"setupNginx(): Nginx reloaded successfully. Result: {result.stderr.strip()}")
+          clear_nginx_cache()
         else:
           logging.error(f"setupNginx(): Error while reloading Nginx: {result.stderr.strip()}")
           return False
