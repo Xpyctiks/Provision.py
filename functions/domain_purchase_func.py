@@ -83,7 +83,9 @@ def load_cf_accounts_checkboxes():
 
 def recheck_domain_statuses():
   """Re-checks every domain still in just_bought/ns_set stage against the live Cloudflare zone status and
-  advances it to ready_to_setup once Cloudflare reports the zone as active (NS propagated, domain served by CF)."""
+  advances it to ready_to_setup once Cloudflare reports the zone as active (NS propagated, domain served by CF).
+  A just_bought domain whose zone is not active yet stays just_bought - only a successful NS assignment
+  (purchase pipeline or retry_set_ns()) may move it to ns_set."""
   try:
     rows = DomainPurchase.query.filter(DomainPurchase.stage.in_(["just_bought", "ns_set"])).all()
     #group by cloudflare_account to minimize API calls - one zones listing per account instead of per domain
@@ -99,7 +101,12 @@ def recheck_domain_statuses():
       zones = _load_zones_for_account(acc)
       for row in account_rows:
         is_ready = zones.get(row.domain) == "active"
-        new_stage = "ready_to_setup" if is_ready else "ns_set"
+        if is_ready:
+          new_stage = "ready_to_setup"
+        elif row.stage == "just_bought":
+          continue
+        else:
+          new_stage = "ns_set"
         if row.stage != new_stage:
           logging.info(f"recheck_domain_statuses(): Domain {row.domain} stage {row.stage} -> {new_stage} (CF zone status: {zones.get(row.domain)})")
           row.stage = new_stage
@@ -137,6 +144,9 @@ def render_actionable_domains(rows: list) -> str:
     account = row.cloudflare_account or ""
     if row.stage == "ready_to_setup":
       checkbox = f'<input class="form-check-input setup-domain-check" type="checkbox" name="setup_domains" value="{row.domain}" id="setup-dom-{i}">'
+    elif row.stage == "just_bought" and account:
+      #NS were not set successfully during purchase - selectable for the "retry NS" action (see retry_set_ns())
+      checkbox = f'<input class="form-check-input retry-ns-check" type="checkbox" name="retry_ns_domains" value="{row.domain}" id="setup-dom-{i}" form="retryNsForm">'
     else:
       checkbox = '<input class="form-check-input" type="checkbox" disabled>'
     html += f"""<div class="col-12 col-md-6 col-lg-4 setup-domain-item" data-account="{account}">
@@ -236,6 +246,71 @@ def append_purchase_message(row: DomainPurchase, text: str, stage: str = None):
   if stage is not None:
     row.stage = stage
   db.session.commit()
+
+def _get_zone_ns(acc: Cloudflare, domain: str):
+  """Returns (True, name_servers_list) assigned by Cloudflare to the domain's zone, or (False, error_message)."""
+  try:
+    headers = {"X-Auth-Email": acc.account, "X-Auth-Key": acc.token, "Content-Type": "application/json"}
+    r = requests.get(f"https://api.cloudflare.com/client/v4/zones?name={domain}", headers=headers, timeout=15).json()
+    if r.get("success") and r.get("result") and r["result"][0].get("name_servers"):
+      return True, r["result"][0]["name_servers"]
+    return False, f"Не вдалося отримати NS сервери з Cloudflare ({r.get('errors') or 'зону не знайдено'})"
+  except Exception as err:
+    return False, str(err)
+
+def retry_set_ns(domains: list, realname: str) -> list:
+  """Retries the NS assignment at the registrator for the selected just_bought domains (purchase succeeded,
+  but setting NS failed). NS servers are taken from Cloudflare with one request per Cloudflare account (all
+  zones of one account share the same NS pair). Only a successful assignment moves the domain to ns_set.
+  Returns a list of (domain, ok, message)."""
+  results = []
+  by_account = {}
+  for domain in domains:
+    row = get_purchase_row(domain)
+    if not row or row.stage != "just_bought":
+      results.append((domain, False, "Домен не має статусу 'щойно куплено', пропущено"))
+      continue
+    if not row.cloudflare_account:
+      results.append((domain, False, "У домену не вказано аккаунт Cloudflare, пропущено"))
+      continue
+    by_account.setdefault(row.cloudflare_account, []).append(row)
+  registrators = {}
+  for account_email, rows in by_account.items():
+    acc = Cloudflare.query.filter_by(account=account_email).first()
+    if not acc:
+      for row in rows:
+        results.append((row.domain, False, f"Cloudflare аккаунт {account_email} не знайдено в базі"))
+      continue
+    #the zone must exist on the account, otherwise pointing NS to Cloudflare makes no sense
+    zones = _load_zones_for_account(acc)
+    ns = None
+    for row in rows:
+      if row.domain not in zones:
+        results.append((row.domain, False, f"Зону домену не знайдено в Cloudflare ({account_email}), NS не встановлено"))
+        continue
+      if ns is None:
+        ok, ns_or_err = _get_zone_ns(acc, row.domain)
+        if not ok:
+          logging.error(f"retry_set_ns(): Failed to get NS for {row.domain} from CF account {account_email}: {ns_or_err}")
+          results.append((row.domain, False, ns_or_err))
+          continue
+        ns = ns_or_err
+      if row.registrator not in registrators:
+        registrators[row.registrator] = DomainRegistrator.query.filter_by(name=row.registrator).first()
+      registrator = registrators[row.registrator]
+      if not registrator:
+        results.append((row.domain, False, f"Реєстратор {row.registrator} не знайдено в базі"))
+        continue
+      ns_ok, ns_msg = _set_ns(registrator, row.domain, ns)
+      if ns_ok:
+        logging.info(f"retry_set_ns(): NS {ns} set for {row.domain} via {registrator.name} by {realname}")
+        row.status = "success"
+        append_purchase_message(row, "NS встановлено (повторно)", stage="ns_set")
+        results.append((row.domain, True, f"NS {', '.join(ns)} встановлено"))
+      else:
+        logging.error(f"retry_set_ns(): NS {ns} set failed for {row.domain} via {registrator.name}: {ns_msg}")
+        results.append((row.domain, False, f"NS {', '.join(ns)} НЕ встановлено: {ns_msg}"))
+  return results
 
 def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: DomainRegistrator, realname: str) -> dict:
   """Main pipeline: pre-flight capacity check, Dynadot purchase, then sequential Cloudflare assignment/NS/DB registration.

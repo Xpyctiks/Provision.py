@@ -14,7 +14,7 @@ from functions.provision_func import start_autoprovision,finishJob
 from functions.domain_purchase_func import (
   parse_domain_textarea,load_domain_registrators,load_cf_accounts_checkboxes,render_purchase_history,
   purchase_and_setup_domains,recheck_domain_statuses,load_actionable_domains,distinct_actionable_accounts,
-  render_actionable_domains,get_purchase_row,append_purchase_message
+  render_actionable_domains,get_purchase_row,append_purchase_message,retry_set_ns
 )
 from pages.cloudflare_email import (
   _get_account_id,_get_destination_addresses,_get_routing_status,_get_routing_rules,_get_catchall_rule,
@@ -310,6 +310,34 @@ def do_domain_purchase_step2():
   except Exception as err:
     logging.error(f"do_domain_purchase_step2(): general error by {current_user.realname}: {err}")
     flash("Неочікувана помилка при розгортанні доменів, дивіться логи!", 'alert alert-danger')
+    return redirect("/domain_purchase/step2/",302)
+
+@domain_purchase_bp.route("/domain_purchase/step2/retry_ns/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def retry_ns_domains():
+  """POST request processor: retries setting Cloudflare NS servers at the registrator for the selected just_bought domains"""
+  try:
+    domains = request.form.getlist("retry_ns_domains")
+    logging.info(f"-----------------------Retrying NS setup for {len(domains)} domain(s) by {current_user.realname}: {domains}-----------------------")
+    if not domains:
+      flash("Помилка! Не обрано жодного домену зі статусом 'щойно куплено'!", 'alert alert-danger')
+      return redirect("/domain_purchase/step2/",302)
+    results = retry_set_ns(domains, current_user.realname)
+    ok_count = sum(1 for _, ok, _ in results if ok)
+    lines = [f"<strong>NS встановлено: {ok_count} з {len(results)}</strong>"]
+    lines += [f"{'✅' if ok else '❌'} {domain}: {msg}" for domain, ok, msg in results]
+    if results and ok_count == len(results):
+      category = 'alert alert-success'
+    elif ok_count == 0:
+      category = 'alert alert-danger'
+    else:
+      category = 'alert alert-warning'
+    flash("<br>".join(lines), category)
+    return redirect("/domain_purchase/step2/",302)
+  except Exception as err:
+    logging.error(f"retry_ns_domains(): general error by {current_user.realname}: {err}")
+    flash("Неочікувана помилка при повторному налаштуванні NS, дивіться логи!", 'alert alert-danger')
     return redirect("/domain_purchase/step2/",302)
 
 @domain_purchase_bp.route("/domain_purchase/step2/delete_domains/", methods=['POST'])

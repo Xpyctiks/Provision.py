@@ -230,6 +230,40 @@ document.addEventListener('submit', function (e) {
   }
 });
 
+// ── Крок 2: "retry NS" checkboxes for just_bought domains (button state / single account check) ────
+
+function updateRetryNsState() {
+  const checkedCount = document.querySelectorAll('#setupDomainsContainer .retry-ns-check:checked').length;
+  const btn = document.getElementById('retryNsBtn');
+  const countSpan = document.getElementById('retryNsCount');
+  if (btn) btn.disabled = checkedCount === 0;
+  if (countSpan) countSpan.textContent = checkedCount;
+}
+
+document.addEventListener('change', function (e) {
+  if (e.target.classList.contains('retry-ns-check')) {
+    updateRetryNsState();
+  }
+});
+
+document.addEventListener('submit', function (e) {
+  const btn = e.submitter;
+  if (btn && btn.id === 'retryNsBtn') {
+    const checked = [].slice.call(document.querySelectorAll('#setupDomainsContainer .retry-ns-check:checked'));
+    const accounts = new Set(checked.map(cb => cb.closest('.setup-domain-item').dataset.account));
+    if (accounts.size > 1) {
+      alert('Обрані домени належать до різних аккаунтів Cloudflare! Оберіть домени лише одного аккаунту (скористайтеся фільтром аккаунтів вгорі).');
+      e.preventDefault();
+      hideLoading();
+      return;
+    }
+    if (!confirm(`Повторно встановити NS сервери Cloudflare для ${checked.length} домен(ів) через API реєстратора?`)) {
+      e.preventDefault();
+      hideLoading();
+    }
+  }
+});
+
 // ── Крок 2: email alias persistence (defaults to "support") ──────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
