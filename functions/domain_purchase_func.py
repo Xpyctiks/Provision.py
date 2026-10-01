@@ -3,7 +3,7 @@ import re
 import idna
 import requests
 from db.db import db
-from db.database import Cloudflare, DomainRegistrator, DomainPurchase
+from db.database import Cloudflare, DomainRegistrator, DomainPurchase, Domain_account
 from functions.pages_forms import _load_zones_for_account
 from functions.site_actions import link_domain_and_account
 from functions.email_routing_status_func import seed_email_routing_domain_status
@@ -283,14 +283,14 @@ def retry_set_ns(domains: list, realname: str) -> list:
       for row in rows:
         results.append((row.domain, False, f"Cloudflare аккаунт {account_email} не знайдено в базі"))
       continue
-    #the zone must exist on the account, otherwise pointing NS to Cloudflare makes no sense
-    zones = _load_zones_for_account(acc)
     #NS servers are taken from the account settings (admin panel -> Аккаунти Cloudflare); only if they are
     #not filled in there yet - asked once from Cloudflare via one of the selected domains and stored for later
     ns = parse_ns(acc.ns_servers) or None
     for row in rows:
-      if row.domain not in zones:
-        results.append((row.domain, False, f"Зону домену не знайдено в Cloudflare ({account_email}), NS не встановлено"))
+      #the zone must exist on the account, otherwise pointing NS to Cloudflare makes no sense. Checked via the
+      #local Domain_account link, which the purchase pipeline creates only after the zone was added to Cloudflare
+      if not Domain_account.query.filter_by(domain=row.domain, account=account_email).first():
+        results.append((row.domain, False, f"Домен не прив'язаний до аккаунту {account_email} (зону в Cloudflare не було створено при покупці), NS не встановлено"))
         continue
       if ns is None:
         ok, ns_or_err = _get_zone_ns(acc, row.domain)
