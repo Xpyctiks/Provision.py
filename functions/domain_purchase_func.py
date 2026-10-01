@@ -193,14 +193,13 @@ def _add_domain_to_cf(acc: Cloudflare, domain: str):
     }
     result_id = requests.get("https://api.cloudflare.com/client/v4/accounts", headers=headers, timeout=15).json()
     if not (result_id.get("success") and result_id.get("result")):
-      return False, "Не вдалося отримати ID акаунту Cloudflare"
+      return False, f"Не вдалося отримати ID акаунту Cloudflare ({result_id})"
     account_id = result_id["result"][0]["id"]
     data = {"name": domain, "account": {"id": account_id}, "type": "full"}
     result_add = requests.post("https://api.cloudflare.com/client/v4/zones", headers=headers, json=data, timeout=15).json()
     if result_add.get("success"):
       return True, result_add["result"]["name_servers"]
-    error_msg = result_add.get("errors", [{}])[0].get("message", "Unknown error")
-    return False, error_msg
+    return False, result_add
   except Exception as err:
     return False, str(err)
 
@@ -301,9 +300,9 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
           cf_setup_log.append((domain, True, f"Додано в Cloudflare ({acc.account}), NS встановлено, зареєстровано в базі"))
           _update_purchase_row(domain, acc.account, "success", "Додано в Cloudflare, NS встановлено, зареєстровано в базі", stage="ns_set")
         else:
-          logging.error(f"purchase_and_setup_domains(): Domain {domain} added to CF account {acc.account} but NS set failed: {ns_msg}")
-          cf_setup_log.append((domain, False, f"Додано в Cloudflare ({acc.account}), але NS НЕ встановлено: {ns_msg}"))
-          _update_purchase_row(domain, acc.account, "error", f"Додано в Cloudflare, але NS не встановлено: {ns_msg}")
+          logging.error(f"purchase_and_setup_domains(): Domain {domain} added to CF account {acc.account} but NS set to {ns} failed: {ns_msg}")
+          cf_setup_log.append((domain, False, f"Додано в Cloudflare ({acc.account}), але NS {ns} НЕ встановлено: {ns_msg}"))
+          _update_purchase_row(domain, acc.account, "error", f"Додано в Cloudflare, але NS {ns} не встановлено: {ns_msg}")
         placed = True
         break
       if not placed:
