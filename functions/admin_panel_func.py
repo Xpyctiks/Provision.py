@@ -6,6 +6,7 @@ from db.database import *
 from werkzeug.security import generate_password_hash
 from functions.rights_required import rights_required,MAIL_ADMIN_RIGHTS,ADMIN_RIGHTS,USER_RIGHTS
 from functions.load_config import load_config
+from functions.cloudflare_ns_func import parse_ns,format_ns,ns_from_zones
 
 @rights_required(255)
 def handler_settings(form):
@@ -244,12 +245,32 @@ def handler_cloudflare(form):
         logging.error(f"Admin {current_user.realname}>Cloudflare account add error - token is not valid!")
         flash(f'Помилка Cloudflare аккаунта {name} - токен не валідний!','alert alert-danger')
         return
-      data = {"account": name, "token": token}
+      #NS servers are taken from any existing zone of the account (all zones of one account share them).
+      #If the account has no zones yet, they will be filled in automatically when the first domain is added to it.
+      ns_servers = format_ns(ns_from_zones(result.get("result", [])))
+      data = {"account": name, "token": token, "ns_servers": ns_servers}
       new_account = Cloudflare(**data)
       db.session.add(new_account)
       db.session.commit()
-      logging.info(f"Admin {current_user.realname}>Cloudflare account {name} created successfully!")
-      flash(f'Cloudflare аккаунт {name} успішно створен!','alert alert-success')
+      logging.info(f"Admin {current_user.realname}>Cloudflare account {name} created successfully! NS servers: {ns_servers or 'not known yet'}")
+      if ns_servers:
+        flash(f'Cloudflare аккаунт {name} успішно створен! NS сервери: {ns_servers}','alert alert-success')
+      else:
+        flash(f'Cloudflare аккаунт {name} успішно створен! На аккаунті ще немає доменів, тому NS сервери невідомі - вони заповняться автоматично при додаванні першого домену, або впишіть їх вручну.','alert alert-success')
+      return
+    #processing edit NS servers request
+    elif "buttonEditCloudflareNs" in form:
+      id = int(form.get("buttonEditCloudflareNs", "").strip())
+      acc = Cloudflare.query.filter_by(id=id).first()
+      if not acc:
+        logging.error(f"Admin {current_user.realname}>Cloudflare account with ID {id} NS edit error - no such account!")
+        flash(f'Помилка редагування NS серверів аккаунту з ID {id} - такого не існує!','alert alert-warning')
+        return
+      ns_servers = format_ns(parse_ns(form.get("edit-cloudflare-ns", "")))
+      acc.ns_servers = ns_servers
+      db.session.commit()
+      logging.info(f"Admin {current_user.realname}>Cloudflare account {acc.account} NS servers set to: {ns_servers}")
+      flash(f'NS сервери для аккаунту {acc.account} збережено: {ns_servers or "(порожньо)"}','alert alert-success')
       return
     #processing set default template request
     elif "buttonDefaultCloudflare" in form:

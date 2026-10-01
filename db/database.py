@@ -51,6 +51,8 @@ class Cloudflare(db.Model):
   token = db.Column(db.String(512), nullable=False)
   isdefault  = db.Column(db.Boolean(), default=False)
   created = db.Column(db.DateTime, default=datetime.now)
+  #comma-separated NS servers Cloudflare assigns to this account's zones (see functions/cloudflare_ns_func.py)
+  ns_servers = db.Column(db.String(512), nullable=True, default="")
 
 class Servers(db.Model):
   id = db.Column(db.Integer, primary_key=True)

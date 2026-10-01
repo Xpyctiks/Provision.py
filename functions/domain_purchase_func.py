@@ -10,6 +10,7 @@ from functions.email_routing_status_func import seed_email_routing_domain_status
 from functions.provision_func import setSiteOwner
 from functions.dynadot_func import dynadot_register_domain, dynadot_set_ns
 from functions.spaceship_func import spaceship_register_domain, spaceship_set_ns
+from functions.cloudflare_ns_func import parse_ns, save_account_ns_if_empty
 
 CF_ACCOUNT_DOMAIN_LIMIT = 300
 DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
@@ -260,8 +261,9 @@ def _get_zone_ns(acc: Cloudflare, domain: str):
 
 def retry_set_ns(domains: list, realname: str) -> list:
   """Retries the NS assignment at the registrator for the selected just_bought domains (purchase succeeded,
-  but setting NS failed). NS servers are taken from Cloudflare with one request per Cloudflare account (all
-  zones of one account share the same NS pair). Only a successful assignment moves the domain to ns_set.
+  but setting NS failed). NS servers are taken from Cloudflare.ns_servers of the domain's account; if that is
+  empty - from Cloudflare with one request per account (all zones of one account share the same NS pair).
+  Only a successful assignment moves the domain to ns_set.
   Returns a list of (domain, ok, message)."""
   results = []
   by_account = {}
@@ -283,7 +285,9 @@ def retry_set_ns(domains: list, realname: str) -> list:
       continue
     #the zone must exist on the account, otherwise pointing NS to Cloudflare makes no sense
     zones = _load_zones_for_account(acc)
-    ns = None
+    #NS servers are taken from the account settings (admin panel -> Аккаунти Cloudflare); only if they are
+    #not filled in there yet - asked once from Cloudflare via one of the selected domains and stored for later
+    ns = parse_ns(acc.ns_servers) or None
     for row in rows:
       if row.domain not in zones:
         results.append((row.domain, False, f"Зону домену не знайдено в Cloudflare ({account_email}), NS не встановлено"))
@@ -295,6 +299,7 @@ def retry_set_ns(domains: list, realname: str) -> list:
           results.append((row.domain, False, ns_or_err))
           continue
         ns = ns_or_err
+        save_account_ns_if_empty(acc, ns)
       if row.registrator not in registrators:
         registrators[row.registrator] = DomainRegistrator.query.filter_by(name=row.registrator).first()
       registrator = registrators[row.registrator]
@@ -365,6 +370,8 @@ def purchase_and_setup_domains(domains: list, cf_accounts: list, registrator: Do
           placed = True
           break
         ns = ns_or_err
+        #first domain on an account with no NS stored yet (e.g. account was empty when added) - remember them
+        save_account_ns_if_empty(acc, ns)
         ns_ok, ns_msg = _set_ns(registrator, domain, ns)
         setSiteOwner(domain)
         link_domain_and_account(domain, acc.account)

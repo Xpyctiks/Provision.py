@@ -25,7 +25,7 @@ def catch_admin_panel():
     elif "buttonDeleteTemplate" in request.form or "buttonDefaultTemplate" in request.form or "buttonAddTemplate" in request.form:
       handler_templates(request.form)
       return redirect("/admin_panel/templates/",302)
-    elif "buttonDeleteCloudflare" in request.form or "buttonDefaultCloudflare" in request.form or "buttonAddCloudflare" in request.form:
+    elif "buttonDeleteCloudflare" in request.form or "buttonDefaultCloudflare" in request.form or "buttonAddCloudflare" in request.form or "buttonEditCloudflareNs" in request.form:
       handler_cloudflare(request.form)
       return redirect("/admin_panel/cloudflare/",302)
     elif "buttonDeleteOwnership" in request.form or "buttonDeleteOwnershipClone" in request.form or "buttonAddOwnership" in request.form:
@@ -242,6 +242,7 @@ def admin_panel_cloudflare():
     <th scope="col" style="width: 45px;">ID:</th>
     <th scope="col" style="width: 150px;">Аккаунт:</th>
     <th scope="col" style="width: 350px;">Токен:</th>
+    <th scope="col" style="width: 350px;">NS сервери (через кому):</th>
     <th scope="col" style="width: 150px;">За замовчуванням?:</th>
     <th scope="col" style="width: 150px;">Створен:</th>
   </tr>
@@ -257,6 +258,11 @@ def admin_panel_cloudflare():
     </td></form>
     <td class="table-success cname-cell" >{s.account}</td>
     <td class="table-success cname-cell" ><details><summary>Натисніть що б подивитись</summary>{s.token}</details></td>
+    <form action="/admin_panel/" method="POST" id="postform" novalidate>
+    <td class="table-success cname-cell" >
+      <input type="text" class="form-control d-inline-block" style="width: 75%;" name="edit-cloudflare-ns" value="{s.ns_servers or ''}" placeholder="ns1.example.com,ns2.example.com">
+      <button type="submit" class="btn btn-outline-warning" name="buttonEditCloudflareNs" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зберегти NS сервери для даного аккаунту.">💾</button>
+    </td></form>
     <form action="/admin_panel/" method="POST" id="postform" novalidate>
     <td class="table-success cname-cell" >{s.isdefault}
     <button type="submit" class="btn btn-outline-warning" name="buttonDefaultCloudflare" onclick="showLoading()" value="{s.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Зробити даний аккаунт за замовчанням">✅</button>    
