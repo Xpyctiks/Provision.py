@@ -1,6 +1,7 @@
 import logging
 import time
 import requests
+from datetime import datetime
 from db.database import DomainRegistrator
 
 SPACESHIP_API_URL = "https://spaceship.dev/api/v1"
@@ -78,6 +79,56 @@ def spaceship_register_domain(registrator: DomainRegistrator, domain: str, durat
     return ok, msg
   except Exception as err:
     logging.error(f"spaceship_register_domain(): general error for domain {domain}: {err}")
+    return False, str(err)
+
+def _spaceship_date_to_iso(value) -> str:
+  """Spaceship returns ISO-8601 dates (e.g. 2024-05-01T10:20:30.000Z). Converts to 'YYYY-MM-DD HH:MM', or '' if unknown."""
+  if not value:
+    return ""
+  try:
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
+  except Exception:
+    return str(value)[:16].replace("T", " ")
+
+def spaceship_list_domains(registrator: DomainRegistrator) -> tuple[bool, list | str]:
+  """Lists all domains on the Spaceship account via GET /domains (paginated, max 100 per request).
+  Returns (True, [ {name, ns, created, status}, ... ]) or (False, error)."""
+  try:
+    headers = _headers(registrator)
+    domains = []
+    skip = 0
+    take = 100
+    while True:
+      r = requests.get(f"{SPACESHIP_API_URL}/domains", headers=headers, params={"take": take, "skip": skip, "orderBy": "name"}, timeout=30)
+      if r.status_code != 200:
+        error_msg = _error_detail(r)
+        logging.error(f"spaceship_list_domains(): Error listing domains via {registrator.name}: {error_msg}")
+        return False, error_msg
+      data = r.json()
+      items = data.get("items", []) or []
+      for item in items:
+        nameservers = item.get("nameservers", {}) or {}
+        ns = [str(h).lower() for h in (nameservers.get("hosts") or [])]
+        if not ns and nameservers.get("provider"):
+          ns = [f"({nameservers.get('provider')})"]
+        status = item.get("lifecycleStatus") or ""
+        if item.get("suspensions"):
+          status = f"{status}, suspended".strip(", ")
+        if item.get("verificationStatus") and item.get("verificationStatus") not in ("success", "verified"):
+          status = f"{status}, verification: {item.get('verificationStatus')}".strip(", ")
+        domains.append({
+          "name": str(item.get("name", "")).lower(),
+          "ns": ns,
+          "created": _spaceship_date_to_iso(item.get("registrationDate")),
+          "status": status or "-"
+        })
+      skip += len(items)
+      if not items or skip >= int(data.get("total", 0) or 0):
+        break
+    logging.info(f"spaceship_list_domains(): {len(domains)} domain(s) loaded from {registrator.name}")
+    return True, domains
+  except Exception as err:
+    logging.error(f"spaceship_list_domains(): general error for {registrator.name}: {err}")
     return False, str(err)
 
 def spaceship_set_ns(registrator: DomainRegistrator, domain: str, ns_list: list) -> tuple[bool, str]:

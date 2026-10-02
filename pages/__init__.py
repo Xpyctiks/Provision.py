@@ -10,6 +10,7 @@ from .cloudflare_email_dashboard import cloudflare_email_dashboard_bp
 from .cloudflare_email_dstaddresses import cloudflare_email_dstaddresses_bp
 from .dns_validation import dns_validation_bp
 from .domain_purchase import domain_purchase_bp
+from .domain_registrators import domain_registrators_bp
 from .drop_upload import drop_upload_bp
 from .login import login_bp
 from .logout import logout_bp
@@ -37,6 +38,7 @@ blueprint.register_blueprint(cloudflare_email_dashboard_bp)
 blueprint.register_blueprint(cloudflare_email_dstaddresses_bp)
 blueprint.register_blueprint(dns_validation_bp)
 blueprint.register_blueprint(domain_purchase_bp)
+blueprint.register_blueprint(domain_registrators_bp)
 blueprint.register_blueprint(drop_upload_bp)
 blueprint.register_blueprint(login_bp)
 blueprint.register_blueprint(logout_bp)

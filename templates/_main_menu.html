@@ -1,0 +1,44 @@
+{#- Shared top-bar "Основне меню дій" dropdown - included by every page template, so the order is the same everywhere.
+    Rights are taken from current_user directly (not from per-page template variables), so the menu doesn't depend
+    on whether a particular view passes admin_panel/mail_admin. 255 = ADMIN_RIGHTS, 50 = MAIL_ADMIN_RIGHTS
+    (functions/rights_required.py). -#}
+{%- set menu_is_admin = current_user.is_authenticated and current_user.rights == 255 -%}
+{%- set menu_is_mail_admin = current_user.is_authenticated and current_user.rights == 50 -%}
+<ul class="dropdown-menu">
+  {% if request.path != "/" %}
+  <li><a href="/" class="btn btn-info dropdown-item">⬅На головну</a></li>
+  <li><hr class="dropdown-divider"></li>
+  {% endif %}
+  {% if not menu_is_mail_admin %}
+  <li><h6 class="dropdown-header">Сайти</h6></li>
+  <li><a class="dropdown-item" href="/upload/">💾Додати новий сайт вручну</a></li>
+  <li><a class="dropdown-item" href="/provision/">💽Розгорнути сайт автоматично</a></li>
+  <li><hr class="dropdown-divider"></li>
+  {% endif %}
+  <li><h6 class="dropdown-header">Домени</h6></li>
+  <li><a class="dropdown-item" href="/cloudflare_domains/"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Робота з доменами CloudFlare</a></li>
+  <li><a class="dropdown-item" href="/cloudflare_cache/"><img src="https://dash.cloudflare.com/favicon.ico" width="20px" height="20px">Очистка кешу CloudFlare</a></li>
+  {% if menu_is_admin %}
+  <li><a class="dropdown-item" href="/domain_purchase/step1/">🛒Купівля нових доменів</a></li>
+  <li><a class="dropdown-item" href="/domain_registrators/">🏷️Робота з реєстраторами доменів</a></li>
+  {% endif %}
+  <li><hr class="dropdown-divider"></li>
+  {% if not menu_is_mail_admin %}
+  <li><h6 class="dropdown-header">Редіректи</h6></li>
+  <li><a class="dropdown-item" href="/redirects_bulk/">🔀Bulk редіректи</a></li>
+  <li><a class="dropdown-item" href="/redirects_dashboard/">📈Дашборд редіректів</a></li>
+  <li><hr class="dropdown-divider"></li>
+  {% endif %}
+  <li><h6 class="dropdown-header">Пошта</h6></li>
+  <li><a class="dropdown-item" href="/cloudflare_email_dashboard/">📊Дашборд Email Routing</a></li>
+  <li><a class="dropdown-item" href="/cloudflare_email_bulk/">📮Bulk Email Routing</a></li>
+  <li><a class="dropdown-item" href="/cloudflare_email_dstaddresses/">📧Адреси призначення Email Routing</a></li>
+  {% if menu_is_admin %}
+  <li><a class="dropdown-item" href="/mail_domains/">📨Налаштування доменів для розсилок</a></li>
+  {% endif %}
+  <li><hr class="dropdown-divider" style="border-top: 3px solid var(--bs-dropdown-divider-bg); opacity: 1;"></li>
+  <li><a class="dropdown-item" href="/logs/">📩Лог роботи програми</a></li>
+  {% if menu_is_admin %}
+  <li><a class="dropdown-item" href="/admin_panel/">🎮Панель адміністрування</a></li>
+  {% endif %}
+</ul>

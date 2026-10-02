@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Automatic provision system for a lot of small sites">
+  <meta name="version" content="{{ version }}">
+  <title>The Provision</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="48x48">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='images/site.webmanifest') }}">
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <link href="{{ url_for('static', filename='css/domain_purchase.css') }}" rel="stylesheet" crossorigin="anonymous">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}" crossorigin="anonymous" defer></script>
+  <style>
+    body { padding-top: 80px; }
+    #regDomainsTable th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    #regDomainsTable th.sortable.sort-asc::after { content: " ▲"; }
+    #regDomainsTable th.sortable.sort-desc::after { content: " ▼"; }
+    #regDomainsTable td.ns-cell { font-family: var(--bs-font-monospace); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<main>
+<div>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center me-auto">
+        <img src="{{ url_for('static', filename='images/favicon.svg') }}" alt="Logo" width="32" height="32">
+        <a class="navbar-brand" href="/">&nbsp;The Provision:</a>
+        <span class="spinner-border text-warning ms-2" role="status" id="spinnerLoading" style="visibility: hidden;"></span>
+      </div>
+      <div class="dropdown mx-auto">
+        <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
+        {% include "_main_menu.html" %}
+      </div>
+      <div class="ms-auto d-flex align-items-center">
+        <form class="d-flex" action="/logout" method="POST">
+          <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+</div>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-11">
+      <div class="card mx-auto mb-3">
+        <div class="card-header">
+          <h4 class="mb-0 text-center">🏷️ Робота з реєстраторами доменів</h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold" for="registratorSelect">Аккаунт реєстратора:</label>
+              <select class="form-select" id="registratorSelect">
+                <option value="">— Оберіть реєстратора —</option>
+                {{reg_options|safe}}
+              </select>
+            </div>
+            <div class="col-12 col-md-2">
+              <button type="button" class="btn btn-outline-secondary w-100" id="reloadDomainsBtn" disabled>🔄 Оновити</button>
+            </div>
+          </div>
+
+          <div id="domainsToolbar" class="d-flex flex-wrap align-items-center gap-2 mb-2 d-none">
+            <input type="text" id="domainSearch" class="form-control form-control-sm" placeholder="🔍 Швидкий пошук (домен, NS, статус)..." style="width:280px;">
+            <div class="d-flex align-items-center gap-1">
+              <label for="sortSelect" class="small text-nowrap">Сортування:</label>
+              <select id="sortSelect" class="form-select form-select-sm" style="width:auto;">
+                <option value="name:asc">Домен (А→Я)</option>
+                <option value="name:desc">Домен (Я→А)</option>
+                <option value="ns:asc">NS сервери (А→Я)</option>
+                <option value="ns:desc">NS сервери (Я→А)</option>
+                <option value="created:desc">Дата додавання (новіші)</option>
+                <option value="created:asc">Дата додавання (старіші)</option>
+              </select>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              <label for="perPageSelect" class="small text-nowrap">На сторінці:</label>
+              <select id="perPageSelect" class="form-select form-select-sm" style="width:auto;">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+                <option value="500" selected>500</option>
+                <option value="1000">1000</option>
+                <option value="0">Усі</option>
+              </select>
+            </div>
+            <span class="badge bg-secondary" id="domainsCountBadge">0</span>
+            <div class="ms-auto d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-outline-success" id="selectFilteredBtn">Обрати всі знайдені</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">Скасувати вибір</button>
+              <button type="button" class="btn btn-sm btn-warning" id="changeNsBtn" disabled>✏️ Змінити NS сервери (<span id="selectedCount">0</span>)</button>
+            </div>
+          </div>
+
+          <div id="domainsContainer">
+            <div class="text-muted text-center py-3">Спочатку оберіть реєстратора</div>
+          </div>
+          <nav id="paginationNav" class="mt-2"></nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Change NS modal -->
+<div class="modal fade" id="changeNsModal" tabindex="-1" aria-labelledby="changeNsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="changeNsModalLabel">Змінити NS сервери для <span id="changeNsDomainsCount">0</span> домен(ів)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6>Оберіть NS сервери зі збережених для аккаунтів Cloudflare:</h6>
+        <div id="cfNsOptions" class="mb-3">
+          {% if cf_ns_options %}
+          {% for opt in cf_ns_options %}
+          <div class="border rounded p-2 mb-1">
+            <div class="small text-muted mb-1">{{opt.account}}</div>
+            {% set outer = loop.index %}
+            {% for ns in opt.ns %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input cf-ns-check" type="checkbox" value="{{ns}}" id="cfns-{{outer}}-{{loop.index}}">
+              <label class="form-check-label font-monospace" for="cfns-{{outer}}-{{loop.index}}">{{ns}}</label>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-muted small">В аккаунтах Cloudflare ще не збережено NS серверів (Панель адміністрування → Аккаунти Cloudflare).</div>
+          {% endif %}
+        </div>
+        <h6>Або впишіть вручну (через кому або з нового рядка):</h6>
+        <textarea class="form-control font-monospace mb-2" id="manualNs" rows="3" placeholder="ns1.example.com&#10;ns2.example.com"></textarea>
+        <div class="small">Будуть встановлені: <span id="nsPreview" class="font-monospace text-muted">—</span></div>
+        <div id="changeNsResult" class="mt-3"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+        <button type="button" class="btn btn-warning" id="submitNsBtn" disabled>Встановити NS</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="myModalLabel">Інформація:</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <ul class=flashes style="margin-top: 33px;" id="message">
+          {% for category, message in messages %}
+          <li class="{{ category }}">{{ message|safe}}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" autofocus>Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+<script src="{{ url_for('static', filename='js/domain_registrators.js') }}" defer></script>
+</main>
+</body>
+</html>

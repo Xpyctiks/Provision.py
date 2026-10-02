@@ -668,20 +668,9 @@ def link_domain_and_account(domain: str, account: str) -> bool:
     return False
 
 def is_admin():
-  """Adds Admin panel and domain purchase options to the main menu if user is admin"""
+  """Checks if the current user is admin. The main menu itself (incl. admin-only items) lives in templates/_main_menu.html"""
   user = User.query.filter_by(realname=current_user.realname).first()
-  if user:
-    rights = user.rights
-    if rights == 255:
-      return ('<li><a class="dropdown-item" href="/admin_panel" class="btn btn-secondary">🎮Панель адміністрування</a></li>'
-              '<li><hr class="dropdown-divider"></li>'
-              '<li><a class="dropdown-item" href="/domain_purchase/step1/" class="btn btn-secondary">🛒Купівля нових доменів</a></li>'
-              '<li><hr class="dropdown-divider"></li>'
-              '<li><a class="dropdown-item" href="/mail_domains/" class="btn btn-secondary">📨Налаштування доменів для розсилок</a></li>')
-    else:
-      return ""
-  else:
-    return ""
+  return bool(user and user.rights == 255)
 
 def is_mail_admin():
   """Checks if the current user has the mail-admin role (view-only access, no site modification rights)"""
