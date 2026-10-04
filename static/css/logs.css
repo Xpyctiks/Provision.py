@@ -12,6 +12,19 @@
   background: #0f1115;
   color: #d1d5db;
 }
+/* long lines wrap inside the box instead of producing a horizontal scrollbar */
+#log-box {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: hidden;
+}
+.log-top-status {
+  text-align: center;
+  color: #8b949e;
+  font-style: italic;
+  padding: 0.25rem 0 0.5rem;
+}
 .log-ERROR { color: #ff6b6b; }
 .log-WARNING { color: #feca57; }
 .log-INFO { color: #48dbfb; }
