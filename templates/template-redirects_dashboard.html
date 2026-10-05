@@ -28,7 +28,10 @@
         <a class="btn btn-success dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">🚀Основне меню дій:</a>
         {% include "_main_menu.html" %}
       </div>
-      <div class="ms-auto d-flex align-items-center">
+      <div class="ms-auto d-flex align-items-center gap-2">
+        {% if admin_panel %}
+        <button type="button" class="btn btn-outline-danger" id="nginxRestartBtn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Повний перезапуск (restart, не reload) веб-сервера Nginx. Усі сайти будуть недоступні кілька секунд.">♻️ Перезапуск Nginx</button>
+        {% endif %}
         <form class="d-flex" action="/logout/" method="POST">
           <button class="btn btn-outline-warning" type="submit" id="logoutButton" name="logout">🏃{{current_user.realname}}&nbsp;Вихід</button>
         </form>
@@ -96,6 +99,26 @@
 </div>
 {% endif %}
 {% endwith %}
+{% if admin_panel %}
+<div class="modal fade" id="nginxRestartModal" tabindex="-1" aria-labelledby="nginxRestartModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nginxRestartModalLabel">♻️ Перезапуск Nginx</h5>
+      </div>
+      <div class="modal-body">
+        <div id="nginxRestartStatus" class="d-flex align-items-center gap-2">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          <span>Перевірка конфігурації...</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="nginxRestartCloseBtn" data-bs-dismiss="modal" disabled>Закрити</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 <script src="{{ url_for('static', filename='js/redirects_dashboard.js') }}" defer></script>
 </main>
 </body>

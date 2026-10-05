@@ -1,11 +1,13 @@
 import glob
 import logging
 import os
+import re
+import subprocess
 from flask import Blueprint,current_app,jsonify,render_template,flash,redirect
 from flask_login import login_required,current_user
 from db.database import RedirectsRules,Domain_account,Cloudflare
-from functions.site_actions import is_admin,sync_redirects_to_db,is_mail_admin
-from functions.rights_required import block_mail_admin
+from functions.site_actions import is_admin,sync_redirects_to_db,is_mail_admin,clear_nginx_cache
+from functions.rights_required import block_mail_admin,rights_required,ADMIN_RIGHTS
 
 redirects_dashboard_bp = Blueprint("redirects_dashboard", __name__)
 @redirects_dashboard_bp.route("/redirects_dashboard/", methods=['GET'])
@@ -49,6 +51,55 @@ def show_redirects_dashboard():
     logging.error(f"show_redirects_dashboard(): general error by {current_user.realname}: {err}")
     flash('Неочікувана помилка при завантаженні дашборду редіректів! Дивіться логи.', 'alert alert-danger')
     return redirect("/",302)
+
+def _nginx_service_state() -> dict:
+  """Reads the nginx systemd unit state (no sudo needed for 'systemctl show')."""
+  result = subprocess.run(["systemctl","show","nginx","--property=ActiveState,SubState,MainPID"], capture_output=True, text=True, timeout=10)
+  state = {}
+  for line in result.stdout.splitlines():
+    key, _, value = line.partition("=")
+    state[key.strip()] = value.strip()
+  return {"active_state": state.get("ActiveState",""), "sub_state": state.get("SubState",""), "pid": state.get("MainPID","0")}
+
+@redirects_dashboard_bp.route("/redirects_dashboard/nginx_restart/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def nginx_restart():
+  """POST request (AJAX): full restart (not reload) of Nginx. The restart itself runs in a detached process with a short
+  delay, so this answer gets delivered even when the panel itself is served through the very same Nginx. The page then
+  polls /redirects_dashboard/nginx_status/ until Nginx is back with a new master PID."""
+  try:
+    logging.info(f"-----------------------Nginx full restart requested by {current_user.realname}-----------------------")
+    #never restart into a broken config - nginx wouldn't start back and all sites would stay down
+    test = subprocess.run(["sudo","nginx","-t"], capture_output=True, text=True, timeout=30)
+    if not (re.search(r".*test is successful.*",test.stderr) and re.search(r".*syntax is ok.*",test.stderr)):
+      logging.error(f"nginx_restart(): Nginx config test failed, restart cancelled: {test.stderr.strip()}")
+      return jsonify({"error": f"Перевірка конфігурації Nginx не пройдена, перезапуск скасовано:\n{test.stderr.strip()}"}), 400
+    #the delayed restart can't report errors back, so check the sudo permission upfront
+    check = subprocess.run(["sudo","-n","-l","systemctl","restart","nginx"], capture_output=True, text=True, timeout=10)
+    if check.returncode != 0:
+      logging.error(f"nginx_restart(): no sudo permission for 'systemctl restart nginx': {check.stderr.strip()}")
+      return jsonify({"error": "Немає прав sudo на 'systemctl restart nginx' для користувача, від якого працює програма. Додайте правило в sudoers."}), 403
+    old_state = _nginx_service_state()
+    subprocess.Popen(["sh","-c","sleep 2; sudo systemctl restart nginx"], start_new_session=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    clear_nginx_cache()
+    logging.info(f"nginx_restart(): Nginx restart scheduled by {current_user.realname}, old master PID {old_state['pid']}")
+    return jsonify({"status": "scheduled", "old_pid": old_state["pid"]}), 202
+  except Exception as err:
+    logging.error(f"nginx_restart(): general error by {current_user.realname}: {err}")
+    return jsonify({"error": str(err)}), 500
+
+@redirects_dashboard_bp.route("/redirects_dashboard/nginx_status/", methods=['GET'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def nginx_status():
+  """GET request (AJAX): current Nginx systemd state - polled by the page while the restart is in progress"""
+  try:
+    return jsonify(_nginx_service_state())
+  except Exception as err:
+    logging.error(f"nginx_status(): general error: {err}")
+    return jsonify({"error": str(err)}), 500
 
 @redirects_dashboard_bp.route("/redirects_dashboard/update_redirects_status", methods=['GET'])
 def update_redirects_status():
