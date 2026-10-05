@@ -3,6 +3,7 @@ import requests
 from flask import Blueprint,jsonify,render_template,request,flash,redirect,current_app
 from flask_login import login_required,current_user
 from db.database import Cloudflare,EmailRoutingDomainStatus
+from db.db import db
 from functions.site_actions import is_admin,is_mail_admin,link_domain_and_account
 from functions.email_routing_status_func import sync_email_routing_domain_status
 from pages.cloudflare_email import (
@@ -127,6 +128,7 @@ def do_bulk_email():
           logging.error(f"do_bulk_email(): Failed to enable Email Routing for {domain}: {enable_result.get('errors')}")
           results.append(f"❌ {domain}: помилка активації Email Routing: {err_msg}")
           error_count += 1
+          domains_left_counter += 1
           continue
       # Create the forwarding rule: either login@domain -> destination, or (if catchall) every address on
       # the domain -> destination, via Cloudflare's dedicated (one per zone) catch-all rule endpoint
@@ -158,6 +160,7 @@ def do_bulk_email():
         logging.error(f"do_bulk_email(): Failed to create rule for {domain}: {rule_result.get('errors')}")
         results.append(f"❌ {domain}: помилка створення правила: {err_msg}")
         error_count += 1
+        domains_left_counter += 1
         _sync_status_to_db(domain, routing_enabled, current_user.realname)
         continue
       # Keep DB in sync after successful rule creation - includes the catch-all rule itself when
@@ -174,9 +177,12 @@ def do_bulk_email():
       link_domain_and_account(domain, account_email)
       domains_left_counter += 1
     except Exception as err:
+      #a failed DB flush leaves the session unusable - roll back so the remaining domains can still be processed
+      db.session.rollback()
       logging.error(f"do_bulk_email(): Unexpected error for domain {domain}: {err}")
       results.append(f"❌ {domain}: неочікувана помилка: {err}")
       error_count += 1
+      domains_left_counter += 1
   results_html = "<br>".join(results)
   if error_count == 0:
     flash(f"Успішно оброблено {success_count} доменів!<br>{results_html}", "alert alert-success")

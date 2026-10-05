@@ -651,19 +651,26 @@ def link_domain_and_account(domain: str, account: str) -> bool:
       logging.error(f"link_domain_and_account(): Error! Cloudflare account with the given email {account} is not exists in our database! But this is not possible! by {current_user.realname}")
       send_to_telegram(f"link_domain_and_account(): Cloudflare account with the given email {account} is not exists in our database! But this is not possible! by {current_user.realname}",f"🚒")
       return False
-    #Check if the given account is already linked with the given domain
-    check = Domain_account.query.filter_by(domain=domain).all()
-    for i, c in enumerate(check,1):
-      if c.account == account:
+    #Domain_account.domain is UNIQUE - one row per domain. If the domain is already linked to another
+    #account (e.g. the zone was moved between Cloudflare accounts), re-point that row instead of inserting a duplicate
+    existing = Domain_account.query.filter_by(domain=domain).first()
+    if existing:
+      if existing.account == account:
         logging.info(f"link_domain_and_account(): Domain {domain} is already linked with account {account}!")
         return True
-    #Else start addition procedure
+      old_account = existing.account
+      existing.account = account
+      db.session.commit()
+      logging.info(f"link_domain_and_account(): Domain {domain} re-linked from account {old_account} to account {account}!")
+      return True
     new_account = Domain_account(domain=domain,account=account)
     db.session.add(new_account)
     db.session.commit()
-    logging.info(f"link_domain_and_account(): Domain domain now is linked to account {account}!")
+    logging.info(f"link_domain_and_account(): Domain {domain} now is linked to account {account}!")
     return True
   except Exception as err:
+    #without rollback the session stays in a failed state and every following DB call in this request fails too
+    db.session.rollback()
     logging.error(f"link_domain_and_account() general error: {err}")
     return False
 

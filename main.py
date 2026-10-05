@@ -10,7 +10,7 @@ from db.mysql_uri import build_mysql_uri
 
 load_dotenv(pathlib.Path(__file__).resolve().parent / ".env")
 application = Flask(__name__)
-application.config["VERSION"] = "2.12.3"
+application.config["VERSION"] = "2.12.4"
 application.config["SQLALCHEMY_DATABASE_URI"] = build_mysql_uri()
 application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 application.config['PERMANENT_SESSION_LIFETIME'] = 86400
