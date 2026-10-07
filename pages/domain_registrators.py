@@ -7,6 +7,7 @@ from functions.rights_required import rights_required,ADMIN_RIGHTS
 from functions.cloudflare_ns_func import parse_ns
 from functions.domain_purchase_func import DOMAIN_RE,_set_ns
 from functions.registrator_domains_func import load_domains_from_db,last_sync_time,is_sync_running,start_background_sync
+from functions.registrator_ns_auto_func import start_auto_ns_job,get_job,BATCH_SIZE
 
 domain_registrators_bp = Blueprint("domain_registrators", __name__)
 
@@ -31,7 +32,8 @@ def show_domain_registrators():
   try:
     registrators = DomainRegistrator.query.order_by(DomainRegistrator.name).all()
     reg_options = "".join(f'<option value="{r.name}">{r.name} ({r.provider})</option>' for r in registrators)
-    return render_template("template-domain_registrators.html",reg_options=reg_options,cf_ns_options=_cf_ns_options(),admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
+    cf_accounts = [a.account for a in Cloudflare.query.order_by(Cloudflare.account).all()]
+    return render_template("template-domain_registrators.html",reg_options=reg_options,cf_ns_options=_cf_ns_options(),cf_accounts=cf_accounts,batch_size=BATCH_SIZE,admin_panel=is_admin(),mail_admin=is_mail_admin(),version=current_app.config.get("VERSION",""))
   except Exception as err:
     logging.error(f"show_domain_registrators(): general render error by {current_user.realname}: {err}")
     flash("Неочікувана помилка на сторінці роботи з реєстраторами, дивіться логи!", 'alert alert-danger')
@@ -57,6 +59,49 @@ def get_registrator_domains():
   except Exception as err:
     logging.error(f"get_registrator_domains(): general error by {current_user.realname}: {err}")
     return jsonify({"error": str(err)}), 500
+
+@domain_registrators_bp.route("/domain_registrators/auto_ns/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def start_auto_ns():
+  """POST request (AJAX, JSON {registrator, domains: [...], accounts: [...]}): "Автоматичні NS операції" - splits the
+  selected domains into batches of 50, adds every batch to a random selected Cloudflare account and sets the NS servers
+  Cloudflare returned at the registrator. Runs in background; the page polls /domain_registrators/auto_ns/status/."""
+  try:
+    data = request.get_json(silent=True) or {}
+    name = (data.get("registrator") or "").strip()
+    domains = []
+    for d in data.get("domains") or []:
+      d = str(d).strip().lower()
+      if d and DOMAIN_RE.fullmatch(d) and d not in domains:
+        domains.append(d)
+    account_names = [str(a).strip() for a in (data.get("accounts") or []) if str(a).strip()]
+    registrator = DomainRegistrator.query.filter_by(name=name).first()
+    if not registrator:
+      return jsonify({"error": f"Реєстратор {name} не знайдено в базі"}), 404
+    if not domains:
+      return jsonify({"error": "Не обрано жодного коректного домену"}), 400
+    accounts = Cloudflare.query.filter(Cloudflare.account.in_(account_names)).all() if account_names else []
+    if not accounts:
+      return jsonify({"error": "Не обрано жодного аккаунту Cloudflare"}), 400
+    job, err = start_auto_ns_job(current_app._get_current_object(), registrator, domains, accounts, current_user.id, current_user.realname)
+    if err:
+      logging.error(f"start_auto_ns(): not started for {current_user.realname}: {err}")
+      return jsonify({"error": err}), 400
+    return jsonify({"job_id": job["id"], "plan": job["plan"], "total": job["total"]})
+  except Exception as err:
+    logging.error(f"start_auto_ns(): general error by {current_user.realname}: {err}")
+    return jsonify({"error": str(err)}), 500
+
+@domain_registrators_bp.route("/domain_registrators/auto_ns/status/", methods=['GET'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def auto_ns_status():
+  """GET request (AJAX, ?job=ID): progress and per-domain results of an "Автоматичні NS операції" job"""
+  job = get_job((request.args.get("job") or "").strip())
+  if not job:
+    return jsonify({"error": "Завдання не знайдено (можливо, програму було перезапущено)"}), 404
+  return jsonify(job)
 
 @domain_registrators_bp.route("/domain_registrators/sync/", methods=['POST'])
 @login_required

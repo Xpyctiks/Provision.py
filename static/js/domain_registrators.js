@@ -272,6 +272,9 @@ function updateSelectedState() {
   const count = state.selected.size;
   document.getElementById('selectedCount').textContent = count;
   document.getElementById('changeNsBtn').disabled = count === 0;
+  document.getElementById('autoNsCount').textContent = count;
+  //disabled while a job is running - one job at a time, the modal shows its progress instead
+  document.getElementById('autoNsBtn').disabled = count === 0 && !autoNs.jobId;
   const pageCheck = document.getElementById('selectPageCheck');
   if (pageCheck) {
     const boxes = document.querySelectorAll('#regDomainsTable .domain-check');
@@ -335,6 +338,124 @@ function submitNs() {
     })
     .catch(err => {
       resultBox.innerHTML = '<div class="alert alert-danger py-2 mb-0">Помилка: ' + escapeHtml(String(err)) + '</div>';
+      submitBtn.disabled = false;
+    });
+}
+
+// ── "Автоматичні NS операції": add selected domains to random CF accounts by 50 and set the returned NS ──
+
+const AUTO_NS_BATCH = 50;
+const autoNs = { jobId: null, timer: null, domains: [] };
+
+function autoNsSelectedAccounts() {
+  return [].slice.call(document.querySelectorAll('#autoNsAccounts .auto-ns-acc-check:checked')).map(cb => cb.value);
+}
+
+function updateAutoNsFormState() {
+  const accCount = autoNsSelectedAccounts().length;
+  document.getElementById('autoNsAccCount').textContent = accCount;
+  document.getElementById('autoNsBatchCount').textContent = Math.ceil(state.selected.size / AUTO_NS_BATCH);
+  document.getElementById('autoNsSubmitBtn').disabled = accCount === 0 || state.selected.size === 0 || !!autoNs.jobId;
+}
+
+function showAutoNsForm() {
+  document.getElementById('autoNsForm').classList.remove('d-none');
+  document.getElementById('autoNsProgress').classList.add('d-none');
+  document.getElementById('autoNsSubmitBtn').classList.remove('d-none');
+  document.getElementById('autoNsDomainsCount').textContent = state.selected.size;
+  updateAutoNsFormState();
+}
+
+function showAutoNsProgress() {
+  document.getElementById('autoNsForm').classList.add('d-none');
+  document.getElementById('autoNsProgress').classList.remove('d-none');
+  document.getElementById('autoNsSubmitBtn').classList.add('d-none');
+}
+
+function renderAutoNsJob(job) {
+  const pct = job.total ? Math.round(job.processed * 100 / job.total) : 0;
+  const bar = document.getElementById('autoNsBar');
+  bar.style.width = pct + '%';
+  bar.textContent = `${job.processed} / ${job.total} (${pct}%)`;
+  document.getElementById('autoNsPlan').innerHTML = 'Розподіл по аккаунтах: ' +
+    job.plan.map(p => `<span class="badge bg-secondary me-1">${escapeHtml(p.account)}: ${p.count}</span>`).join('');
+  const running = job.status === 'running';
+  bar.classList.toggle('progress-bar-animated', running);
+  bar.classList.toggle('bg-success', !running && job.failed === 0);
+  bar.classList.toggle('bg-warning', !running && job.failed > 0 && job.ok > 0);
+  bar.classList.toggle('bg-danger', !running && job.ok === 0);
+  let summary = `✅ Успішно: ${job.ok} &nbsp; ❌ З помилками: ${job.failed}`;
+  if (job.status === 'done') summary = '<strong>Завершено.</strong> ' + summary;
+  if (job.status === 'error') summary = `<strong class="text-danger">Завдання перервано: ${escapeHtml(job.error)}</strong> ` + summary;
+  if (running) summary = '<span class="spinner-border spinner-border-sm" role="status"></span> Виконується... ' + summary;
+  document.getElementById('autoNsSummary').innerHTML = summary;
+  const log = document.getElementById('autoNsLog');
+  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 30;
+  log.innerHTML = job.results.map(r =>
+    `<div class="${r.ok ? 'text-success' : 'text-danger'}">${r.ok ? '✅' : '❌'} ${escapeHtml(r.domain)} → ${escapeHtml(r.account || '-')}: ${escapeHtml(r.message)}</div>`
+  ).join('');
+  if (atBottom) log.scrollTop = log.scrollHeight;
+}
+
+function finishAutoNsJob(job) {
+  clearInterval(autoNs.timer);
+  autoNs.timer = null;
+  autoNs.jobId = null;
+  //reflect the new NS in the table right away and unselect the processed domains
+  const nsByDomain = new Map(job.results.filter(r => r.ok).map(r => [r.domain, r.ns]));
+  state.domains.forEach(d => { if (nsByDomain.has(d.name)) d.ns = nsByDomain.get(d.name).slice(); });
+  nsByDomain.forEach((_, name) => state.selected.delete(name));
+  applyFilterAndSort();
+}
+
+function pollAutoNsJob() {
+  if (!autoNs.jobId) return;
+  fetch('/domain_registrators/auto_ns/status/?job=' + encodeURIComponent(autoNs.jobId), { cache: 'no-store' })
+    .then(response => response.json())
+    .then(job => {
+      if (job.error && !job.status) {
+        document.getElementById('autoNsSummary').innerHTML = '<span class="text-danger">' + escapeHtml(job.error) + '</span>';
+        clearInterval(autoNs.timer);
+        autoNs.timer = null;
+        autoNs.jobId = null;
+        updateSelectedState();
+        return;
+      }
+      renderAutoNsJob(job);
+      if (job.status !== 'running') {
+        finishAutoNsJob(job);
+      }
+    })
+    .catch(() => {});
+}
+
+function submitAutoNs() {
+  const accounts = autoNsSelectedAccounts();
+  const domains = Array.from(state.selected);
+  const batches = Math.ceil(domains.length / AUTO_NS_BATCH);
+  if (!confirm(`Додати ${domains.length} домен(ів) у Cloudflare (${batches} груп(и) по ${AUTO_NS_BATCH}) на ${accounts.length} обраних аккаунтах та встановити NS у реєстратора ${state.registrator}?`)) return;
+  const submitBtn = document.getElementById('autoNsSubmitBtn');
+  submitBtn.disabled = true;
+  fetch('/domain_registrators/auto_ns/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ registrator: state.registrator, domains: domains, accounts: accounts })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        alert('Помилка: ' + data.error);
+        submitBtn.disabled = false;
+        return;
+      }
+      autoNs.jobId = data.job_id;
+      showAutoNsProgress();
+      renderAutoNsJob({ status: 'running', total: data.total, processed: 0, ok: 0, failed: 0, plan: data.plan, results: [] });
+      autoNs.timer = setInterval(pollAutoNsJob, 2000);
+      pollAutoNsJob();
+    })
+    .catch(err => {
+      alert('Помилка: ' + err);
       submitBtn.disabled = false;
     });
 }
@@ -436,6 +557,24 @@ document.addEventListener('DOMContentLoaded', function () {
     state.selected.clear();
     render();
   });
+
+  const autoNsModal = new bootstrap.Modal(document.getElementById('autoNsModal'));
+  document.getElementById('autoNsBtn').addEventListener('click', function () {
+    //while a job is running the button just reopens its progress window
+    if (autoNs.jobId) showAutoNsProgress();
+    else showAutoNsForm();
+    autoNsModal.show();
+  });
+  document.getElementById('autoNsAccounts').addEventListener('change', updateAutoNsFormState);
+  document.getElementById('autoNsSelectAllAcc').addEventListener('click', function () {
+    document.querySelectorAll('#autoNsAccounts .auto-ns-acc-check').forEach(cb => { cb.checked = true; });
+    updateAutoNsFormState();
+  });
+  document.getElementById('autoNsDeselectAllAcc').addEventListener('click', function () {
+    document.querySelectorAll('#autoNsAccounts .auto-ns-acc-check').forEach(cb => { cb.checked = false; });
+    updateAutoNsFormState();
+  });
+  document.getElementById('autoNsSubmitBtn').addEventListener('click', submitAutoNs);
 
   const nsModal = new bootstrap.Modal(document.getElementById('changeNsModal'));
   document.getElementById('changeNsBtn').addEventListener('click', function () {
