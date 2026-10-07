@@ -79,25 +79,7 @@ window.addEventListener("pageshow", function (event) {
   }
 });
 
-// ── Shift-click range select for row checkboxes (delegated - rows can be swapped in via AJAX pagination) ──
-
-let lastChecked = null;
-document.addEventListener("click", function (e) {
-  if (!e.target.classList.contains("chk")) return;
-  const allChecks = Array.from(document.querySelectorAll(".chk"));
-  if (e.shiftKey && lastChecked && allChecks.includes(lastChecked)) {
-    let inRange = false;
-    allChecks.forEach(box => {
-      if (box === e.target || box === lastChecked) {
-        inRange = !inRange;
-      }
-      if (inRange) {
-        box.checked = lastChecked.checked;
-      }
-    });
-  }
-  lastChecked = e.target;
-});
+// Shift-click range select for row checkboxes lives in static/js/shift_select.js (shared by all pages)
 
 function checkAll(bx) {
   document.querySelectorAll("tbody tr").forEach(row => {
