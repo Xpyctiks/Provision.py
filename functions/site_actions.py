@@ -674,6 +674,19 @@ def link_domain_and_account(domain: str, account: str) -> bool:
     logging.error(f"link_domain_and_account() general error: {err}")
     return False
 
+def unlink_domain_from_account(domain: str, account: str) -> None:
+  """Best-effort: removes the Domain_account link of the domain to the given Cloudflare account - called after the
+  zone was deleted from that account on Cloudflare, so the local link doesn't stay behind pointing to nothing.
+  A link to a different account (domain already moved elsewhere) is left untouched."""
+  try:
+    deleted = Domain_account.query.filter_by(domain=domain, account=account).delete(synchronize_session=False)
+    db.session.commit()
+    if deleted:
+      logging.info(f"unlink_domain_from_account(): Domain {domain} unlinked from account {account}")
+  except Exception as err:
+    db.session.rollback()
+    logging.error(f"unlink_domain_from_account(): error for {domain} ({account}): {err}")
+
 def is_admin():
   """Checks if the current user is admin. The main menu itself (incl. admin-only items) lives in templates/_main_menu.html"""
   user = User.query.filter_by(realname=current_user.realname).first()

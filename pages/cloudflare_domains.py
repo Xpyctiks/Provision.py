@@ -6,7 +6,7 @@ from datetime import datetime
 from flask import render_template,request,redirect,flash,Blueprint,jsonify,current_app
 from flask_login import login_required,current_user
 from db.database import Cloudflare
-from functions.site_actions import is_admin, is_mail_admin
+from functions.site_actions import is_admin, is_mail_admin, unlink_domain_from_account
 from functions.email_routing_status_func import seed_email_routing_domain_status
 from functions.pages_forms import loadClodflareAccounts,_load_zones_for_account
 from functions.domain_purchase_func import parse_domain_textarea
@@ -246,6 +246,7 @@ def del_existingDomain():
       result_del_domain = requests.delete(url_del_domain, headers=headers).json()
       if result_del_domain.get("success") and result_del_domain.get("result"):
         logging.info(f"del_existingDomain(): Domain {domain} successfully deleted from Cloudflare account {account}!")
+        unlink_domain_from_account(domain, account)
         flash(f'Домен {domain} успішно видален з аккаунту {account}!','alert alert-success')
         return redirect(f"/cloudflare_domains/",302)
       else:
@@ -295,6 +296,7 @@ def delete_domains_bulk():
       result_del_domain = requests.delete(url_del_domain, headers=headers).json()
       if result_del_domain.get("success") and result_del_domain.get("result"):
         logging.info(f"delete_domains_bulk(): Domain {domain} successfully deleted from Cloudflare account {account} by {current_user.realname}")
+        unlink_domain_from_account(domain, account)
         results.append(f"✅ {domain}: успішно видалено")
         success_count += 1
       else:

@@ -5,10 +5,11 @@ import uuid
 from datetime import datetime
 from flask_login import login_user
 from db.db import db
-from db.database import Cloudflare, DomainRegistrator, Domain_account, User
+from db.database import Cloudflare, DomainRegistrator, User
 from functions.domain_purchase_func import (
-  _add_domain_to_cf, _set_ns, count_free_slots, get_purchase_row, append_purchase_message
+  _add_domain_to_cf, _set_ns, get_purchase_row, append_purchase_message, CF_ACCOUNT_DOMAIN_LIMIT
 )
+from functions.pages_forms import _load_zones_for_account
 from functions.cloudflare_ns_func import save_account_ns_if_empty
 from functions.site_actions import link_domain_and_account
 from functions.email_routing_status_func import seed_email_routing_domain_status
@@ -66,14 +67,21 @@ def start_auto_ns_job(app, registrator: DomainRegistrator, domains: list, accoun
   with _jobs_lock:
     if _active_job["id"] and _jobs.get(_active_job["id"], {}).get("status") == "running":
       return None, "Інша автоматична NS операція вже виконується - дочекайтесь її завершення."
-  #domains already linked to some Cloudflare account are skipped right away - Cloudflare would refuse a second zone anyway
-  linked = {r.domain: r.account for r in Domain_account.query.filter(Domain_account.domain.in_(domains)).all()}
-  todo = [d for d in domains if d not in linked]
-  skipped = [{"domain": d, "account": linked[d], "ok": False, "ns": [], "message": f"Вже прив'язаний до аккаунту Cloudflare {linked[d]}, пропущено"} for d in domains if d in linked]
+  #the live zone list of every selected account (one listing per account) - used both for the free-slot count and to
+  #skip domains that really are on one of these accounts already. The local Domain_account table is NOT used for this:
+  #it's only a "last known" link and stays behind when a zone is deleted on Cloudflare, so it can't be trusted here.
+  #A domain sitting on some other, not selected account is simply refused by Cloudflare and reported per domain.
+  zones_by_account = {acc.account: _load_zones_for_account(acc) for acc in accounts}
+  present = {}
+  for acc_name, zones in zones_by_account.items():
+    for zone_name in zones:
+      present.setdefault(zone_name, acc_name)
+  todo = [d for d in domains if d not in present]
+  skipped = [{"domain": d, "account": present[d], "ok": False, "ns": [], "message": f"Вже є на аккаунті Cloudflare {present[d]}, пропущено"} for d in domains if d in present]
   if not todo:
-    return None, "Усі обрані домени вже прив'язані до аккаунтів Cloudflare - нічого додавати."
+    return None, "Усі обрані домени вже є на обраних аккаунтах Cloudflare - нічого додавати."
   random.shuffle(todo)
-  free_slots = count_free_slots(accounts)
+  free_slots = {name: max(0, CF_ACCOUNT_DOMAIN_LIMIT - len(zones)) for name, zones in zones_by_account.items()}
   plan, err = plan_batches(todo, accounts, free_slots)
   if err:
     return None, err

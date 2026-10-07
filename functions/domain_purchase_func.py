@@ -189,7 +189,7 @@ def render_purchase_history():
     return f'<tr><td colspan="9">Помилка завантаження історії: {err}</td></tr>'
 
 def count_free_slots(cf_accounts: list) -> dict:
-  """For every given Cloudflare account, returns how many domain slots are free before hitting the 50-domain limit."""
+  """For every given Cloudflare account, returns how many domain slots are free before hitting CF_ACCOUNT_DOMAIN_LIMIT."""
   slots = {}
   for acc in cf_accounts:
     zones = _load_zones_for_account(acc)
