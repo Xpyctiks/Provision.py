@@ -2,6 +2,7 @@ import logging
 import re
 import idna
 import requests
+from datetime import datetime
 from db.db import db
 from db.database import Cloudflare, DomainRegistrator, DomainPurchase, Domain_account
 from functions.pages_forms import _load_zones_for_account
@@ -11,6 +12,7 @@ from functions.provision_func import setSiteOwner
 from functions.dynadot_func import dynadot_register_domain, dynadot_set_ns
 from functions.spaceship_func import spaceship_register_domain, spaceship_set_ns
 from functions.cloudflare_ns_func import parse_ns, save_account_ns_if_empty
+from functions.registrator_domains_func import upsert_registrator_domain
 
 CF_ACCOUNT_DOMAIN_LIMIT = 300
 DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
@@ -215,16 +217,26 @@ def _add_domain_to_cf(acc: Cloudflare, domain: str):
     return False, str(err)
 
 def _register_domain(registrator: DomainRegistrator, domain: str, duration: int = 1):
-  """Dispatches domain registration to the correct API based on registrator.provider."""
+  """Dispatches domain registration to the correct API based on registrator.provider.
+  On success the domain is added to the RegistratorDomain cache right away (no need to wait for the next sync)."""
   if registrator.provider == "spaceship":
-    return spaceship_register_domain(registrator, domain, duration=duration)
-  return dynadot_register_domain(registrator, domain, duration=duration)
+    ok, msg = spaceship_register_domain(registrator, domain, duration=duration)
+  else:
+    ok, msg = dynadot_register_domain(registrator, domain, duration=duration)
+  if ok:
+    upsert_registrator_domain(registrator.name, domain, status="active", registered=datetime.now())
+  return ok, msg
 
 def _set_ns(registrator: DomainRegistrator, domain: str, ns_list: list):
-  """Dispatches nameserver assignment to the correct API based on registrator.provider."""
+  """Dispatches nameserver assignment to the correct API based on registrator.provider.
+  On success the new NS are written to the RegistratorDomain cache right away."""
   if registrator.provider == "spaceship":
-    return spaceship_set_ns(registrator, domain, ns_list)
-  return dynadot_set_ns(registrator, domain, ns_list)
+    ok, msg = spaceship_set_ns(registrator, domain, ns_list)
+  else:
+    ok, msg = dynadot_set_ns(registrator, domain, ns_list)
+  if ok:
+    upsert_registrator_domain(registrator.name, domain, ns_list=ns_list)
+  return ok, msg
 
 def _update_purchase_row(domain: str, account, status: str, message: str, stage: str = None):
   row = DomainPurchase.query.filter_by(domain=domain).order_by(DomainPurchase.id.desc()).first()

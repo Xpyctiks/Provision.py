@@ -52,16 +52,18 @@ function loadDomains() {
   state.selected.clear();
   state.page = 1;
   document.getElementById('paginationNav').innerHTML = '';
+  document.getElementById('syncInfo').textContent = '';
   updateSelectedState();
   if (!state.registrator) {
     toolbar.classList.add('d-none');
     container.innerHTML = '<div class="text-muted text-center py-3">Спочатку оберіть реєстратора</div>';
     document.getElementById('reloadDomainsBtn').disabled = true;
+    document.getElementById('syncDomainsBtn').disabled = true;
     return;
   }
   document.getElementById('reloadDomainsBtn').disabled = false;
   toolbar.classList.add('d-none');
-  container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" role="status"></div> Завантаження доменів з API реєстратора (може зайняти деякий час)...</div>';
+  container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" role="status"></div> Завантаження доменів...</div>';
   fetch('/domain_registrators/domains/?registrator=' + encodeURIComponent(state.registrator))
     .then(response => response.json())
     .then(data => {
@@ -70,11 +72,78 @@ function loadDomains() {
         return;
       }
       state.domains = data.domains || [];
+      renderSyncInfo(data);
+      if (!state.domains.length && !data.sync_running) {
+        container.innerHTML = '<div class="text-muted text-center py-3">У базі ще немає доменів цього реєстратора. Натисніть «⇅ Синхронізувати з API реєстратора».</div>';
+        return;
+      }
       toolbar.classList.remove('d-none');
       applyFilterAndSort();
     })
     .catch(err => {
       container.innerHTML = '<div class="alert alert-danger py-2 mb-0">Помилка завантаження: ' + escapeHtml(String(err)) + '</div>';
+    });
+}
+
+// ── Sync with the registrator API (runs in background on the server) ─────────
+
+let syncPollTimer = null;
+
+function renderSyncInfo(data) {
+  const info = document.getElementById('syncInfo');
+  const syncBtn = document.getElementById('syncDomainsBtn');
+  if (data.sync_running) {
+    info.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Йде синхронізація з API реєстратора... Список оновиться автоматично після завершення.';
+    syncBtn.disabled = true;
+    startSyncPolling();
+  } else {
+    info.textContent = data.last_sync ? `Остання синхронізація з API: ${data.last_sync}` : 'Синхронізація з API ще не виконувалась.';
+    syncBtn.disabled = false;
+  }
+}
+
+function startSyncPolling() {
+  if (syncPollTimer) return;
+  const registrator = state.registrator;
+  syncPollTimer = setInterval(() => {
+    if (state.registrator !== registrator) {
+      clearInterval(syncPollTimer);
+      syncPollTimer = null;
+      return;
+    }
+    fetch('/domain_registrators/domains/?registrator=' + encodeURIComponent(registrator))
+      .then(response => response.json())
+      .then(data => {
+        if (data.error || data.sync_running) return;
+        clearInterval(syncPollTimer);
+        syncPollTimer = null;
+        //sync finished - reload the table, keeping nothing stale
+        loadDomains();
+      })
+      .catch(() => {});
+  }, 5000);
+}
+
+function startSync() {
+  if (!state.registrator) return;
+  document.getElementById('syncDomainsBtn').disabled = true;
+  fetch('/domain_registrators/sync/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ registrator: state.registrator })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        alert('Помилка запуску синхронізації: ' + data.error);
+        document.getElementById('syncDomainsBtn').disabled = false;
+        return;
+      }
+      renderSyncInfo({ sync_running: true });
+    })
+    .catch(err => {
+      alert('Помилка запуску синхронізації: ' + err);
+      document.getElementById('syncDomainsBtn').disabled = false;
     });
 }
 
@@ -298,6 +367,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.getElementById('reloadDomainsBtn').addEventListener('click', loadDomains);
+  document.getElementById('syncDomainsBtn').addEventListener('click', startSync);
+  [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach(el => new bootstrap.Tooltip(el));
 
   document.getElementById('domainSearch').addEventListener('input', function () {
     state.page = 1;

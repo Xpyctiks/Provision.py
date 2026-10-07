@@ -129,6 +129,20 @@ class DomainRegistrator(db.Model):
   contact_id = db.Column(db.String(64), nullable=True, default="")         #Spaceship contact ID, порожньо для Dynadot
   created = db.Column(db.DateTime, default=datetime.now)
 
+class RegistratorDomain(db.Model):
+  #local cache of every domain on every registrator account (DomainRegistrator) - the /domain_registrators/ page
+  #reads from here instead of the slow registrator APIs. Refreshed by functions/registrator_domains_func.py
+  #(GET /domain_registrators/sync_all/ + the page's sync button), and updated right away on purchase / NS change.
+  __table_args__ = (db.UniqueConstraint("registrator", "domain", name="uq_registrator_domain"),)
+  id = db.Column(db.Integer, primary_key=True)
+  registrator = db.Column(db.String(256), nullable=False, index=True)   #DomainRegistrator.name
+  domain = db.Column(db.String(256), nullable=False, index=True)
+  ns_servers = db.Column(db.String(1024), nullable=True, default="")    #comma-separated
+  registered = db.Column(db.DateTime, nullable=True)                    #registration date reported by the registrator
+  status = db.Column(db.String(256), nullable=True, default="")
+  created = db.Column(db.DateTime, default=datetime.now)
+  synced = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
 class DomainPurchase(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   domain = db.Column(db.String(256), nullable=False)

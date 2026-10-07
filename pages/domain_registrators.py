@@ -6,20 +6,13 @@ from functions.site_actions import is_admin,is_mail_admin
 from functions.rights_required import rights_required,ADMIN_RIGHTS
 from functions.cloudflare_ns_func import parse_ns
 from functions.domain_purchase_func import DOMAIN_RE,_set_ns
-from functions.dynadot_func import dynadot_list_domains
-from functions.spaceship_func import spaceship_list_domains
+from functions.registrator_domains_func import load_domains_from_db,last_sync_time,is_sync_running,start_background_sync
 
 domain_registrators_bp = Blueprint("domain_registrators", __name__)
 
 #Spaceship accepts 2..12 custom hosts, Dynadot up to 13 - the common safe range
 NS_MIN = 2
 NS_MAX = 12
-
-def _list_domains(registrator: DomainRegistrator):
-  """Dispatches the domain listing to the correct API based on registrator.provider."""
-  if registrator.provider == "spaceship":
-    return spaceship_list_domains(registrator)
-  return dynadot_list_domains(registrator)
 
 def _cf_ns_options() -> list:
   """NS pairs stored for Cloudflare accounts (Cloudflare.ns_servers) - offered as checkboxes in the "change NS" window."""
@@ -48,20 +41,54 @@ def show_domain_registrators():
 @login_required
 @rights_required(ADMIN_RIGHTS)
 def get_registrator_domains():
-  """GET request (AJAX): returns all domains of the given registrator account as JSON"""
+  """GET request (AJAX): returns all domains of the given registrator account as JSON - from the local
+  RegistratorDomain cache (fast), not from the registrator API. See sync routes below for refreshing it."""
   try:
     name = (request.args.get("registrator") or "").strip()
     registrator = DomainRegistrator.query.filter_by(name=name).first()
     if not registrator:
       return jsonify({"error": f"Реєстратор {name} не знайдено в базі"}), 404
-    logging.info(f"get_registrator_domains(): Loading domains of registrator {name} by {current_user.realname}")
-    ok, domains_or_err = _list_domains(registrator)
-    if not ok:
-      return jsonify({"error": f"Помилка API реєстратора: {domains_or_err}"}), 502
-    return jsonify({"domains": domains_or_err})
+    last_sync = last_sync_time(name)
+    return jsonify({
+      "domains": load_domains_from_db(name),
+      "last_sync": last_sync.strftime("%d.%m.%Y %H:%M") if last_sync else "",
+      "sync_running": is_sync_running(name)
+    })
   except Exception as err:
     logging.error(f"get_registrator_domains(): general error by {current_user.realname}: {err}")
     return jsonify({"error": str(err)}), 500
+
+@domain_registrators_bp.route("/domain_registrators/sync/", methods=['POST'])
+@login_required
+@rights_required(ADMIN_RIGHTS)
+def sync_one_registrator():
+  """POST request (AJAX, form/JSON field "registrator"): starts a background sync of one registrator with the DB.
+  The page then polls /domain_registrators/domains/ (sync_running flag) and reloads the table when it's done."""
+  try:
+    data = request.get_json(silent=True) or request.form
+    name = (data.get("registrator") or "").strip()
+    if not DomainRegistrator.query.filter_by(name=name).first():
+      return jsonify({"error": f"Реєстратор {name} не знайдено в базі"}), 404
+    started, skipped = start_background_sync(current_app._get_current_object(), [name])
+    logging.info(f"sync_one_registrator(): sync of registrator {name} requested by {current_user.realname}: {'started' if started else 'already running'}")
+    return jsonify({"status": "started" if started else "already running"})
+  except Exception as err:
+    logging.error(f"sync_one_registrator(): general error by {current_user.realname}: {err}")
+    return jsonify({"error": str(err)}), 500
+
+@domain_registrators_bp.route("/domain_registrators/sync_all/", methods=['GET'])
+def sync_all_registrators():
+  """GET request: starts a background sync of ALL registrators in DB with the RegistratorDomain table (new domains are
+  added, NS/dates/statuses updated, domains missing at the registrator deleted). Answers immediately - the sync can take
+  long. Meant to be triggered periodically by a cron job (same as /cloudflare_email/update_emails_status)."""
+  try:
+    names = [r.name for r in DomainRegistrator.query.order_by(DomainRegistrator.name).all()]
+    started, skipped = start_background_sync(current_app._get_current_object(), names)
+    logging.info(f"sync_all_registrators(): registrators sync started for {started}, already running: {skipped}")
+    return jsonify({"status": "started", "started": started, "already_running": skipped}), 200
+  except Exception as err:
+    logging.error(f"sync_all_registrators(): Global error: {err}")
+    return jsonify({"status": "error", "message": str(err)}), 500
 
 @domain_registrators_bp.route("/domain_registrators/set_ns/", methods=['POST'])
 @login_required

@@ -60,9 +60,13 @@
               </select>
             </div>
             <div class="col-12 col-md-2">
-              <button type="button" class="btn btn-outline-secondary w-100" id="reloadDomainsBtn" disabled>🔄 Оновити</button>
+              <button type="button" class="btn btn-outline-secondary w-100" id="reloadDomainsBtn" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Перечитати список з бази даних">🔄 Оновити</button>
+            </div>
+            <div class="col-12 col-md-4">
+              <button type="button" class="btn btn-outline-primary w-100" id="syncDomainsBtn" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Завантажити актуальний список доменів з API реєстратора в базу (може тривати кілька хвилин)">⇅ Синхронізувати з API реєстратора</button>
             </div>
           </div>
+          <div class="small text-muted mb-2" id="syncInfo"></div>
 
           <div id="domainsToolbar" class="d-flex flex-wrap align-items-center gap-2 mb-2 d-none">
             <input type="text" id="domainSearch" class="form-control form-control-sm" placeholder="🔍 Швидкий пошук (домен, NS, статус)..." style="width:280px;">
