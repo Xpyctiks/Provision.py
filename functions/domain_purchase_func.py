@@ -14,7 +14,7 @@ from functions.spaceship_func import spaceship_register_domain, spaceship_set_ns
 from functions.cloudflare_ns_func import parse_ns, save_account_ns_if_empty
 from functions.registrator_domains_func import upsert_registrator_domain
 
-CF_ACCOUNT_DOMAIN_LIMIT = 300
+CF_ACCOUNT_DOMAIN_LIMIT = 2000
 DOMAIN_RE = re.compile(r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
 
 def _clean_domain(raw: str):
