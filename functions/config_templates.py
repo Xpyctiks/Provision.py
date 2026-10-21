@@ -70,7 +70,8 @@ server {{
   add_header X-Content-Type-Options nosniff always;
   add_header X-Frame-Options SAMEORIGIN always;
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
+  include snippets/banned-ip.conf;
+  
   if ($request_method !~ ^(GET|POST|HEAD)$) {{
     return 405;
   }}
